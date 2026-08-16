@@ -123,10 +123,11 @@
         /* ĐIỀU CHỈNH CHO ĐIỆN THOẠI */
         @media (max-width: 768px) {
             body { font-size: 13.5px; padding: 6px; }
-            .main-nav { flex-direction: column; gap: 10px; margin-bottom: 10px; padding-bottom: 6px;}
-            .nav-tabs { width: 100%; }
-            .nav-actions { width: 100%; justify-content: space-between; }
-            .nav-actions button { flex: 1; }
+            .main-nav { flex-direction: row; gap: 6px; margin-bottom: 10px; padding-bottom: 6px; }
+            .nav-tabs { flex: 1; min-width: unset; }
+            .nav-actions { width: auto; }
+            .nav-btn { font-size: 0.85em; padding: 6px 4px; }
+            .btn-login, .btn-danger { font-size: 0.85em; padding: 6px 10px; white-space: nowrap; }
             .grid { grid-template-columns: 1fr; gap: 8px;}
             .tabs { margin-bottom: 10px; }
             .tab { flex: 1 1 30%; text-align: center; }
