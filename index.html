@@ -405,7 +405,44 @@
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
-    function login() { adminPassword = document.getElementById('adminPass').value; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; }
+    async function login() { 
+        const inputPass = document.getElementById('adminPass').value;
+        const btnLogin = document.querySelector('#loginModal .btn-primary');
+        const originalText = btnLogin.innerText;
+        
+        // Đổi chữ nút thành Đang kiểm tra để người dùng biết hệ thống đang xử lý
+        btnLogin.innerText = "Đang kiểm tra..."; 
+        btnLogin.disabled = true;
+
+        try {
+            // Gửi mật khẩu lên Google Apps Script để hỏi xem đúng không
+            const res = await fetch(API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) 
+            });
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                // Nếu Google trả lời mật khẩu ĐÚNG
+                adminPassword = inputPass; 
+                sessionStorage.setItem('adminPassword', adminPassword); 
+                document.body.classList.add('logged-in'); 
+                closeModal('loginModal'); 
+                document.getElementById('adminPass').value = ''; 
+                // Có thể bật dòng dưới nếu bạn muốn hiện thông báo
+                // alert("Đăng nhập thành công!");
+            } else {
+                // Nếu Google trả lời mật khẩu SAI
+                alert("Sai mật khẩu quản trị!");
+                document.getElementById('adminPass').value = '';
+            }
+        } catch(e) {
+            alert("Lỗi mạng, không thể kiểm tra mật khẩu!");
+        } finally {
+            btnLogin.innerText = originalText;
+            btnLogin.disabled = false;
+        }
+    }
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
