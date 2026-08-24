@@ -340,33 +340,28 @@
         const html = data.map(item => {
             const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending';
             return `
-            <div class="card">
-                <div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div>
-                
-                <div class="repair-info">
-                    <div class="repair-grid">
-                        <div class="repair-col-left">
-                            <span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> 
-                            <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span>
-                            <span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span>
-                        </div>
-                        <div class="repair-col-right">
-                            <span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span>
-                            <span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span>
-                            <span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span>
-                        </div>
-                    </div>
-                    ${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}
+            <!-- MÀN HÌNH UPLOAD FILE -->
+    <div id="app-upload" class="app-section">
+        <div class="header"><h3>Upload File lên Google Drive</h3></div>
+        <div class="card" style="max-width: 500px; margin: 0 auto;">
+            <input type="file" id="fileInput" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+            <button class="btn btn-primary admin-only" onclick="uploadFileToDrive()" id="btnUpload" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên Drive ngay</button>
+            <div id="uploadAlert" class="btn-login" style="color:var(--text-light); text-align:center; font-size:0.9em;">Vui lòng Đăng nhập Quản trị để Upload.</div>
+            
+            <!-- Thanh tiến độ (Mặc định ẩn, chỉ hiện khi đang tải) -->
+            <div id="progressContainer" style="display: none; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
+                    <span id="progressStatus">Đang gửi dữ liệu...</span>
+                    <span id="progressText">0%</span>
                 </div>
-                
-                <div class="card-footer">
-                    ${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}
-                    <div style="display:flex; gap: 4px;">
-                        <button class="btn btn-repair btn-sm admin-only" onclick="editRepair('${item.id}')">✏️ Sửa</button>
-                        <button class="btn btn-danger btn-sm admin-only" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button>
-                    </div>
+                <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.2s;"></div>
                 </div>
-            </div>`}).join('');
+            </div>
+
+            <div id="uploadResult" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+        </div>
+    </div>
         document.getElementById('repairContainer').innerHTML = html || emptyStateHTML;
     }
 
@@ -461,7 +456,7 @@
     
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
-    // HÀM UPLOAD FILE LÊN DRIVE
+    // HÀM UPLOAD FILE LÊN DRIVE (CÓ THANH TIẾN ĐỘ)
     async function uploadFileToDrive() {
         if (!adminPassword) return alert("Vui lòng Đăng nhập Quản trị trước!");
         
@@ -472,28 +467,73 @@
         const btn = document.getElementById('btnUpload');
         const resultDiv = document.getElementById('uploadResult');
         
-        btn.innerText = "Đang tải lên... Vui lòng chờ!"; btn.disabled = true; resultDiv.innerHTML = "";
+        // Gọi các thành phần giao diện của thanh tiến độ
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        btn.innerText = "Đang xử lý file..."; btn.disabled = true; resultDiv.innerHTML = "";
+        progressContainer.style.display = 'block'; // Hiện thanh tiến độ
+        progressBar.style.width = '0%'; progressText.innerText = '0%';
 
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = function(e) {
             const base64Data = e.target.result.split(',')[1];
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        adminPassword, 
-                        action: 'upload', 
-                        data: { fileName: file.name, mimeType: file.type, base64: base64Data }
-                    })
-                });
-                const result = await res.json();
-                if (result.status === 'success') {
-                    resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
-                    fileInput.value = '';
-                } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; }
-            } catch(error) { resultDiv.innerHTML = `❌ Lỗi mạng!`; } 
-            finally { btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false; }
+            const payload = JSON.stringify({
+                adminPassword, 
+                action: 'upload', 
+                data: { fileName: file.name, mimeType: file.type, base64: base64Data }
+            });
+
+            // Sử dụng XMLHttpRequest thay vì fetch để đo tiến độ (progress)
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', API_URL, true);
+
+            // Bắt sự kiện tải lên
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.innerText = percentComplete + '%';
+                    
+                    if (percentComplete === 100) {
+                        progressStatus.innerText = "Đang lưu vào Drive...";
+                        btn.innerText = "Vui lòng chờ Google xử lý...";
+                    } else {
+                        progressStatus.innerText = "Đang gửi dữ liệu...";
+                        btn.innerText = `Đang tải... ${percentComplete}%`;
+                    }
+                }
+            };
+
+            // Nhận kết quả từ server trả về
+            xhr.onload = function() {
+                btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false;
+                progressContainer.style.display = 'none'; // Ẩn thanh tiến độ
+                
+                if (xhr.status === 200) {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.status === 'success') {
+                            resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
+                            fileInput.value = '';
+                        } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; }
+                    } catch(err) { resultDiv.innerHTML = `❌ Lỗi xử lý kết quả trả về!`; }
+                } else { resultDiv.innerHTML = `❌ Lỗi máy chủ Google (${xhr.status})!`; }
+            };
+
+            xhr.onerror = function() {
+                btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false;
+                progressContainer.style.display = 'none';
+                resultDiv.innerHTML = `❌ Lỗi mạng, mất kết nối!`;
+            };
+
+            // Gửi dữ liệu đi
+            xhr.send(payload); 
         };
+        
+        reader.onerror = () => { alert("Lỗi khi đọc file trên máy của bạn!"); btn.disabled = false; btn.innerText = "🚀 Tải lên Drive ngay"; }
         reader.readAsDataURL(file); 
     }
 
