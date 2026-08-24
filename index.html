@@ -176,10 +176,10 @@
         
         <div class="ai-form-container" style="max-width: 700px; margin: 0 auto;">
             <div class="form-grid">
-                <input type="text" id="aiGrade" class="ai-input" placeholder="Lớp (Ví dụ: Lớp 4)">
-                <input type="text" id="aiSubject" class="ai-input" placeholder="Môn học (Ví dụ: Toán)">
+                <!-- Đã loại bỏ ô Lớp theo yêu cầu -->
+                <input type="text" id="aiSubject" class="ai-input full-width" placeholder="Môn học (Nếu để trống AI sẽ tự tìm trong ảnh)">
             </div>
-            <input type="text" id="aiLesson" class="ai-input" placeholder="Tên bài dạy (Ví dụ: Phép cộng phân số)">
+            <input type="text" id="aiLesson" class="ai-input" placeholder="Tên bài dạy (Nếu để trống AI sẽ tự tìm trong ảnh)">
             
             <div class="integration-section">
                 <label style="font-weight: 600; color: #1e293b; display: block; margin-bottom: 5px;">📌 Chọn nội dung tích hợp (nếu có):</label>
@@ -273,7 +273,7 @@
     async function uploadHeavyFile() { /* Code upload heavy file giữ nguyên */ }
 
     // ==========================================
-    // MODULE TRỢ GIẢNG AI (CÓ ĐỊNH DẠNG WORD CHUẨN)
+    // MODULE TRỢ GIẢNG AI 
     // ==========================================
     const aiDataTransfer = new DataTransfer();
 
@@ -329,14 +329,14 @@
         if (pastedCount > 0) updateAiImagePreview();
     });
 
-    // Hàm phiên dịch Markdown sang HTML (Có bọc thẻ <strong> cho các mục I. II. 1. 2.)
+    // Hàm chuyển đổi Markdown sang HTML với tính năng TỰ ĐỘNG IN ĐẬM ĐỀ MỤC
     function parseMarkdownToHTML(text) {
         let html = text;
         
-        // Bắt chính xác cụm KẾ HOẠCH BÀI DẠY và định dạng chuẩn
-        html = html.replace(/\*\*KẾ HOẠCH BÀI DẠY\*\*/g, '<p align="center" style="text-align: center; margin-bottom: 12pt;"><strong><span style="font-size: 16pt; text-transform: uppercase;">KẾ HOẠCH BÀI DẠY</span></strong></p>');
+        // 1. In đậm và căn giữa KẾ HOẠCH BÀI DẠY
+        html = html.replace(/\*\*KẾ HOẠCH BÀI DẠY\*\*/gi, '<p align="center" style="text-align: center; margin-bottom: 12pt;"><strong><span style="font-size: 16pt; text-transform: uppercase;">KẾ HOẠCH BÀI DẠY</span></strong></p>');
 
-        // In đậm các mục I, II, III... và 1, 2, 3... (nếu AI quên in đậm)
+        // 2. In đậm tự động các đề mục số La Mã (I., II., III....) và số đếm (1., 2., 3....)
         html = html.replace(/^(I{1,3}|IV|V|VI)\.\s*(.*)$/gm, '<strong>$1. $2</strong>');
         html = html.replace(/^([0-9]+)\.\s*(.*)$/gm, '<strong>$1. $2</strong>');
 
@@ -357,18 +357,15 @@
             }); return t + '</table>';
         });
         
-        // Thay thế \n bằng <br> nhưng loại trừ các thẻ block để web và Word không bị khoảng trắng thừa
+        // Thay thế \n bằng <br> 
         html = html.replace(/\n(?!(?:.*?<\/td>|.*?<\/th>|.*?<\/tr>|.*?<\/table>|.*?<\/p>))/g, '<br>'); 
         html = html.replace(/<\/h1><br>/g, '</h1>').replace(/<\/h2><br>/g, '</h2>').replace(/<\/h3><br>/g, '</h3>').replace(/<\/table><br>/g, '</table>').replace(/<\/p><br>/g, '</p>'); 
-        
-        // Dọn dẹp khoảng trắng dư
         html = html.replace(/<br><br><br>/g, '<br><br>');
         
         return html;
     }
 
     async function generateLessonPlan() {
-        const grade = document.getElementById('aiGrade').value || '4/6'; // Tự động điền lớp 4/6 nếu để trống
         const subject = document.getElementById('aiSubject').value;
         const lesson = document.getElementById('aiLesson').value;
         const files = aiDataTransfer.files;
@@ -417,44 +414,18 @@
                 }
             }
 
-            const payload = { action: 'generate_lesson_plan', data: { grade, subject, lesson, integrated, images: imagesDataArray } };
+            const payload = { action: 'generate_lesson_plan', data: { subject, lesson, integrated, images: imagesDataArray } };
             btn.innerText = `🧠 AI Đang Phân Tích ${files.length} Ảnh (Chờ 5-15s)...`;
 
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
 
             if (result.status === 'success') {
+                // Chúng ta sẽ giao quyền hiển thị Môn, Tên Bài cho AI 100% (Vì đã cài đặt trong Code.gs)
                 let rawText = result.result;
                 
-                // Dọn dẹp tiêu đề cũ do AI tự sinh ra (để tránh bị trùng lặp)
-                rawText = rawText.replace(/^(#+ |)KẾ HOẠCH BÀI DẠY.*?\n/gim, '');
-                rawText = rawText.replace(/^(#+ |)THÔNG TIN BÀI HỌC.*?\n/gim, '');
-                rawText = rawText.replace(/^\*\*Môn:\*\*.*?\n/gim, '');
-                rawText = rawText.replace(/^\*\*Tên bài:\*\*.*?\n/gim, '');
-                rawText = rawText.replace(/^\*\*Thời lượng:\*\*.*?\n/gim, '');
-                rawText = rawText.replace(/^\*\*Lớp:\*\*.*?\n/gim, '');
-                rawText = rawText.replace(/^Môn:.*?\n/gim, '');
-                rawText = rawText.replace(/^Tên bài:.*?\n/gim, '');
-                rawText = rawText.replace(/^Thời lượng:.*?\n/gim, '');
-                rawText = rawText.replace(/^Lớp:.*?\n/gim, '');
-                
-                const gradeVal = document.getElementById('aiGrade').value || '4/6';
-                const subjectVal = document.getElementById('aiSubject').value || '...';
-                const lessonVal = document.getElementById('aiLesson').value || '...';
-                
-                // Nối Header chuẩn vào đầu kết quả
-                const standardMarkdown = `**KẾ HOẠCH BÀI DẠY**
-
-**Môn:** ${subjectVal}
-**Tên bài:** ${lessonVal}
-**Thời lượng:** 1 tiết (35 phút)
-**Lớp:** ${gradeVal}
-
-`;              
-                const fullMarkdown = standardMarkdown + rawText.trim();
-                
-                contentDiv.innerHTML = parseMarkdownToHTML(fullMarkdown);
-                contentDiv.setAttribute('data-raw', fullMarkdown);
+                contentDiv.innerHTML = parseMarkdownToHTML(rawText);
+                contentDiv.setAttribute('data-raw', rawText);
                 resultBox.style.display = 'block'; resultBox.scrollIntoView({ behavior: 'smooth' });
             } else { alert("Lỗi AI: " + result.message); }
         } catch (error) { alert("Lỗi mạng! Không thể kết nối với máy chủ AI."); console.error(error); } 
@@ -473,12 +444,10 @@
         const subject = document.getElementById('aiSubject').value || 'MON';
         const lesson = document.getElementById('aiLesson').value || 'BAI';
         const toNonAccent = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
-        const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}_LOP4.doc`;
+        const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}.doc`;
 
-        // Lấy nội dung HTML đã được render hoàn hảo từ giao diện Web
         const content = document.getElementById('aiContent').innerHTML;
 
-        // Mã nhúng Word chuẩn: Cỡ giấy A4, Lề chuẩn hồ sơ, Font Times New Roman 14, Bảng biểu nét liền màu đen
         const header = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -494,7 +463,6 @@
             </xml>
             <![endif]-->
             <style>
-                /* Khổ giấy A4 chuẩn */
                 @page Section1 { 
                     size: 595.3pt 841.9pt; 
                     margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: Trái 3cm, Phải/Trên/Dưới 2cm */
@@ -504,11 +472,10 @@
                 }
                 div.Section1 { page: Section1; }
                 
-                /* Định dạng văn bản */
                 body, p, td, th, li, span { 
                     font-family: 'Times New Roman', serif; 
                     font-size: 14pt; 
-                    line-height: 120%; /* Giãn dòng Multiple 1.2 */
+                    line-height: 120%; 
                     mso-line-height-rule: exactly;
                 }
                 
@@ -517,7 +484,6 @@
                 h2 { font-size: 15pt; } 
                 h3 { font-size: 14pt; } 
                 
-                /* Bảng tự động ép vào khung trang giấy */
                 table { 
                     border-collapse: collapse; 
                     width: 100% !important; 
