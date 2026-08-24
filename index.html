@@ -78,6 +78,10 @@
         .checkbox-grid label:hover { color: var(--ai); }
         .checkbox-grid input[type="checkbox"] { accent-color: var(--ai); cursor: pointer; width: 15px; height: 15px;}
 
+        /* Vùng tải ảnh AI */
+        #aiImageContainer { border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; transition: border-color 0.3s, background-color 0.3s; }
+        #aiImageContainer.dragover { border-color: var(--ai); background-color: #f5f3ff; }
+
         /* Hiển thị Markdown & Table trên Web */
         .markdown-body h1 { color: var(--ai); margin-top: 15px; margin-bottom: 10px; font-size: 1.4em;}
         .markdown-body h2 { color: #334155; margin-top: 15px; margin-bottom: 8px; font-size: 1.2em;}
@@ -182,7 +186,6 @@
             </div>
             <input type="text" id="aiLesson" class="ai-input" placeholder="Tên bài dạy (Ví dụ: Phép cộng phân số)">
             
-            <!-- VÙNG TÍCH HỢP MỚI -->
             <div class="integration-section">
                 <label style="font-weight: 600; color: #1e293b; display: block; margin-bottom: 5px;">📌 Chọn nội dung tích hợp (nếu có):</label>
                 <div class="checkbox-grid">
@@ -199,9 +202,12 @@
                 <input type="text" id="aiIntegratedOther" class="ai-input" style="margin-top: 10px; margin-bottom: 0;" placeholder="Hoặc nhập nội dung tích hợp khác...">
             </div>
             
-            <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                <p style="margin:0 0 10px 0; font-weight:bold; color:var(--text-light); font-size:0.9em;">📸 Tải lên ảnh SGK hoặc bài tập (Để AI lấy dữ liệu soạn bài)</p>
+            <!-- VÙNG TẢI ẢNH CÓ HỖ TRỢ CTRL+V -->
+            <div id="aiImageContainer">
+                <p style="margin:0 0 10px 0; font-weight:bold; color:var(--text-light); font-size:0.95em;">📸 Tải lên ảnh SGK hoặc bài tập</p>
+                <p style="margin:0 0 10px 0; color:#64748b; font-size:0.85em;">(Chọn File hoặc bấm <kbd style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:bold;">Ctrl + V</kbd> để dán ảnh vào đây)</p>
                 <input type="file" id="aiImage" accept="image/*" style="width:100%;">
+                <div id="aiImagePreview" style="margin-top: 10px; font-size: 0.85em; color: var(--ai); font-weight: bold;"></div>
             </div>
 
             <button class="btn btn-ai" id="btnGenerateAI" onclick="generateLessonPlan()" style="width: 100%; padding: 12px; font-size: 1.05em;">✨ AI Bắt Đầu Soạn Giáo Án</button>
@@ -262,7 +268,7 @@
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
     // ==========================================
-    // MODULE UPLOAD FILES (LIGHT & HEAVY)
+    // MODULE UPLOAD FILES
     // ==========================================
     async function uploadLightFile() {
         const fileInput = document.getElementById('fileInputLight'); const files = fileInput.files;
@@ -343,8 +349,45 @@
     }
 
     // ==========================================
-    // MODULE TRỢ GIẢNG AI (CÓ GOM CHECKBOX TÍCH HỢP)
+    // MODULE TRỢ GIẢNG AI (CÓ CTRL+V)
     // ==========================================
+    
+    // Bắt sự kiện Ctrl + V để dán ảnh trực tiếp
+    document.addEventListener('paste', function(e) {
+        if (!document.getElementById('app-ai').classList.contains('active')) return;
+        
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const blob = item.getAsFile();
+                // Gán file ảnh vào ô input file
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(new File([blob], "Anh_Dan_Tu_Clipboard.png", { type: item.type }));
+                document.getElementById('aiImage').files = dataTransfer.files;
+                
+                // Hiển thị thông báo thành công
+                document.getElementById('aiImagePreview').innerText = "✅ Đã dán 1 ảnh từ Clipboard thành công!";
+                document.getElementById('aiImageContainer').style.borderColor = "var(--ai)";
+                document.getElementById('aiImageContainer').style.backgroundColor = "#f5f3ff";
+                break;
+            }
+        }
+    });
+
+    // Reset thông báo nếu người dùng tự chọn file bằng tay
+    document.getElementById('aiImage').addEventListener('change', function() {
+        if(this.files.length > 0) {
+            document.getElementById('aiImagePreview').innerText = "✅ Đã chọn 1 ảnh: " + this.files[0].name;
+            document.getElementById('aiImageContainer').style.borderColor = "var(--ai)";
+            document.getElementById('aiImageContainer').style.backgroundColor = "#f5f3ff";
+        } else {
+            document.getElementById('aiImagePreview').innerText = "";
+            document.getElementById('aiImageContainer').style.borderColor = "#cbd5e1";
+            document.getElementById('aiImageContainer').style.backgroundColor = "transparent";
+        }
+    });
+
     function parseMarkdownToHTML(text) {
         let html = text;
         html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
@@ -373,7 +416,7 @@
         const lesson = document.getElementById('aiLesson').value;
         const fileInput = document.getElementById('aiImage');
         
-        // GOM DỮ LIỆU TỪ CÁC DẤU TÍCH VÀ Ô TEXT BOX KHÁC
+        // Gom dữ liệu tích hợp
         const checkedBoxes = document.querySelectorAll('.checkbox-grid input[type="checkbox"]:checked');
         let integratedArr = Array.from(checkedBoxes).map(cb => cb.value);
         const otherIntegrated = document.getElementById('aiIntegratedOther').value.trim();
