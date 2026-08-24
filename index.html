@@ -5,94 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý Tiện Ích - Nguyễn Hiển</title>
     <style>
-        /* BẢNG MÀU DEEP INDIGO */
         :root { 
-            --primary: #4f46e5;       
-            --primary-hover: #4338ca; 
-            --repair: #0ea5e9;        
-            --repair-hover: #0284c7; 
-            --bg: #f8fafc;            
-            --text: #0f172a;          
-            --text-light: #64748b; 
-            --border: #e2e8f0; 
+            --primary: #4f46e5; --primary-hover: #4338ca; 
+            --repair: #0ea5e9; --repair-hover: #0284c7; 
+            --heavy: #f59e0b; --heavy-hover: #d97706; /* Màu riêng cho Tải File Lớn */
+            --bg: #f8fafc; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; 
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px 15px; font-size: 14.5px; }
         .container { max-width: 1200px; margin: 0 auto; }
-        
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
+        ::-webkit-scrollbar { width: 5px; height: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .main-nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #cbd5e1; flex-wrap: wrap; }
-        .nav-tabs { display: flex; gap: 8px; flex: 1; min-width: 250px; }
-        .nav-actions { display: flex; gap: 8px; }
+        .nav-tabs { display: flex; gap: 8px; flex: 1; min-width: 250px; } .nav-actions { display: flex; gap: 8px; }
         .nav-btn { flex: 1; padding: 6px 5px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: bold; background: #e2e8f0; color: var(--text-light); text-align: center; transition: 0.2s;}
         .nav-btn.active[data-target="app-prompts"] { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
         .nav-btn.active[data-target="app-repairs"] { background: var(--repair); color: white; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3); }
         .nav-btn.active[data-target="app-upload"] { background: #10b981; color: white; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); }
-        
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
         .header h3 { margin: 0; font-size: 1.15em; }
         
         .btn { padding: 5px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85em; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s; }
         .btn-sm { padding: 4px 10px; font-size: 0.8em; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-repair { background: var(--repair); color: white; }
-        .btn-repair:hover { background: var(--repair-hover); }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
+        .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
+        .btn-repair { background: var(--repair); color: white; } .btn-repair:hover { background: var(--repair-hover); }
+        .btn-danger { background: #ef4444; color: white; } .btn-danger:hover { background: #dc2626; }
         
-        /* QUẢN LÝ QUYỀN TRUY CẬP */
-        .admin-only { display: none !important; }
-        body.logged-in .admin-only { display: inline-flex !important; }
-        body.logged-in .btn-login { display: none !important; }
+        .admin-only { display: none !important; } body.logged-in .admin-only { display: block !important; } body.logged-in .admin-only.btn-inline { display: inline-flex !important; } body.logged-in .btn-login { display: none !important; }
 
         .tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
         .tab { padding: 4px 12px; background: white; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.85em; font-weight: 600; white-space: nowrap; color: var(--text-light); transition: 0.3s; }
-        .tab:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--text); }
-        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--text); } .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
         
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
-
-        .card { 
-            background: white; border: 1px solid var(--border); padding: 12px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -2px rgba(0,0,0,0.02); 
-            display: flex; flex-direction: column; 
-            transition: transform 0.2s ease, box-shadow 0.2s ease; 
-        }
+        .card { background: white; border: 1px solid var(--border); padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -2px rgba(0,0,0,0.02); display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04); }
         
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
         .card-title { margin: 0; font-size: 1em; color: var(--text); line-height: 1.3; font-weight: bold; }
         
         .tag { padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold; white-space: nowrap; }
-        .tag-teaching { background: #e0e7ff; color: #4338ca; } 
-        .tag-admin { background: #fae8ff; color: #6d28d9; }
-        .tag-coding { background: #f1f5f9; color: #334155; } 
-        .tag-media { background: #fce7f3; color: #be185d; }
-        .tag-diy { background: #ffedd5; color: #c2410c; } 
-        .tag-default { background: #f1f5f9; color: #475569; }
+        .tag-teaching { background: #e0e7ff; color: #4338ca; } .tag-admin { background: #fae8ff; color: #6d28d9; } .tag-coding { background: #f1f5f9; color: #334155; } .tag-media { background: #fce7f3; color: #be185d; } .tag-diy { background: #ffedd5; color: #c2410c; } .tag-default { background: #f1f5f9; color: #475569; }
         
-        .prompt-box { 
-            background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px; 
-            max-height: 150px; 
-            overflow-y: auto; font-size: 1.02em; line-height: 1.5; color: #334155; margin-bottom: 8px; white-space: pre-wrap; 
-        }
+        .prompt-box { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 150px; overflow-y: auto; font-size: 1.02em; line-height: 1.5; color: #334155; margin-bottom: 8px; white-space: pre-wrap; }
         .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: auto; }
         
         .repair-info { font-size: 0.85em; line-height: 1.6; color: #334155; }
-        .repair-grid { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-            background: #f8fafc; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; 
-        }
-        .repair-col-left { display: flex; flex-direction: column; gap: 8px; border-right: 1px dashed #cbd5e1; padding-right: 15px; }
-        .repair-col-right { display: flex; flex-direction: column; gap: 8px; }
-        
-        .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: bold; }
-        .status-done { background: #dcfce7; color: #15803d; } .status-pending { background: #fef08a; color: #a16207; }
+        .repair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; padding: 12px 15px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; }
+        .repair-col-left { display: flex; flex-direction: column; gap: 8px; border-right: 1px dashed #cbd5e1; padding-right: 15px; } .repair-col-right { display: flex; flex-direction: column; gap: 8px; }
+        .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: bold; } .status-done { background: #dcfce7; color: #15803d; } .status-pending { background: #fef08a; color: #a16207; }
         
         @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
         .skeleton { background: #f1f5f9 linear-gradient(to right, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%) no-repeat; background-size: 800px 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; height: 180px; border: 1px solid var(--border); }
@@ -102,27 +61,17 @@
         .modal-content h3 { margin: 0 0 5px 0; font-size: 1.1em; color: var(--text); }
         .modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: 8px 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.9em; transition: 0.2s; color: var(--text); }
         .modal-content input:focus, .modal-content textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .full-width { grid-column: 1 / -1; }
-
-        .app-section { display: none; }
-        .app-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .full-width { grid-column: 1 / -1; }
+        .app-section { display: none; } .app-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
             body { font-size: 13.5px; padding: 6px; }
             .main-nav { flex-direction: row; gap: 6px; margin-bottom: 10px; padding-bottom: 6px; flex-wrap: wrap; }
-            .nav-tabs { flex: 1; min-width: 100%; display: flex; gap: 6px; }
-            .nav-actions { width: 100%; justify-content: space-between; display: flex; gap: 6px; }
+            .nav-tabs { flex: 1; min-width: 100%; display: flex; gap: 6px; } .nav-actions { width: 100%; justify-content: space-between; display: flex; gap: 6px; }
             .nav-btn, .btn-login, .btn-danger { font-size: 0.85em; padding: 6px 4px; flex: 1; text-align: center; white-space: nowrap;}
-            .grid { grid-template-columns: 1fr; gap: 8px;}
-            .tabs { margin-bottom: 10px; }
-            .tab { flex: 1 1 30%; text-align: center; }
-            .header { margin-bottom: 10px; }
-            .prompt-box { max-height: 120px; } 
-            
-            .repair-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
-            .repair-col-left { border-right: none; border-bottom: 1px dashed #cbd5e1; padding-right: 0; padding-bottom: 10px; }
+            .grid { grid-template-columns: 1fr; gap: 8px;} .tabs { margin-bottom: 10px; } .tab { flex: 1 1 30%; text-align: center; } .header { margin-bottom: 10px; } .prompt-box { max-height: 120px; } 
+            .repair-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; } .repair-col-left { border-right: none; border-bottom: 1px dashed #cbd5e1; padding-right: 0; padding-bottom: 10px; }
         }
     </style>
 </head>
@@ -137,59 +86,67 @@
         </div>
         <div class="nav-actions">
             <button class="btn btn-primary btn-login" onclick="openModal('loginModal')">🔒 Đăng nhập</button>
-            <button class="btn btn-danger admin-only" onclick="logout()">Thoát quản trị</button>
+            <button class="btn btn-danger admin-only btn-inline" onclick="logout()">Thoát quản trị</button>
         </div>
     </div>
 
     <!-- MÀN HÌNH PROMPTS -->
     <div id="app-prompts" class="app-section active">
-        <div class="header">
-            <h3>Danh sách Prompt</h3>
-            <button class="btn btn-primary btn-sm admin-only" onclick="openModalPrompt()">➕ Thêm Prompt Mới</button>
-        </div>
+        <div class="header"><h3>Danh sách Prompt</h3> <button class="btn btn-primary btn-sm admin-only btn-inline" onclick="openModalPrompt()">➕ Thêm Prompt Mới</button></div>
         <div class="tabs" id="tabContainer">
-            <button class="tab active" onclick="filterTab('all', this)">Tất cả</button>
-            <button class="tab" onclick="filterTab('teaching', this)">👨‍🏫 Giảng dạy</button>
-            <button class="tab" onclick="filterTab('admin', this)">📋 Hành chính</button>
-            <button class="tab" onclick="filterTab('coding', this)">💻 Lập trình</button>
-            <button class="tab" onclick="filterTab('media', this)">🎨 Media</button>
-            <button class="tab" onclick="filterTab('diy', this)">🔧 DIY</button>
+            <button class="tab active" onclick="filterTab('all', this)">Tất cả</button> <button class="tab" onclick="filterTab('teaching', this)">👨‍🏫 Giảng dạy</button> <button class="tab" onclick="filterTab('admin', this)">📋 Hành chính</button>
+            <button class="tab" onclick="filterTab('coding', this)">💻 Lập trình</button> <button class="tab" onclick="filterTab('media', this)">🎨 Media</button> <button class="tab" onclick="filterTab('diy', this)">🔧 DIY</button>
         </div>
         <div class="grid" id="promptContainer"></div>
     </div>
 
     <!-- MÀN HÌNH REPAIRS -->
     <div id="app-repairs" class="app-section">
-        <div class="header">
-            <h3>Nhật ký Sửa chữa thiết bị</h3>
-            <button class="btn btn-repair btn-sm admin-only" onclick="openModalRepair()">➕ Thêm Báo Cáo</button>
-        </div>
+        <div class="header"><h3>Nhật ký Sửa chữa thiết bị</h3> <button class="btn btn-repair btn-sm admin-only btn-inline" onclick="openModalRepair()">➕ Thêm Báo Cáo</button></div>
         <div class="grid" id="repairContainer"></div>
     </div>
     
-    <!-- MÀN HÌNH UPLOAD FILE -->
+    <!-- MÀN HÌNH UPLOAD FILE (TÁCH 2 PHẦN) -->
     <div id="app-upload" class="app-section">
-        <div class="header"><h3>Upload File lên Google Drive</h3></div>
-        <div class="card" style="max-width: 500px; margin: 0 auto;">
-            <input type="file" id="fileInput" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
-            
-            <button class="btn btn-primary" onclick="uploadFileToDrive()" id="btnUpload" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên Drive ngay</button>
-            
-            <!-- Nút truy cập thư mục dành riêng cho Admin (Hiển thị khi đăng nhập) -->
-            <a href="https://drive.google.com/drive/u/0/folders/1r5BGSJW3_gf2JxS7aX5vSky8Jz-ebJgV" target="_blank" class="btn btn-primary admin-only" style="margin-top: 10px; width: 100%; background: var(--primary); text-decoration: none; box-sizing: border-box; text-align: center; display: block;">📂 Mở thư mục 3.TienIch_Uploads</a>
-            
-            <!-- Thanh tiến độ tải lên (Dùng FETCH giả lập 90%) -->
-            <div id="progressContainer" style="display: none; margin-top: 15px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
-                    <span id="progressStatus">Đang gửi dữ liệu...</span>
-                    <span id="progressText">0%</span>
+        <div class="header" style="margin-bottom: 20px;">
+            <h3>Trung tâm Upload Dữ Liệu</h3>
+            <a href="https://drive.google.com/drive/u/0/folders/1r5BGSJW3_gf2JxS7aX5vSky8Jz-ebJgV" target="_blank" class="btn btn-primary admin-only btn-inline" style="background: #be185d;">📂 Mở thư mục (Admin)</a>
+        </div>
+        
+        <div class="grid" style="gap: 20px;">
+            <!-- MỤC 1: FILE NHẸ -->
+            <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid #10b981;">
+                <div class="card-header"><h3 class="card-title">⚡ Tải File Nhỏ (Dưới 15MB)</h3></div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: Hình ảnh (png, jpg), Word, Excel, PDF giáo án. Xử lý tức thì.</div>
+                
+                <input type="file" id="fileInputLight" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+                <button class="btn btn-primary" onclick="uploadLightFile()" id="btnUploadLight" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên (Chế độ Nhanh)</button>
+                
+                <div id="progressContainerLight" style="display: none; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
+                        <span id="progressStatusLight">Đang gửi dữ liệu...</span> <span id="progressTextLight">0%</span>
+                    </div>
+                    <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;"><div id="progressBarLight" style="width: 0%; height: 100%; background: #10b981; transition: width 0.3s;"></div></div>
                 </div>
-                <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
-                    <div id="progressBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.3s;"></div>
-                </div>
+                <div id="uploadResultLight" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
             </div>
 
-            <div id="uploadResult" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+            <!-- MỤC 2: FILE LỚN (RESUMABLE UPLOAD) -->
+            <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid var(--heavy);">
+                <div class="card-header"><h3 class="card-title">📦 Tải File Lớn (Không giới hạn)</h3></div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: File Video, File Nén, Dữ liệu GB. Có thanh đo phần trăm (%) chạy thực tế.</div>
+                
+                <input type="file" id="fileInputHeavy" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+                <button class="btn btn-primary" onclick="uploadHeavyFile()" id="btnUploadHeavy" style="width: 100%; padding: 10px; background:var(--heavy);">🚀 Tải lên (Chế độ Phân mảnh)</button>
+                
+                <div id="progressContainerHeavy" style="display: none; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
+                        <span id="progressStatusHeavy">Đang chuẩn bị luồng truyền dữ liệu...</span> <span id="progressTextHeavy">0%</span>
+                    </div>
+                    <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;"><div id="progressBarHeavy" style="width: 0%; height: 100%; background: var(--heavy); transition: width 0.1s;"></div></div>
+                </div>
+                <div id="uploadResultHeavy" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -204,61 +161,9 @@
     </div>
 </div>
 
-<!-- Modal Prompt -->
-<div class="modal" id="modalPrompt">
-    <div class="modal-content">
-        <h3 id="modalPromptTitle">Thêm Prompt Mới</h3>
-        <input type="text" id="pTitle" placeholder="Tiêu đề...">
-        <div class="form-grid">
-            <select id="pCategory">
-                <option value="teaching">👨‍🏫 Giảng dạy</option>
-                <option value="admin">📋 Hành chính</option>
-                <option value="coding">💻 Lập trình</option>
-                <option value="media">🎨 Media</option>
-                <option value="diy">🔧 DIY</option>
-            </select>
-            <select id="pPlatform">
-                <option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option>
-                <option value="Claude">🧠 Claude</option>
-                <option value="Suno AI">🎵 Suno AI</option>
-                <option value="Midjourney">🎨 Midjourney</option>
-                <option value="Khác">✨ Khác</option>
-            </select>
-        </div>
-        <textarea id="pContent" rows="5" placeholder="Dán nội dung prompt..."></textarea>
-        <div class="form-grid">
-            <button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button>
-            <button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Sửa Chữa -->
-<div class="modal" id="modalRepair">
-    <div class="modal-content">
-        <h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3>
-        <input type="text" id="rTask" class="full-width" placeholder="Công việc (VD: Sửa TV)">
-        <div class="form-grid">
-            <input type="text" id="rDate" placeholder="Ngày (VD: 16/8/2026)">
-            <input type="text" id="rLocation" placeholder="Lớp (VD: 1/6)">
-            <input type="text" id="rCost" placeholder="Chi phí (VD: 1500000)">
-            <select id="rStatus">
-                <option value="Đã hoàn thành">✅ Hoàn thành</option>
-                <option value="Đang chờ linh kiện">⏳ Đang chờ</option>
-                <option value="Cần theo dõi">🔍 Theo dõi</option>
-            </select>
-            <input type="text" id="rWarranty" placeholder="Thời hạn bảo hành (VD: 3 tháng)">
-            <input type="text" id="rVendor" placeholder="Đơn vị sửa/mua">
-            <input type="text" id="rReporter" placeholder="Người báo">
-            <input type="text" id="rImageUrl" placeholder="Link ảnh đính kèm (Tùy chọn)">
-        </div>
-        <textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea>
-        <div class="form-grid">
-            <button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button>
-            <button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button>
-        </div>
-    </div>
-</div>
+<!-- Modal Prompt / Repair (Giữ nguyên) -->
+<div class="modal" id="modalPrompt"><div class="modal-content"><h3 id="modalPromptTitle">Thêm Prompt Mới</h3><input type="text" id="pTitle" placeholder="Tiêu đề..."><div class="form-grid"><select id="pCategory"><option value="teaching">👨‍🏫 Giảng dạy</option><option value="admin">📋 Hành chính</option><option value="coding">💻 Lập trình</option><option value="media">🎨 Media</option><option value="diy">🔧 DIY</option></select><select id="pPlatform"><option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option><option value="Claude">🧠 Claude</option><option value="Suno AI">🎵 Suno AI</option><option value="Midjourney">🎨 Midjourney</option><option value="Khác">✨ Khác</option></select></div><textarea id="pContent" rows="5" placeholder="Dán nội dung prompt..."></textarea><div class="form-grid"><button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button><button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
+<div class="modal" id="modalRepair"><div class="modal-content"><h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3><input type="text" id="rTask" class="full-width" placeholder="Công việc (VD: Sửa TV)"><div class="form-grid"><input type="text" id="rDate" placeholder="Ngày (VD: 16/8/2026)"><input type="text" id="rLocation" placeholder="Lớp (VD: 1/6)"><input type="text" id="rCost" placeholder="Chi phí (VD: 1500000)"><select id="rStatus"><option value="Đã hoàn thành">✅ Hoàn thành</option><option value="Đang chờ linh kiện">⏳ Đang chờ</option><option value="Cần theo dõi">🔍 Theo dõi</option></select><input type="text" id="rWarranty" placeholder="Thời hạn bảo hành (VD: 3 tháng)"><input type="text" id="rVendor" placeholder="Đơn vị sửa/mua"><input type="text" id="rReporter" placeholder="Người báo"><input type="text" id="rImageUrl" placeholder="Link ảnh đính kèm (Tùy chọn)"></div><textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea><div class="form-grid"><button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button><button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec"; 
@@ -267,280 +172,166 @@
     let globalData = { prompts: [], repairs: [] };
     let editId = null;
 
-    /* --- PARSE DỮ LIỆU --- */
     function parseDate(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; } return raw; }
     function parseLocation(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate()}/${d.getMonth() + 1}`; } return raw; }
     function formatMoney(amount) { if (!amount && amount !== 0) return '0đ'; const num = parseInt(amount.toString().replace(/\D/g, '')); return isNaN(num) ? amount : num.toLocaleString('vi-VN') + 'đ'; }
-    
-    function getExpirationDate(dateStr, wStr) {
-        if (!wStr || wStr.toLowerCase() === 'không' || wStr == '0') return '<span style="color:#ef4444; font-weight:bold;">Không có</span>';
-        if (!dateStr || (typeof dateStr === 'string' && !dateStr.includes('T'))) return '<span style="color:var(--text-light);">Chưa xác định</span>';
-        
-        let months = 0; 
-        const m = wStr.toLowerCase().match(/(\d+)/);
-        if (m) { 
-            months = parseInt(m[1]); 
-            if (wStr.toLowerCase().includes('năm')) months *= 12; 
-        } else return `<span style="color:var(--text-light);">${wStr}</span>`;
-        
-        const endDate = new Date(dateStr); 
-        endDate.setMonth(endDate.getMonth() + months);
-        const now = new Date(); now.setHours(0,0,0,0);
-        
-        const dateString = `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`;
-        
-        if (now > endDate) return `<span style="color:#ef4444; font-weight:bold;">${dateString} (Đã hết hạn)</span>`;
-        const d = Math.ceil(Math.abs(endDate - now) / 86400000);
-        if (d <= 30) return `<span style="color:#f59e0b; font-weight:bold;">${dateString} (Sắp hết: ${d} ngày)</span>`;
-        return `<span style="color:#10b981; font-weight:bold;">${dateString}</span>`;
-    }
-    
+    function getExpirationDate(dateStr, wStr) { if (!wStr || wStr.toLowerCase() === 'không' || wStr == '0') return '<span style="color:#ef4444; font-weight:bold;">Không có</span>'; if (!dateStr || (typeof dateStr === 'string' && !dateStr.includes('T'))) return '<span style="color:var(--text-light);">Chưa xác định</span>'; let months = 0; const m = wStr.toLowerCase().match(/(\d+)/); if (m) { months = parseInt(m[1]); if (wStr.toLowerCase().includes('năm')) months *= 12; } else return `<span style="color:var(--text-light);">${wStr}</span>`; const endDate = new Date(dateStr); endDate.setMonth(endDate.getMonth() + months); const now = new Date(); now.setHours(0,0,0,0); const dateString = `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`; if (now > endDate) return `<span style="color:#ef4444; font-weight:bold;">${dateString} (Đã hết hạn)</span>`; const d = Math.ceil(Math.abs(endDate - now) / 86400000); if (d <= 30) return `<span style="color:#f59e0b; font-weight:bold;">${dateString} (Sắp hết: ${d} ngày)</span>`; return `<span style="color:#10b981; font-weight:bold;">${dateString}</span>`; }
     function getCategoryTag(cat) { const tags = { 'teaching': 'Giảng dạy', 'admin': 'Hành chính', 'coding': 'Code', 'media': 'Media', 'diy': 'DIY' }; return `<span class="tag tag-${cat || 'default'}">${tags[cat] || cat}</span>`; }
 
-    /* --- GIAO DIỆN --- */
     function showSkeleton(id) { document.getElementById(id).innerHTML = '<div class="skeleton"></div>'.repeat(3); }
-    function switchApp(appId, btn) { 
-        document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); 
-        document.getElementById(appId).classList.add('active'); 
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
-        btn.classList.add('active'); 
-        if(appId === 'app-prompts') loadData('prompts'); 
-        else if(appId === 'app-repairs') loadData('repairs'); 
-    }
+    function switchApp(appId, btn) { document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); document.getElementById(appId).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if(appId === 'app-prompts') loadData('prompts'); else if(appId === 'app-repairs') loadData('repairs'); }
     function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
 
-    /* --- TẢI DỮ LIỆU --- */
     async function loadData(type) {
         const cId = type === 'prompts' ? 'promptContainer' : 'repairContainer';
         const cache = localStorage.getItem(`cache_${type}`);
         if (cache) { globalData[type] = JSON.parse(cache); type === 'prompts' ? renderPrompts(globalData[type]) : renderRepairs(globalData[type]); } else showSkeleton(cId);
         try { const res = await fetch(API_URL + "?type=" + type); const json = await res.json(); globalData[type] = json.data; localStorage.setItem(`cache_${type}`, JSON.stringify(json.data)); type === 'prompts' ? renderPrompts(json.data) : renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById(cId).innerHTML = 'Lỗi tải dữ liệu mạng.'; }
     }
-
     const emptyStateHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu nào ở mục này.</div>';
 
-    function renderPrompts(data) {
-        const html = data.map(item => `
-            <div class="card prompt-card" data-category="${item.category}">
-                <div class="card-header"><h3 class="card-title">${item.title}</h3>${getCategoryTag(item.category)}</div>
-                <div class="prompt-box" id="content-${item.id}">${item.content}</div>
-                <div class="card-footer">
-                    <span style="font-size: 0.8em; color: var(--text-light); font-weight: 600;">🤖 ${item.platform}</span>
-                    <div style="display:flex; gap: 4px;">
-                        <button class="btn btn-primary btn-sm" onclick="copyPrompt('${item.id}')">📋 Copy</button>
-                        <button class="btn btn-primary btn-sm admin-only" onclick="editPrompt('${item.id}')">✏️ Sửa</button>
-                        <button class="btn btn-danger btn-sm admin-only" onclick="deleteItem('prompts', '${item.id}')">🗑️ Xóa</button>
-                    </div>
-                </div>
-            </div>`).join('');
-        document.getElementById('promptContainer').innerHTML = html || emptyStateHTML;
-        filterTab('all', document.querySelector('.tab.active') || document.querySelector('.tab'));
-    }
-
-    function renderRepairs(data) {
-        const html = data.map(item => {
-            const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending';
-            return `
-            <div class="card">
-                <div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div>
-                
-                <div class="repair-info">
-                    <div class="repair-grid">
-                        <div class="repair-col-left">
-                            <span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> 
-                            <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span>
-                            <span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span>
-                        </div>
-                        <div class="repair-col-right">
-                            <span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span>
-                            <span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span>
-                            <span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span>
-                        </div>
-                    </div>
-                    ${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}
-                </div>
-                
-                <div class="card-footer">
-                    ${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}
-                    <div style="display:flex; gap: 4px;">
-                        <button class="btn btn-repair btn-sm admin-only" onclick="editRepair('${item.id}')">✏️ Sửa</button>
-                        <button class="btn btn-danger btn-sm admin-only" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button>
-                    </div>
-                </div>
-            </div>`}).join('');
-        document.getElementById('repairContainer').innerHTML = html || emptyStateHTML;
-    }
-
+    function renderPrompts(data) { const html = data.map(item => `<div class="card prompt-card" data-category="${item.category}"><div class="card-header"><h3 class="card-title">${item.title}</h3>${getCategoryTag(item.category)}</div><div class="prompt-box" id="content-${item.id}">${item.content}</div><div class="card-footer"><span style="font-size: 0.8em; color: var(--text-light); font-weight: 600;">🤖 ${item.platform}</span><div style="display:flex; gap: 4px;"><button class="btn btn-primary btn-sm" onclick="copyPrompt('${item.id}')">📋 Copy</button><button class="btn btn-primary btn-sm admin-only btn-inline" onclick="editPrompt('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('prompts', '${item.id}')">🗑️ Xóa</button></div></div></div>`).join(''); document.getElementById('promptContainer').innerHTML = html || emptyStateHTML; filterTab('all', document.querySelector('.tab.active') || document.querySelector('.tab')); }
+    function renderRepairs(data) { const html = data.map(item => { const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending'; return `<div class="card"><div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div><div class="repair-info"><div class="repair-grid"><div class="repair-col-left"><span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span><span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span></div><div class="repair-col-right"><span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span><span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span><span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span></div></div>${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}</div><div class="card-footer">${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}<div style="display:flex; gap: 4px;"><button class="btn btn-repair btn-sm admin-only btn-inline" onclick="editRepair('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button></div></div></div>`}).join(''); document.getElementById('repairContainer').innerHTML = html || emptyStateHTML; }
     function copyPrompt(id) { navigator.clipboard.writeText(document.getElementById(`content-${id}`).innerText).then(() => alert("Đã copy prompt!")); }
 
-    /* --- CRUD --- */
-    function openModalPrompt(id = null) {
-        editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới";
-        if(id) {
-            const item = globalData.prompts.find(x => x.id === id);
-            document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category;
-            document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content;
-        } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); }
-        document.getElementById('modalPrompt').style.display = 'flex';
-    }
-
-    function openModalRepair(id = null) {
-        editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới";
-        if(id) {
-            const item = globalData.repairs.find(x => x.id === id);
-            document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date;
-            document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location;
-            document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty;
-            document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter;
-            document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note;
-        } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); }
-        document.getElementById('modalRepair').style.display = 'flex';
-    }
-
+    function openModalPrompt(id = null) { editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới"; if(id) { const item = globalData.prompts.find(x => x.id === id); document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category; document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content; } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); } document.getElementById('modalPrompt').style.display = 'flex'; }
+    function openModalRepair(id = null) { editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới"; if(id) { const item = globalData.repairs.find(x => x.id === id); document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date; document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location; document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty; document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter; document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note; } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); } document.getElementById('modalRepair').style.display = 'flex'; }
     function editPrompt(id) { openModalPrompt(id); } function editRepair(id) { openModalRepair(id); }
 
-    async function sendData(sheetType, action, dataObj, btnId) {
-        if(btnId) document.getElementById(btnId).innerText = "...";
-        try {
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType, action, data: dataObj }) });
-            const result = await res.json();
-            if(btnId) document.getElementById(btnId).innerText = "Lưu";
-            if(result.status === 'success') {
-                closeModal('modalPrompt'); closeModal('modalRepair');
-                localStorage.removeItem(`cache_${sheetType}`); loadData(sheetType);
-            } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); }
-        } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; }
-    }
-
-    function savePrompt() {
-        const data = { title: document.getElementById('pTitle').value, category: document.getElementById('pCategory').value, platform: document.getElementById('pPlatform').value, content: document.getElementById('pContent').value };
-        if(editId) { data.id = editId; sendData('prompts', 'update', data, 'btnSavePrompt'); } else sendData('prompts', 'create', data, 'btnSavePrompt');
-    }
-
-    function saveRepair() {
-        const data = { date: document.getElementById('rDate').value, task: document.getElementById('rTask').value, location: document.getElementById('rLocation').value, cost: document.getElementById('rCost').value, status: document.getElementById('rStatus').value, warranty: document.getElementById('rWarranty').value, vendor: document.getElementById('rVendor').value, reporter: document.getElementById('rReporter').value, asset_id: '', image_url: document.getElementById('rImageUrl').value, note: document.getElementById('rNote').value };
-        if(editId) { data.id = editId; sendData('repairs', 'update', data, 'btnSaveRepair'); } else sendData('repairs', 'create', data, 'btnSaveRepair');
-    }
-
+    async function sendData(sheetType, action, dataObj, btnId) { if(btnId) document.getElementById(btnId).innerText = "..."; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType, action, data: dataObj }) }); const result = await res.json(); if(btnId) document.getElementById(btnId).innerText = "Lưu"; if(result.status === 'success') { closeModal('modalPrompt'); closeModal('modalRepair'); localStorage.removeItem(`cache_${sheetType}`); loadData(sheetType); } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); } } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; } }
+    function savePrompt() { const data = { title: document.getElementById('pTitle').value, category: document.getElementById('pCategory').value, platform: document.getElementById('pPlatform').value, content: document.getElementById('pContent').value }; if(editId) { data.id = editId; sendData('prompts', 'update', data, 'btnSavePrompt'); } else sendData('prompts', 'create', data, 'btnSavePrompt'); }
+    function saveRepair() { const data = { date: document.getElementById('rDate').value, task: document.getElementById('rTask').value, location: document.getElementById('rLocation').value, cost: document.getElementById('rCost').value, status: document.getElementById('rStatus').value, warranty: document.getElementById('rWarranty').value, vendor: document.getElementById('rVendor').value, reporter: document.getElementById('rReporter').value, asset_id: '', image_url: document.getElementById('rImageUrl').value, note: document.getElementById('rNote').value }; if(editId) { data.id = editId; sendData('repairs', 'update', data, 'btnSaveRepair'); } else sendData('repairs', 'create', data, 'btnSaveRepair'); }
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
     
-    // HÀM ĐĂNG NHẬP
-    async function login() { 
-        const inputPass = document.getElementById('adminPass').value;
-        const btnLogin = document.querySelector('#loginModal .btn-primary');
-        const originalText = btnLogin.innerText;
-        
-        btnLogin.innerText = "Đang kiểm tra..."; 
-        btnLogin.disabled = true;
-
-        try {
-            const res = await fetch(API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) 
-            });
-            const result = await res.json();
-
-            if (result.status === 'success') {
-                adminPassword = inputPass; 
-                sessionStorage.setItem('adminPassword', adminPassword); 
-                document.body.classList.add('logged-in'); 
-                closeModal('loginModal'); 
-                document.getElementById('adminPass').value = ''; 
-            } else {
-                alert("Sai mật khẩu quản trị!");
-                document.getElementById('adminPass').value = '';
-            }
-        } catch(e) {
-            alert("Lỗi mạng, không thể kiểm tra mật khẩu!");
-        } finally {
-            btnLogin.innerText = originalText;
-            btnLogin.disabled = false;
-        }
-    }
-    
+    async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu quản trị!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
-    // HÀM UPLOAD FILE (TỰ ĐỘNG CHẶN FILE QUÁ LỚN)
-    async function uploadFileToDrive() {
-        const fileInput = document.getElementById('fileInput');
+    // ==========================================
+    // MỤC 1: HÀM UPLOAD FILE NHẸ (BASE64)
+    // ==========================================
+    async function uploadLightFile() {
+        const fileInput = document.getElementById('fileInputLight');
         if (fileInput.files.length === 0) return alert("Vui lòng chọn một file!");
-        
         const file = fileInput.files[0];
         
-        // KIỂM TRA DUNG LƯỢNG (GIỚI HẠN AN TOÀN 15MB)
-        const maxSize = 15 * 1024 * 1024; // 15MB
-        if (file.size > maxSize) {
-            return alert("⚠️ Tệp quá lớn!\n\nHệ thống API chỉ hỗ trợ tốt nhất cho file dưới 15MB. File lớn hơn sẽ làm quá tải máy chủ Google và bị chặn lại. \n\nVui lòng nén file nhỏ lại hoặc Quản trị viên tải trực tiếp vào Drive nhé.");
-        }
+        if (file.size > 15 * 1024 * 1024) return alert("⚠️ Tệp quá lớn cho chế độ này!\nVui lòng sử dụng mục 'TẢI FILE LỚN' ở bên dưới.");
 
-        const btn = document.getElementById('btnUpload');
-        const resultDiv = document.getElementById('uploadResult');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const progressStatus = document.getElementById('progressStatus');
+        const btn = document.getElementById('btnUploadLight');
+        const resultDiv = document.getElementById('uploadResultLight');
+        const pContainer = document.getElementById('progressContainerLight');
+        const pBar = document.getElementById('progressBarLight');
+        const pText = document.getElementById('progressTextLight');
+        const pStatus = document.getElementById('progressStatusLight');
         
-        btn.innerText = "Đang tải lên... Vui lòng chờ!"; btn.disabled = true; resultDiv.innerHTML = "";
-        progressContainer.style.display = 'block'; 
-        progressBar.style.width = '0%'; progressText.innerText = '0%';
-        progressStatus.innerText = "Đang gửi dữ liệu lên máy chủ...";
+        btn.innerText = "Đang tải lên..."; btn.disabled = true; resultDiv.innerHTML = "";
+        pContainer.style.display = 'block'; pBar.style.width = '0%'; pText.innerText = '0%'; pStatus.innerText = "Đang gửi dữ liệu...";
         
         let fakeProgress = 0;
-        const progressInterval = setInterval(() => {
-            if (fakeProgress < 90) {
-                fakeProgress += Math.floor(Math.random() * 8) + 1;
-                if(fakeProgress > 90) fakeProgress = 90;
-                progressBar.style.width = fakeProgress + '%';
-                progressText.innerText = fakeProgress + '%';
-            }
-        }, 300);
+        const progressInterval = setInterval(() => { if (fakeProgress < 90) { fakeProgress += Math.floor(Math.random() * 8) + 1; if(fakeProgress > 90) fakeProgress = 90; pBar.style.width = fakeProgress + '%'; pText.innerText = fakeProgress + '%'; } }, 300);
 
         const reader = new FileReader();
         reader.onload = async function(e) {
             const base64Data = e.target.result.split(',')[1];
             try {
-                // Fetch ổn định hơn XMLHttp, hạn chế lỗi CORS với Google
                 const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        adminPassword: adminPassword || "no_pass", 
-                        action: 'upload', 
-                        data: { fileName: file.name, mimeType: file.type, base64: base64Data }
-                    })
+                    method: 'POST', body: JSON.stringify({ action: 'upload', data: { fileName: file.name, mimeType: file.type, base64: base64Data } })
                 });
-                
                 clearInterval(progressInterval); 
-                
                 const result = await res.json();
-                
                 if (result.status === 'success') {
-                    progressBar.style.width = '100%'; progressText.innerText = '100%';
-                    progressStatus.innerText = "Hoàn tất!";
-                    
-                    setTimeout(() => {
-                        resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
-                        fileInput.value = '';
-                        progressContainer.style.display = 'none';
-                    }, 500);
-
-                } else { 
-                    resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; 
-                    progressContainer.style.display = 'none';
-                }
-            } catch(error) { 
-                clearInterval(progressInterval);
-                resultDiv.innerHTML = `❌ Lỗi mạng hoặc File bị Google từ chối vì quá nặng!`; 
-                progressContainer.style.display = 'none';
-            } 
-            finally { 
-                btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false; 
-            }
+                    pBar.style.width = '100%'; pText.innerText = '100%'; pStatus.innerText = "Hoàn tất!";
+                    setTimeout(() => { resultDiv.innerHTML = `✅ Xong! <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file</a>`; fileInput.value = ''; pContainer.style.display = 'none'; }, 500);
+                } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; pContainer.style.display = 'none'; }
+            } catch(error) { clearInterval(progressInterval); resultDiv.innerHTML = `❌ Lỗi mạng!`; pContainer.style.display = 'none'; } 
+            finally { btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; btn.disabled = false; }
         };
-        
-        reader.onerror = () => { alert("Lỗi khi đọc file!"); btn.disabled = false; btn.innerText = "🚀 Tải lên Drive ngay"; progressContainer.style.display = 'none'; }
+        reader.onerror = () => { alert("Lỗi khi đọc file!"); btn.disabled = false; btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; pContainer.style.display = 'none'; }
         reader.readAsDataURL(file); 
+    }
+
+    // ==========================================
+    // MỤC 2: HÀM UPLOAD FILE LỚN (RESUMABLE)
+    // ==========================================
+    async function uploadHeavyFile() {
+        const fileInput = document.getElementById('fileInputHeavy');
+        if (fileInput.files.length === 0) return alert("Vui lòng chọn một file!");
+        const file = fileInput.files[0];
+        
+        const btn = document.getElementById('btnUploadHeavy');
+        const resultDiv = document.getElementById('uploadResultHeavy');
+        const pContainer = document.getElementById('progressContainerHeavy');
+        const pBar = document.getElementById('progressBarHeavy');
+        const pText = document.getElementById('progressTextHeavy');
+        const pStatus = document.getElementById('progressStatusHeavy');
+
+        btn.innerText = "Khởi tạo luồng..."; btn.disabled = true; resultDiv.innerHTML = "";
+        pContainer.style.display = 'block'; pBar.style.width = '0%'; pText.innerText = '0%';
+        pStatus.innerText = "Đang xin quyền truyền dữ liệu lớn...";
+
+        try {
+            // 1. Lấy link phân mảnh (Resumable URL) từ Apps Script
+            const resUrl = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getResumableUrl', data: { fileName: file.name, mimeType: file.type } })
+            });
+            const urlData = await resUrl.json();
+            
+            if(urlData.status !== 'success') throw new Error("Không thể khởi tạo luồng truyền file!");
+            
+            const resumableUrl = urlData.resumableUrl;
+            pStatus.innerText = "Đang truyền dữ liệu lên Google Drive...";
+
+            // 2. Sử dụng XMLHttpRequest để PUT thẳng lên Drive và lấy tiến độ % THỰC TẾ
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', resumableUrl, true);
+            
+            xhr.upload.onprogress = function(e) {
+                if(e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    pBar.style.width = pct + '%'; pText.innerText = pct + '%';
+                    btn.innerText = `Đang truyền... ${pct}%`;
+                }
+            };
+            
+            xhr.onload = async function() {
+                if(xhr.status === 200 || xhr.status === 201) {
+                    pStatus.innerText = "Tải lên xong! Đang cấu hình quyền xem file...";
+                    btn.innerText = "Đang hoàn thiện...";
+                    const fileInfo = JSON.parse(xhr.responseText);
+                    
+                    // 3. Mở quyền Public cho file vừa tải
+                    const resPerm = await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'setPermission', data: { fileId: fileInfo.id } })
+                    });
+                    const permData = await resPerm.json();
+                    
+                    if(permData.status === 'success') {
+                        pStatus.innerText = "Hoàn tất!";
+                        resultDiv.innerHTML = `✅ Thành công! <br><br> <a href="${permData.fileUrl}" target="_blank" style="color:var(--heavy)">🔗 Mở file vừa tải</a>`;
+                        fileInput.value = '';
+                    } else {
+                        resultDiv.innerHTML = `⚠️ Đã tải nhưng lỗi cấp quyền xem: ${permData.message}`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `❌ Lỗi máy chủ Google (${xhr.status})`;
+                }
+                btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
+                setTimeout(() => pContainer.style.display = 'none', 3000);
+            };
+            
+            xhr.onerror = function() {
+                resultDiv.innerHTML = `❌ Rớt mạng hoặc gián đoạn kết nối!`;
+                btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
+            };
+            
+            xhr.send(file);
+        } catch(error) {
+            resultDiv.innerHTML = `❌ Lỗi: ${error.message}`;
+            btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
+            pContainer.style.display = 'none';
+        }
     }
 
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
