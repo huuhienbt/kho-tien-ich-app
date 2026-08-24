@@ -207,7 +207,6 @@
                     <div id="aiImagePreview" style="font-size: 0.85em; color: var(--ai); font-weight: bold;">Chưa có ảnh nào.</div>
                     <button id="btnClearImages" onclick="clearAiImages()" style="display:none; padding: 2px 8px; border:none; background:#ef4444; color:white; border-radius:4px; font-size:0.8em; cursor:pointer;">Xóa ảnh</button>
                 </div>
-                <!-- Vùng hiển thị thẻ tên các ảnh đã chọn -->
                 <div id="aiImageTags" class="preview-list"></div>
             </div>
 
@@ -279,7 +278,6 @@
     // ==========================================
     const aiDataTransfer = new DataTransfer();
 
-    // 1. Cập nhật thẻ hiển thị ảnh
     function updateAiImagePreview() {
         const preview = document.getElementById('aiImagePreview');
         const container = document.getElementById('aiImageContainer');
@@ -294,7 +292,6 @@
             container.style.borderColor = "var(--ai)";
             container.style.backgroundColor = "#f5f3ff";
             btnClear.style.display = 'block';
-            
             for(let i=0; i<files.length; i++) {
                 let fname = files[i].name;
                 if(fname.length > 20) fname = fname.substring(0, 15) + '...';
@@ -309,27 +306,17 @@
         document.getElementById('aiImage').files = aiDataTransfer.files;
     }
 
-    // 2. Nút xóa toàn bộ ảnh
-    function clearAiImages() {
-        aiDataTransfer.items.clear();
-        updateAiImagePreview();
-    }
+    function clearAiImages() { aiDataTransfer.items.clear(); updateAiImagePreview(); }
 
-    // 3. Lắng nghe chọn file bằng tay (Cộng dồn file cũ)
     document.getElementById('aiImage').addEventListener('change', function() {
-        for(let i = 0; i < this.files.length; i++) {
-            aiDataTransfer.items.add(this.files[i]);
-        }
+        for(let i = 0; i < this.files.length; i++) { aiDataTransfer.items.add(this.files[i]); }
         updateAiImagePreview();
     });
 
-    // 4. Lắng nghe Ctrl+V (Cộng dồn ảnh vào list)
     document.addEventListener('paste', function(e) {
         if (!document.getElementById('app-ai').classList.contains('active')) return;
-        
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         let pastedCount = 0;
-        
         for (let index in items) {
             const item = items[index];
             if (item.kind === 'file' && item.type.startsWith('image/')) {
@@ -340,11 +327,9 @@
                 pastedCount++;
             }
         }
-        
         if (pastedCount > 0) updateAiImagePreview();
     });
 
-    // Render HTML
     function parseMarkdownToHTML(text) {
         let html = text;
         html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>'); html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>'); html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -363,7 +348,6 @@
         return html;
     }
 
-    // 5. Nén và gửi MẢNG ảnh lên AI
     async function generateLessonPlan() {
         const grade = document.getElementById('aiGrade').value;
         const subject = document.getElementById('aiSubject').value;
@@ -389,13 +373,10 @@
 
         try {
             let imagesDataArray = [];
-            
-            // Xử lý nén HÀNG LOẠT ảnh
             if (files.length > 0) {
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
                     btn.innerText = `⏳ Đang nén ảnh ${i+1}/${files.length}...`;
-                    
                     const compressed = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = event => {
@@ -406,7 +387,7 @@
                                 if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
                                 canvas.width = width; canvas.height = height;
                                 const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                                const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Nén JPEG 70%
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                                 resolve({ base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
                             };
                             img.onerror = () => reject("Lỗi đọc ảnh"); img.src = event.target.result;
@@ -417,7 +398,6 @@
                 }
             }
 
-            // Gửi dữ liệu chứa mảng images
             const payload = { action: 'generate_lesson_plan', data: { grade, subject, lesson, integrated, images: imagesDataArray } };
             btn.innerText = `🧠 AI Đang Phân Tích ${files.length} Ảnh (Chờ 5-15s)...`;
 
@@ -439,17 +419,110 @@
         if (rawText) navigator.clipboard.writeText(rawText).then(() => alert("Đã Copy giáo án!"));
     }
 
+    // ==========================================
+    // XUẤT FILE WORD (.doc) ĐỊNH DẠNG KHÓA CỨNG (A4, Times New Roman, 1.2 line spacing)
+    // ==========================================
     function exportToWord() {
         const subject = document.getElementById('aiSubject').value || 'MON';
         const lesson = document.getElementById('aiLesson').value || 'BAI';
         const toNonAccent = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
         const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}_LOP4.doc`;
+
+        // Lấy nội dung HTML đã được render từ web
         const content = document.getElementById('aiContent').innerHTML;
-        const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Kế Hoạch Bài Dạy</title><style>@page Section1 { size: 595.3pt 841.9pt; margin: 56.7pt 56.7pt 56.7pt 85.05pt; } div.Section1 { page: Section1; } body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.2; } h1, h2, h3 { font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; } h1 { font-size: 16pt; } h2 { font-size: 15pt; } h3 { font-size: 14pt; } table { border-collapse: collapse; width: 100%; border: 1px solid black; margin-bottom: 10pt; } table, th, td { border: 1px solid black; padding: 5px; vertical-align: top; } th { text-align: center; font-weight: bold; background-color: #f2f2f2; } p { margin-top: 5pt; margin-bottom: 5pt; }</style></head><body><div class="Section1">`;
+
+        // Mã nhúng Word chuẩn: Cỡ giấy, lề, font, căn dòng, bảng biểu
+        const header = `
+        <html xmlns:v="urn:schemas-microsoft-com:vml"
+              xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+              xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <title>Kế Hoạch Bài Dạy</title>
+            <!--[if gte mso 9]>
+            <xml>
+                <w:WordDocument>
+                    <w:View>Print</w:View>
+                    <w:Zoom>100</w:Zoom>
+                    <w:DoNotOptimizeForBrowser/>
+                </w:WordDocument>
+            </xml>
+            <![endif]-->
+            <style>
+                /* Cài đặt trang A4 chuẩn: 21cm x 29.7cm */
+                @page Section1 {
+                    size: 595.3pt 841.9pt; 
+                    margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: trên 2cm, dưới 2cm, phải 2cm, trái 3cm */
+                    mso-header-margin: 35.4pt;
+                    mso-footer-margin: 35.4pt;
+                    mso-paper-source: 0;
+                }
+                div.Section1 { page: Section1; }
+                
+                /* Định dạng văn bản chung */
+                body, p, td, th, li, span {
+                    font-family: "Times New Roman", serif;
+                    font-size: 14pt;
+                    line-height: 120%; /* Tương đương Multiple 1.2 */
+                    mso-line-height-rule: exactly;
+                }
+                
+                p {
+                    margin-top: 6pt;
+                    margin-bottom: 6pt;
+                }
+                
+                h1, h2, h3 { 
+                    font-family: "Times New Roman", serif;
+                    font-weight: bold; 
+                    margin-top: 12pt; 
+                    margin-bottom: 6pt; 
+                }
+                h1 { font-size: 16pt; text-transform: uppercase; } 
+                h2 { font-size: 15pt; } 
+                h3 { font-size: 14pt; }
+                
+                /* Định dạng Bảng biểu (Table) tự động ép vào lề */
+                table { 
+                    border-collapse: collapse; 
+                    width: 100% !important; /* Ép bảng rộng 100% lề giấy */
+                    mso-table-layout-alt: fixed; /* Chống tràn lề */
+                    margin-top: 10pt;
+                    margin-bottom: 10pt;
+                }
+                table, th, td { 
+                    border: 1pt solid windowtext; /* Viền đen chuẩn Word */
+                    padding: 4pt 6pt; 
+                    vertical-align: top; 
+                }
+                th { 
+                    text-align: center; 
+                    font-weight: bold; 
+                    background-color: #f2f2f2; 
+                }
+                ul, ol {
+                    margin-top: 0cm;
+                    margin-bottom: 0cm;
+                }
+            </style>
+        </head>
+        <body>
+        <div class="Section1">
+        `;
+        
         const footer = "</div></body></html>";
-        const blob = new Blob(['\ufeff', header + content + footer], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob); const fileDownload = document.createElement("a");
-        document.body.appendChild(fileDownload); fileDownload.href = url; fileDownload.download = fileName; fileDownload.click(); document.body.removeChild(fileDownload);
+        const sourceHTML = header + content + footer;
+
+        const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob); 
+        const fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload); 
+        fileDownload.href = url; 
+        fileDownload.download = fileName;
+        fileDownload.click(); 
+        document.body.removeChild(fileDownload);
     }
 
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
