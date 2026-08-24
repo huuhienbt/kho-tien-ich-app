@@ -474,6 +474,7 @@
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
     // HÀM UPLOAD FILE LÊN DRIVE (CÓ THANH TIẾN ĐỘ %)
+    // HÀM UPLOAD FILE LÊN DRIVE (DÙNG FETCH ỔN ĐỊNH)
     async function uploadFileToDrive() {
         if (!adminPassword) return alert("Vui lòng Đăng nhập Quản trị trước!");
         
@@ -489,63 +490,71 @@
         const progressText = document.getElementById('progressText');
         const progressStatus = document.getElementById('progressStatus');
         
-        btn.innerText = "Đang xử lý file..."; btn.disabled = true; resultDiv.innerHTML = "";
+        btn.innerText = "Đang tải lên... Vui lòng chờ!"; btn.disabled = true; resultDiv.innerHTML = "";
+        
+        // Hiển thị thanh tiến độ dạng "loading" giả lập chạy đến 90%
         progressContainer.style.display = 'block'; 
         progressBar.style.width = '0%'; progressText.innerText = '0%';
+        progressStatus.innerText = "Đang gửi dữ liệu lên máy chủ...";
+        
+        let fakeProgress = 0;
+        const progressInterval = setInterval(() => {
+            if (fakeProgress < 90) {
+                fakeProgress += Math.floor(Math.random() * 10) + 1;
+                if(fakeProgress > 90) fakeProgress = 90;
+                progressBar.style.width = fakeProgress + '%';
+                progressText.innerText = fakeProgress + '%';
+            }
+        }, 300);
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             const base64Data = e.target.result.split(',')[1];
-            const payload = JSON.stringify({
-                adminPassword, 
-                action: 'upload', 
-                data: { fileName: file.name, mimeType: file.type, base64: base64Data }
-            });
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', API_URL, true);
-
-            xhr.upload.onprogress = function(event) {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    progressBar.style.width = percentComplete + '%';
-                    progressText.innerText = percentComplete + '%';
-                    
-                    if (percentComplete === 100) {
-                        progressStatus.innerText = "Đang lưu vào Drive...";
-                        btn.innerText = "Vui lòng chờ Google xử lý...";
-                    } else {
-                        progressStatus.innerText = "Đang gửi dữ liệu...";
-                        btn.innerText = `Đang tải... ${percentComplete}%`;
-                    }
-                }
-            };
-
-            xhr.onload = function() {
-                btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false;
-                progressContainer.style.display = 'none'; 
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        adminPassword, 
+                        action: 'upload', 
+                        data: { fileName: file.name, mimeType: file.type, base64: base64Data }
+                    })
+                });
                 
-                if (xhr.status === 200) {
-                    try {
-                        const result = JSON.parse(xhr.responseText);
-                        if (result.status === 'success') {
-                            resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
-                            fileInput.value = '';
-                        } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; }
-                    } catch(err) { resultDiv.innerHTML = `❌ Lỗi xử lý kết quả trả về!`; }
-                } else { resultDiv.innerHTML = `❌ Lỗi máy chủ Google (${xhr.status})!`; }
-            };
+                clearInterval(progressInterval); // Dừng chạy số ảo
+                
+                const result = await res.json();
+                
+                if (result.status === 'success') {
+                    // Chạy nốt đến 100% khi thành công
+                    progressBar.style.width = '100%';
+                    progressText.innerText = '100%';
+                    progressStatus.innerText = "Hoàn tất!";
+                    
+                    setTimeout(() => {
+                        resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
+                        fileInput.value = '';
+                        progressContainer.style.display = 'none';
+                    }, 500);
 
-            xhr.onerror = function() {
-                btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false;
+                } else { 
+                    resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; 
+                    progressContainer.style.display = 'none';
+                }
+            } catch(error) { 
+                clearInterval(progressInterval);
+                resultDiv.innerHTML = `❌ Lỗi mạng, không thể kết nối tới Google!`; 
                 progressContainer.style.display = 'none';
-                resultDiv.innerHTML = `❌ Lỗi mạng, mất kết nối!`;
-            };
-
-            xhr.send(payload); 
+            } 
+            finally { 
+                btn.innerText = "🚀 Tải lên Drive ngay"; 
+                btn.disabled = false; 
+            }
         };
-        
-        reader.onerror = () => { alert("Lỗi khi đọc file trên máy của bạn!"); btn.disabled = false; btn.innerText = "🚀 Tải lên Drive ngay"; }
+        reader.onerror = () => { 
+            alert("Lỗi khi đọc file trên máy của bạn!"); 
+            btn.disabled = false; btn.innerText = "🚀 Tải lên Drive ngay"; 
+            progressContainer.style.display = 'none';
+        }
         reader.readAsDataURL(file); 
     }
 
