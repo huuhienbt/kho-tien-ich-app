@@ -71,9 +71,17 @@
         .ai-form-container { background: white; border: 1px solid var(--ai); border-radius: 8px; padding: 15px; box-shadow: 0 4px 15px -3px rgba(139, 92, 246, 0.2); }
         .ai-input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; font-family: inherit;}
         .ai-result-box { margin-top: 20px; padding: 15px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; display: none; }
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: var(--ai); margin-top: 15px; margin-bottom: 5px;}
+        
+        /* Hiển thị Markdown & Table trên Web */
+        .markdown-body h1 { color: var(--ai); margin-top: 15px; margin-bottom: 10px; font-size: 1.4em;}
+        .markdown-body h2 { color: #334155; margin-top: 15px; margin-bottom: 8px; font-size: 1.2em;}
+        .markdown-body h3 { color: #475569; margin-top: 12px; margin-bottom: 5px; font-size: 1.1em;}
         .markdown-body p { line-height: 1.6; margin-bottom: 10px; }
         .markdown-body strong { color: #1e293b; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white;}
+        .markdown-body table, .markdown-body th, .markdown-body td { border: 1px solid #94a3b8; }
+        .markdown-body th { background-color: #f1f5f9; padding: 8px; text-align: center; font-weight: bold; }
+        .markdown-body td { padding: 8px; vertical-align: top; }
 
         .file-list-container { max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 15px; text-align: left; background: #f8fafc; }
         .file-item { padding: 8px 12px; border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; transition: background 0.2s;}
@@ -92,6 +100,7 @@
 <body>
 
 <div class="container">
+    <!-- KHU VỰC ĐIỀU HƯỚNG -->
     <div class="main-nav">
         <div class="nav-tabs">
             <button class="nav-btn active" data-target="app-prompts" onclick="switchApp('app-prompts', this)">📚 Kho Prompt</button>
@@ -105,26 +114,45 @@
         </div>
     </div>
 
-    <!-- CÁC MÀN HÌNH PROMPT, REPAIRS, UPLOAD GIỮ NGUYÊN (Để gọn code hiển thị) -->
-    <div id="app-prompts" class="app-section active"><div class="header"><h3>Danh sách Prompt</h3> <button class="btn btn-primary btn-sm admin-only btn-inline" onclick="openModalPrompt()">➕ Thêm Mới</button></div><div class="tabs" id="tabContainer"><button class="tab active" onclick="filterTab('all', this)">Tất cả</button> <button class="tab" onclick="filterTab('teaching', this)">👨‍🏫 Giảng dạy</button> <button class="tab" onclick="filterTab('admin', this)">📋 Hành chính</button><button class="tab" onclick="filterTab('coding', this)">💻 Lập trình</button> <button class="tab" onclick="filterTab('media', this)">🎨 Media</button> <button class="tab" onclick="filterTab('diy', this)">🔧 DIY</button></div><div class="grid" id="promptContainer"></div></div>
+    <!-- MÀN HÌNH PROMPTS -->
+    <div id="app-prompts" class="app-section active">
+        <div class="header"><h3>Danh sách Prompt</h3> <button class="btn btn-primary btn-sm admin-only btn-inline" onclick="openModalPrompt()">➕ Thêm Mới</button></div>
+        <div class="tabs" id="tabContainer">
+            <button class="tab active" onclick="filterTab('all', this)">Tất cả</button> 
+            <button class="tab" onclick="filterTab('teaching', this)">👨‍🏫 Giảng dạy</button> 
+            <button class="tab" onclick="filterTab('admin', this)">📋 Hành chính</button>
+            <button class="tab" onclick="filterTab('coding', this)">💻 Lập trình</button> 
+            <button class="tab" onclick="filterTab('media', this)">🎨 Media</button> 
+            <button class="tab" onclick="filterTab('diy', this)">🔧 DIY</button>
+        </div>
+        <div class="grid" id="promptContainer"></div>
+    </div>
     
-    <div id="app-repairs" class="app-section"><div class="header"><h3>Nhật ký Sửa chữa</h3> <button class="btn btn-repair btn-sm admin-only btn-inline" onclick="openModalRepair()">➕ Thêm Mới</button></div><div class="grid" id="repairContainer"></div></div>
+    <!-- MÀN HÌNH REPAIRS -->
+    <div id="app-repairs" class="app-section">
+        <div class="header"><h3>Nhật ký Sửa chữa</h3> <button class="btn btn-repair btn-sm admin-only btn-inline" onclick="openModalRepair()">➕ Thêm Mới</button></div>
+        <div class="grid" id="repairContainer"></div>
+    </div>
     
+    <!-- MÀN HÌNH UPLOAD FILE -->
     <div id="app-upload" class="app-section">
         <div class="header" style="margin-bottom: 20px;">
             <h3>Trung tâm Upload Dữ Liệu</h3>
-            <a href="https://drive.google.com/drive/u/0/folders/1r5BGSJW3_gf2JxS7aX5vSky8Jz-ebJgV" target="_blank" class="btn btn-primary admin-only btn-inline" style="background: #be185d;">📂 Mở thư mục</a>
+            <a href="https://drive.google.com/drive/u/0/folders/1r5BGSJW3_gf2JxS7aX5vSky8Jz-ebJgV" target="_blank" class="btn btn-primary admin-only btn-inline" style="background: #be185d;">📂 Mở thư mục (Admin)</a>
         </div>
         <div class="grid" style="gap: 20px;">
             <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid #10b981;">
                 <div class="card-header"><h3 class="card-title">⚡ Tải File Nhỏ (<15MB)</h3></div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Hỗ trợ chọn nhiều file.</div>
                 <input type="file" id="fileInputLight" multiple style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
                 <button class="btn btn-primary" onclick="uploadLightFile()" id="btnUploadLight" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên</button>
                 <div id="progressContainerLight" style="display:none; margin-top:15px;"><div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:5px; color:var(--text-light); font-weight:bold;"><span id="progressStatusLight">Đang xử lý...</span> <span id="progressTextLight">0%</span></div><div style="width:100%; background:#e2e8f0; border-radius:8px; height:8px;"><div id="progressBarLight" style="width:0%; height:100%; background:#10b981; transition:width 0.3s;"></div></div></div>
                 <div id="uploadResultLight"></div>
             </div>
+            
             <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid var(--heavy);">
                 <div class="card-header"><h3 class="card-title">📦 Tải File Lớn (Không giới hạn)</h3></div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Hỗ trợ chọn nhiều file. Phân mảnh chống lỗi.</div>
                 <input type="file" id="fileInputHeavy" multiple style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
                 <button class="btn btn-primary" onclick="uploadHeavyFile()" id="btnUploadHeavy" style="width: 100%; padding: 10px; background:var(--heavy);">🚀 Tải lên</button>
                 <div id="progressContainerHeavy" style="display:none; margin-top:15px;"><div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:5px; color:var(--text-light); font-weight:bold;"><span id="progressStatusHeavy">Đang xử lý...</span> <span id="progressTextHeavy">0%</span></div><div style="width:100%; background:#e2e8f0; border-radius:8px; height:8px;"><div id="progressBarHeavy" style="width:0%; height:100%; background:var(--heavy); transition:width 0.1s;"></div></div></div>
@@ -133,11 +161,11 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH MỚI: TRỢ GIẢNG AI -->
+    <!-- MÀN HÌNH TRỢ GIẢNG AI -->
     <div id="app-ai" class="app-section">
         <div class="header">
             <h3>Trợ Giảng AI - Thiết Kế Giáo Án</h3>
-            <span style="font-size:0.85em; color:var(--text-light)">Sử dụng sức mạnh của Google Gemini 1.5</span>
+            <span style="font-size:0.85em; color:var(--text-light)">Sử dụng sức mạnh của Google Gemini</span>
         </div>
         
         <div class="ai-form-container" style="max-width: 600px; margin: 0 auto;">
@@ -157,28 +185,31 @@
         </div>
 
         <div id="aiResultBox" class="ai-result-box" style="max-width: 800px; margin: 20px auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px;">
-                <h3 style="margin:0; color:var(--ai);">📝 Kế Hoạch Bài Dạy (Bản nháp AI)</h3>
-                <button class="btn btn-sm" onclick="copyAIResult()" style="background:#e2e8f0; color:#334155;">📋 Copy Giáo Án</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                <h3 style="margin:0; color:var(--ai);">📝 Kế Hoạch Bài Dạy</h3>
+                <div style="display:flex; gap: 6px;">
+                    <button class="btn btn-sm" onclick="copyAIResult()" style="background:#e2e8f0; color:#334155;">📋 Copy</button>
+                    <button class="btn btn-sm" onclick="exportToWord()" style="background:#2563eb; color:white;">📄 Xuất Word (Chuẩn H/sơ)</button>
+                </div>
             </div>
-            <!-- Nội dung giáo án sinh ra sẽ hiển thị ở đây -->
             <div id="aiContent" class="markdown-body"></div>
         </div>
     </div>
 </div>
 
-<!-- Modal Đăng nhập / Prompt / Repair (Giữ nguyên) -->
-<div class="modal" id="loginModal"><div class="modal-content" style="max-width: 320px;"><h3>Mật khẩu</h3><input type="password" id="adminPass" placeholder="..."><button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button><button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button></div></div>
+<!-- MODALS -->
+<div class="modal" id="loginModal"><div class="modal-content" style="max-width: 320px;"><h3>Mật khẩu Quản trị</h3><input type="password" id="adminPass" placeholder="..."><button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button><button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button></div></div>
 <div class="modal" id="modalPrompt"><div class="modal-content"><h3 id="modalPromptTitle">Thêm Prompt Mới</h3><input type="text" id="pTitle" placeholder="Tiêu đề..."><div class="form-grid"><select id="pCategory"><option value="teaching">👨‍🏫 Giảng dạy</option><option value="admin">📋 Hành chính</option><option value="coding">💻 Lập trình</option><option value="media">🎨 Media</option><option value="diy">🔧 DIY</option></select><select id="pPlatform"><option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option><option value="Claude">🧠 Claude</option><option value="Suno AI">🎵 Suno AI</option><option value="Midjourney">🎨 Midjourney</option><option value="Khác">✨ Khác</option></select></div><textarea id="pContent" rows="5" placeholder="Dán nội dung..."></textarea><div class="form-grid"><button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button><button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 <div class="modal" id="modalRepair"><div class="modal-content"><h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3><input type="text" id="rTask" class="full-width" placeholder="Công việc"><div class="form-grid"><input type="text" id="rDate" placeholder="Ngày"><input type="text" id="rLocation" placeholder="Lớp"><input type="text" id="rCost" placeholder="Chi phí"><select id="rStatus"><option value="Đã hoàn thành">✅ Hoàn thành</option><option value="Đang chờ linh kiện">⏳ Đang chờ</option><option value="Cần theo dõi">🔍 Theo dõi</option></select><input type="text" id="rWarranty" placeholder="Thời hạn bảo hành"><input type="text" id="rVendor" placeholder="Đơn vị sửa/mua"><input type="text" id="rReporter" placeholder="Người báo"><input type="text" id="rImageUrl" placeholder="Link ảnh (Tùy chọn)"></div><textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea><div class="form-grid"><button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button><button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 
+<!-- JAVASCRIPT -->
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec"; 
-    
     let adminPassword = sessionStorage.getItem('adminPassword') || "";
     let globalData = { prompts: [], repairs: [] };
     let editId = null;
 
+    // Các hàm tiện ích
     function parseDate(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; } return raw; }
     function parseLocation(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate()}/${d.getMonth() + 1}`; } return raw; }
     function formatMoney(amount) { if (!amount && amount !== 0) return '0đ'; const num = parseInt(amount.toString().replace(/\D/g, '')); return isNaN(num) ? amount : num.toLocaleString('vi-VN') + 'đ'; }
@@ -188,6 +219,7 @@
     function switchApp(appId, btn) { document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); document.getElementById(appId).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if(appId === 'app-prompts') loadData('prompts'); else if(appId === 'app-repairs') loadData('repairs'); }
     function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
 
+    // Gọi dữ liệu & Render
     async function loadData(type) { const cId = type === 'prompts' ? 'promptContainer' : 'repairContainer'; const cache = localStorage.getItem(`cache_${type}`); if (cache) { globalData[type] = JSON.parse(cache); type === 'prompts' ? renderPrompts(globalData[type]) : renderRepairs(globalData[type]); } else showSkeleton(cId); try { const res = await fetch(API_URL + "?type=" + type); const json = await res.json(); globalData[type] = json.data; localStorage.setItem(`cache_${type}`, JSON.stringify(json.data)); type === 'prompts' ? renderPrompts(json.data) : renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById(cId).innerHTML = 'Lỗi tải dữ liệu mạng.'; } }
     const emptyStateHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu nào ở mục này.</div>';
     
@@ -195,108 +227,24 @@
     function renderRepairs(data) { const html = data.map(item => { const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending'; return `<div class="card"><div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div><div class="repair-info"><div class="repair-grid"><div class="repair-col-left"><span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span><span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span></div><div class="repair-col-right"><span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span><span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span><span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span></div></div>${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}</div><div class="card-footer">${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}<div style="display:flex; gap: 4px;"><button class="btn btn-repair btn-sm admin-only btn-inline" onclick="editRepair('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button></div></div></div>`}).join(''); document.getElementById('repairContainer').innerHTML = html || emptyStateHTML; }
     function copyPrompt(id) { navigator.clipboard.writeText(document.getElementById(`content-${id}`).innerText).then(() => alert("Đã copy prompt!")); }
     
+    // Xử lý Modals & CRUD
     function openModalPrompt(id = null) { editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới"; if(id) { const item = globalData.prompts.find(x => x.id === id); document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category; document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content; } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); } document.getElementById('modalPrompt').style.display = 'flex'; }
     function openModalRepair(id = null) { editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới"; if(id) { const item = globalData.repairs.find(x => x.id === id); document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date; document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location; document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty; document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter; document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note; } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); } document.getElementById('modalRepair').style.display = 'flex'; }
     function editPrompt(id) { openModalPrompt(id); } function editRepair(id) { openModalRepair(id); }
+    
     async function sendData(sheetType, action, dataObj, btnId) { if(btnId) document.getElementById(btnId).innerText = "..."; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType, action, data: dataObj }) }); const result = await res.json(); if(btnId) document.getElementById(btnId).innerText = "Lưu"; if(result.status === 'success') { closeModal('modalPrompt'); closeModal('modalRepair'); localStorage.removeItem(`cache_${sheetType}`); loadData(sheetType); } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); } } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; } }
     function savePrompt() { const data = { title: document.getElementById('pTitle').value, category: document.getElementById('pCategory').value, platform: document.getElementById('pPlatform').value, content: document.getElementById('pContent').value }; if(editId) { data.id = editId; sendData('prompts', 'update', data, 'btnSavePrompt'); } else sendData('prompts', 'create', data, 'btnSavePrompt'); }
     function saveRepair() { const data = { date: document.getElementById('rDate').value, task: document.getElementById('rTask').value, location: document.getElementById('rLocation').value, cost: document.getElementById('rCost').value, status: document.getElementById('rStatus').value, warranty: document.getElementById('rWarranty').value, vendor: document.getElementById('rVendor').value, reporter: document.getElementById('rReporter').value, asset_id: '', image_url: document.getElementById('rImageUrl').value, note: document.getElementById('rNote').value }; if(editId) { data.id = editId; sendData('repairs', 'update', data, 'btnSaveRepair'); } else sendData('repairs', 'create', data, 'btnSaveRepair'); }
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
     
+    // Đăng nhập
     async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
-    // HÀM TẠO GIÁO ÁN BẰNG AI
-    async function generateLessonPlan() {
-        const grade = document.getElementById('aiGrade').value;
-        const subject = document.getElementById('aiSubject').value;
-        const lesson = document.getElementById('aiLesson').value;
-        const integrated = document.getElementById('aiIntegrated').value;
-        const fileInput = document.getElementById('aiImage');
-        
-        if (!grade && !subject && !lesson && fileInput.files.length === 0) {
-            return alert("Vui lòng nhập ít nhất thông tin bài học hoặc tải ảnh SGK lên để AI soạn bài!");
-        }
-
-        const btn = document.getElementById('btnGenerateAI');
-        const resultBox = document.getElementById('aiResultBox');
-        const contentDiv = document.getElementById('aiContent');
-        
-        btn.innerText = "⏳ AI Đang Đọc Và Soạn Giáo Án (Chờ 10-20s)...";
-        btn.disabled = true;
-        resultBox.style.display = 'none';
-        contentDiv.innerHTML = '';
-
-        try {
-            let base64Data = null;
-            let mimeType = null;
-
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                mimeType = file.type;
-                base64Data = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result.split(',')[1]);
-                    reader.onerror = e => reject(e);
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            const payload = {
-                action: 'generate_lesson_plan',
-                data: { grade, subject, lesson, integrated, imageBase64: base64Data, mimeType: mimeType }
-            };
-
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await res.json();
-
-            if (result.status === 'success') {
-                // Đổi cấu trúc Markdown sang HTML cơ bản để hiển thị đẹp trên Web
-                let formattedText = result.result;
-                formattedText = formattedText.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-                formattedText = formattedText.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-                formattedText = formattedText.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                formattedText = formattedText.replace(/\n/g, '<br>');
-                
-                contentDiv.innerHTML = formattedText;
-                // Lưu lại text gốc ẩn để copy
-                contentDiv.setAttribute('data-raw', result.result);
-                resultBox.style.display = 'block';
-                
-                // Cuộn xuống kết quả
-                resultBox.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                alert("Lỗi AI: " + result.message);
-            }
-        } catch (error) {
-            alert("Lỗi kết nối tới máy chủ AI!");
-        } finally {
-            btn.innerText = "✨ AI Bắt Đầu Soạn Giáo Án";
-            btn.disabled = false;
-        }
-    }
-
-    function copyAIResult() {
-        const rawText = document.getElementById('aiContent').getAttribute('data-raw');
-        if (rawText) {
-            navigator.clipboard.writeText(rawText).then(() => {
-                alert("Đã Copy giáo án! Bạn có thể dán vào Word để chỉnh sửa thêm.");
-            });
-        }
-    }
-
-    // Các hàm Upload file giữ nguyên (Giấu gọn để code không quá dài)
-    async function uploadLightFile() { /*... (Giữ nguyên như version trước) ...*/ }
-    async function uploadHeavyFile() { /*... (Giữ nguyên như version trước) ...*/ }
-
-    window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
-</script>
-
-<!-- Chèn luồng tải file của phiên bản trước vào đây để Web hoàn chỉnh 100% -->
-<script>
+    // ==========================================
+    // MODULE UPLOAD FILES (LIGHT & HEAVY)
+    // ==========================================
     async function uploadLightFile() {
         const fileInput = document.getElementById('fileInputLight');
         const files = fileInput.files;
@@ -307,16 +255,20 @@
         const pBar = document.getElementById('progressBarLight');
         const pText = document.getElementById('progressTextLight');
         const pStatus = document.getElementById('progressStatusLight');
+        
         btn.disabled = true; pContainer.style.display = 'block'; 
         let listHTML = `<div class="file-list-container">`;
         for(let i = 0; i < files.length; i++) { listHTML += `<div class="file-item"><span class="file-name" title="${files[i].name}">${files[i].name}</span><span class="file-status" id="status-light-${i}" style="color: #94a3b8;">⏳ Đang chờ</span></div>`; }
         listHTML += `</div>`; resultDiv.innerHTML = listHTML;
+        
         for(let i = 0; i < files.length; i++) {
             const file = files[i]; const statusEl = document.getElementById(`status-light-${i}`);
             if (file.size > 15 * 1024 * 1024) { statusEl.style.color = '#ef4444'; statusEl.innerText = '❌ Quá lớn (>15MB)'; continue; }
+            
             btn.innerText = `Đang tải ${i+1}/${files.length}...`; pBar.style.width = '0%'; pText.innerText = '0%'; pStatus.innerText = `Đang xử lý: ${file.name}`; statusEl.style.color = '#0ea5e9'; statusEl.innerText = 'Đang tải 0%';
             let fakeProgress = 0;
             const progressInterval = setInterval(() => { if (fakeProgress < 90) { fakeProgress += Math.floor(Math.random() * 8) + 1; if(fakeProgress > 90) fakeProgress = 90; pBar.style.width = fakeProgress + '%'; pText.innerText = fakeProgress + '%'; statusEl.innerText = `Đang tải ${fakeProgress}%`; } }, 300);
+            
             try {
                 const base64Data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = e => resolve(e.target.result.split(',')[1]); reader.onerror = e => reject(e); reader.readAsDataURL(file); });
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'upload', data: { fileName: file.name, mimeType: file.type, base64: base64Data } }) });
@@ -325,7 +277,7 @@
                 else { statusEl.style.color = '#ef4444'; statusEl.innerText = `❌ Lỗi`; }
             } catch(error) { clearInterval(progressInterval); statusEl.style.color = '#ef4444'; statusEl.innerText = `❌ Lỗi mạng`; }
         } 
-        pStatus.innerText = "Tất cả file đã xử lý xong!"; btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; btn.disabled = false; setTimeout(() => pContainer.style.display = 'none', 2000); fileInput.value = '';
+        pStatus.innerText = "Tất cả file đã xử lý xong!"; btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; btn.disabled = false; setTimeout(() => pContainer.style.display = 'none', 3000); fileInput.value = '';
     }
 
     async function uploadHeavyFile() {
@@ -334,10 +286,12 @@
         const btn = document.getElementById('btnUploadHeavy'); const resultDiv = document.getElementById('uploadResultHeavy');
         const pContainer = document.getElementById('progressContainerHeavy'); const pBar = document.getElementById('progressBarHeavy');
         const pText = document.getElementById('progressTextHeavy'); const pStatus = document.getElementById('progressStatusHeavy');
+        
         btn.disabled = true; pContainer.style.display = 'block'; 
         let listHTML = `<div class="file-list-container">`;
         for(let i = 0; i < files.length; i++) { listHTML += `<div class="file-item"><span class="file-name" title="${files[i].name}">${files[i].name}</span><span class="file-status" id="status-heavy-${i}" style="color: #94a3b8;">⏳ Đang chờ</span></div>`; }
         listHTML += `</div>`; resultDiv.innerHTML = listHTML;
+        
         for(let i = 0; i < files.length; i++) {
             const file = files[i]; const statusEl = document.getElementById(`status-heavy-${i}`);
             btn.innerText = `Đang xử lý ${i+1}/${files.length}...`; pBar.style.width = '0%'; pText.innerText = '0%'; pStatus.innerText = `Xin quyền tải: ${file.name}`; statusEl.style.color = 'var(--heavy)'; statusEl.innerText = 'Khởi tạo...';
@@ -346,6 +300,7 @@
                 const urlData = await resUrl.json();
                 if(urlData.status !== 'success') throw new Error("Lỗi luồng!");
                 const resumableUrl = urlData.resumableUrl; pStatus.innerText = `Đang truyền: ${file.name}`;
+                
                 await new Promise((resolve) => {
                     const xhr = new XMLHttpRequest(); xhr.open('PUT', resumableUrl, true);
                     xhr.upload.onprogress = function(e) { if(e.lengthComputable) { const pct = Math.round((e.loaded / e.total) * 100); pBar.style.width = pct + '%'; pText.innerText = pct + '%'; btn.innerText = `Tải file ${i+1}/${files.length}: ${pct}%`; statusEl.innerText = `Đang tải ${pct}%`; } };
@@ -369,8 +324,196 @@
                 }); 
             } catch(error) { statusEl.style.color = '#ef4444'; statusEl.innerText = `❌ Lỗi khởi tạo`; }
         } 
-        pStatus.innerText = "Tất cả file đã tải xong!"; btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false; setTimeout(() => pContainer.style.display = 'none', 2000); fileInput.value = '';
+        pStatus.innerText = "Tất cả file đã tải xong!"; btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false; setTimeout(() => pContainer.style.display = 'none', 3000); fileInput.value = '';
     }
+
+    // ==========================================
+    // MODULE TRỢ GIẢNG AI (ÉP ẢNH & RENDER TABLE)
+    // ==========================================
+    
+    // Hàm chuyển đổi Markdown sang HTML (Xử lý cả Table)
+    function parseMarkdownToHTML(text) {
+        let html = text;
+        // Xử lý các Heading
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        // Xử lý in đậm, in nghiêng
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Xử lý Markdown Table cực nhạy
+        html = html.replace(/(?:\|.*\|\n)+/g, (match) => {
+            let t = '<table>\n';
+            let lines = match.trim().split('\n');
+            lines.forEach((line, index) => {
+                if (line.match(/^\|(?:\s*[-:]+\s*\|)+$/)) return; // Bỏ qua dòng phân cách ---|---
+                t += '<tr>';
+                let cells = line.split('|').slice(1, -1);
+                cells.forEach(cell => {
+                    let tag = index === 0 ? 'th' : 'td';
+                    // Xử lý xuống dòng trong ô (nếu AI dùng thẻ <br>)
+                    let cellContent = cell.trim().replace(/<br\s*\/?>/gi, '<br>');
+                    t += `<${tag}>${cellContent}</${tag}>`;
+                });
+                t += '</tr>\n';
+            });
+            t += '</table>';
+            return t;
+        });
+
+        // Xuống dòng cho các đoạn văn thông thường (không nằm trong bảng/heading)
+        html = html.replace(/\n(?!(?:.*?<\/td>|.*?<\/th>|.*?<\/tr>|.*?<\/table>))/g, '<br>'); 
+        
+        // Dọn dẹp các thẻ br thừa do replace newline sinh ra
+        html = html.replace(/<\/h1><br>/g, '</h1>');
+        html = html.replace(/<\/h2><br>/g, '</h2>');
+        html = html.replace(/<\/h3><br>/g, '</h3>');
+        html = html.replace(/<\/table><br>/g, '</table>');
+        html = html.replace(/<br><br>/g, '<br>'); 
+
+        return html;
+    }
+
+    async function generateLessonPlan() {
+        const grade = document.getElementById('aiGrade').value;
+        const subject = document.getElementById('aiSubject').value;
+        const lesson = document.getElementById('aiLesson').value;
+        const integrated = document.getElementById('aiIntegrated').value;
+        const fileInput = document.getElementById('aiImage');
+        
+        if (!grade && !subject && !lesson && fileInput.files.length === 0) {
+            return alert("Vui lòng nhập ít nhất thông tin bài học hoặc tải ảnh SGK lên!");
+        }
+
+        const btn = document.getElementById('btnGenerateAI');
+        const resultBox = document.getElementById('aiResultBox');
+        const contentDiv = document.getElementById('aiContent');
+        
+        btn.innerText = "⏳ Đang nén ảnh & Chuẩn bị dữ liệu...";
+        btn.disabled = true;
+        resultBox.style.display = 'none';
+        contentDiv.innerHTML = '';
+
+        try {
+            let base64Data = null;
+            let mimeType = null;
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                
+                // Nén ảnh trực tiếp xuống JPEG chất lượng 70%, max ngang 1000px
+                const compressed = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 1000;
+                            let width = img.width; let height = img.height;
+                            if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+                            canvas.width = width; canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                            resolve({ base64: dataUrl.split(',')[1], type: 'image/jpeg' });
+                        };
+                        img.onerror = () => reject("Lỗi đọc ảnh");
+                        img.src = event.target.result;
+                    };
+                    reader.onerror = () => reject("Lỗi file");
+                    reader.readAsDataURL(file);
+                });
+                base64Data = compressed.base64;
+                mimeType = compressed.type;
+            }
+
+            const payload = {
+                action: 'generate_lesson_plan',
+                data: { grade, subject, lesson, integrated, imageBase64: base64Data, mimeType: mimeType }
+            };
+
+            btn.innerText = "🧠 AI Đang Đọc Và Viết Giáo Án (Chờ 5-10s)...";
+
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const rawText = result.result;
+                // Render ra HTML có bảng biểu đẹp mắt
+                contentDiv.innerHTML = parseMarkdownToHTML(rawText);
+                // Lưu lại raw text nếu cần
+                contentDiv.setAttribute('data-raw', rawText);
+                
+                resultBox.style.display = 'block';
+                resultBox.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert("Lỗi AI: " + result.message);
+            }
+        } catch (error) {
+            alert("Lỗi mạng! Không thể kết nối với máy chủ AI.");
+            console.error(error);
+        } finally {
+            btn.innerText = "✨ AI Bắt Đầu Soạn Giáo Án";
+            btn.disabled = false;
+        }
+    }
+
+    function copyAIResult() {
+        const contentDiv = document.getElementById('aiContent');
+        const rawText = contentDiv.getAttribute('data-raw');
+        if (rawText) {
+            navigator.clipboard.writeText(rawText).then(() => {
+                alert("Đã Copy giáo án!");
+            });
+        }
+    }
+
+    // HÀM XUẤT FILE WORD (.doc) ĐỊNH DẠNG HỒ SƠ CHUẨN A4
+    function exportToWord() {
+        const subject = document.getElementById('aiSubject').value || 'MON';
+        const lesson = document.getElementById('aiLesson').value || 'BAI';
+        
+        const toNonAccent = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
+        const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}_LOP4.doc`;
+
+        const content = document.getElementById('aiContent').innerHTML;
+
+        const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset='utf-8'>
+            <title>Kế Hoạch Bài Dạy</title>
+            <style>
+                @page Section1 {
+                    size: 595.3pt 841.9pt; /* A4 */
+                    margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: trên 2cm, dưới 2cm, phải 2cm, trái 3cm */
+                }
+                div.Section1 { page: Section1; }
+                body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.2; }
+                h1, h2, h3 { font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; }
+                h1 { font-size: 16pt; } h2 { font-size: 15pt; } h3 { font-size: 14pt; }
+                table { border-collapse: collapse; width: 100%; border: 1px solid black; margin-bottom: 10pt; }
+                table, th, td { border: 1px solid black; padding: 5px; vertical-align: top; }
+                th { text-align: center; font-weight: bold; background-color: #f2f2f2; }
+                p { margin-top: 5pt; margin-bottom: 5pt; }
+            </style>
+        </head><body><div class="Section1">`;
+        
+        const footer = "</div></body></html>";
+        const sourceHTML = header + content + footer;
+
+        const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload);
+        fileDownload.href = url;
+        fileDownload.download = fileName;
+        fileDownload.click();
+        document.body.removeChild(fileDownload);
+    }
+
+    // Khởi chạy khi tải trang
+    window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
 </script>
 </body>
 </html>
