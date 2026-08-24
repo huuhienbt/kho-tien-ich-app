@@ -197,7 +197,6 @@
                 <input type="text" id="aiIntegratedOther" class="ai-input" style="margin-top: 10px; margin-bottom: 0;" placeholder="Hoặc nhập nội dung tích hợp khác...">
             </div>
             
-            <!-- VÙNG TẢI ẢNH ĐA FILE VÀ CTRL+V CỘNG DỒN -->
             <div id="aiImageContainer">
                 <p style="margin:0 0 10px 0; font-weight:bold; color:var(--text-light); font-size:0.95em;">📸 Tải lên ảnh SGK hoặc bài tập (Nhiều trang)</p>
                 <p style="margin:0 0 10px 0; color:#64748b; font-size:0.85em;">(Chọn File hoặc bấm <kbd style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:bold;">Ctrl + V</kbd> liên tục để dán nhiều ảnh)</p>
@@ -274,7 +273,7 @@
     async function uploadHeavyFile() { /* Code upload heavy file giữ nguyên */ }
 
     // ==========================================
-    // MODULE TRỢ GIẢNG AI (XỬ LÝ ĐA FILE & PASTE)
+    // MODULE TRỢ GIẢNG AI (CÓ ĐỊNH DẠNG WORD CHUẨN)
     // ==========================================
     const aiDataTransfer = new DataTransfer();
 
@@ -330,10 +329,24 @@
         if (pastedCount > 0) updateAiImagePreview();
     });
 
+    // Hàm phiên dịch Markdown sang HTML (Có bọc thẻ <strong> cho các mục I. II. 1. 2.)
     function parseMarkdownToHTML(text) {
         let html = text;
-        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>'); html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>'); html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Bắt chính xác cụm KẾ HOẠCH BÀI DẠY và định dạng chuẩn
+        html = html.replace(/\*\*KẾ HOẠCH BÀI DẠY\*\*/g, '<p align="center" style="text-align: center; margin-bottom: 12pt;"><strong><span style="font-size: 16pt; text-transform: uppercase;">KẾ HOẠCH BÀI DẠY</span></strong></p>');
+
+        // In đậm các mục I, II, III... và 1, 2, 3... (nếu AI quên in đậm)
+        html = html.replace(/^(I{1,3}|IV|V|VI)\.\s*(.*)$/gm, '<strong>$1. $2</strong>');
+        html = html.replace(/^([0-9]+)\.\s*(.*)$/gm, '<strong>$1. $2</strong>');
+
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>'); 
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>'); 
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Xử lý Table
         html = html.replace(/(?:\|.*\|\n)+/g, (match) => {
             let t = '<table>\n'; let lines = match.trim().split('\n');
             lines.forEach((line, index) => {
@@ -343,13 +356,19 @@
                 t += '</tr>\n';
             }); return t + '</table>';
         });
-        html = html.replace(/\n(?!(?:.*?<\/td>|.*?<\/th>|.*?<\/tr>|.*?<\/table>))/g, '<br>'); 
-        html = html.replace(/<\/h1><br>/g, '</h1>').replace(/<\/h2><br>/g, '</h2>').replace(/<\/h3><br>/g, '</h3>').replace(/<\/table><br>/g, '</table>').replace(/<br><br>/g, '<br>'); 
+        
+        // Thay thế \n bằng <br> nhưng loại trừ các thẻ block để web và Word không bị khoảng trắng thừa
+        html = html.replace(/\n(?!(?:.*?<\/td>|.*?<\/th>|.*?<\/tr>|.*?<\/table>|.*?<\/p>))/g, '<br>'); 
+        html = html.replace(/<\/h1><br>/g, '</h1>').replace(/<\/h2><br>/g, '</h2>').replace(/<\/h3><br>/g, '</h3>').replace(/<\/table><br>/g, '</table>').replace(/<\/p><br>/g, '</p>'); 
+        
+        // Dọn dẹp khoảng trắng dư
+        html = html.replace(/<br><br><br>/g, '<br><br>');
+        
         return html;
     }
 
     async function generateLessonPlan() {
-        const grade = document.getElementById('aiGrade').value;
+        const grade = document.getElementById('aiGrade').value || '4/6'; // Tự động điền lớp 4/6 nếu để trống
         const subject = document.getElementById('aiSubject').value;
         const lesson = document.getElementById('aiLesson').value;
         const files = aiDataTransfer.files;
@@ -360,7 +379,7 @@
         if(otherIntegrated) integratedArr.push(otherIntegrated);
         const integrated = integratedArr.join(", ");
         
-        if (!grade && !subject && !lesson && files.length === 0) {
+        if (!subject && !lesson && files.length === 0) {
             return alert("Vui lòng nhập thông tin hoặc cung cấp ít nhất 1 ảnh SGK!");
         }
 
@@ -405,9 +424,37 @@
             const result = await res.json();
 
             if (result.status === 'success') {
-                const rawText = result.result;
-                contentDiv.innerHTML = parseMarkdownToHTML(rawText);
-                contentDiv.setAttribute('data-raw', rawText);
+                let rawText = result.result;
+                
+                // Dọn dẹp tiêu đề cũ do AI tự sinh ra (để tránh bị trùng lặp)
+                rawText = rawText.replace(/^(#+ |)KẾ HOẠCH BÀI DẠY.*?\n/gim, '');
+                rawText = rawText.replace(/^(#+ |)THÔNG TIN BÀI HỌC.*?\n/gim, '');
+                rawText = rawText.replace(/^\*\*Môn:\*\*.*?\n/gim, '');
+                rawText = rawText.replace(/^\*\*Tên bài:\*\*.*?\n/gim, '');
+                rawText = rawText.replace(/^\*\*Thời lượng:\*\*.*?\n/gim, '');
+                rawText = rawText.replace(/^\*\*Lớp:\*\*.*?\n/gim, '');
+                rawText = rawText.replace(/^Môn:.*?\n/gim, '');
+                rawText = rawText.replace(/^Tên bài:.*?\n/gim, '');
+                rawText = rawText.replace(/^Thời lượng:.*?\n/gim, '');
+                rawText = rawText.replace(/^Lớp:.*?\n/gim, '');
+                
+                const gradeVal = document.getElementById('aiGrade').value || '4/6';
+                const subjectVal = document.getElementById('aiSubject').value || '...';
+                const lessonVal = document.getElementById('aiLesson').value || '...';
+                
+                // Nối Header chuẩn vào đầu kết quả
+                const standardMarkdown = `**KẾ HOẠCH BÀI DẠY**
+
+**Môn:** ${subjectVal}
+**Tên bài:** ${lessonVal}
+**Thời lượng:** 1 tiết (35 phút)
+**Lớp:** ${gradeVal}
+
+`;              
+                const fullMarkdown = standardMarkdown + rawText.trim();
+                
+                contentDiv.innerHTML = parseMarkdownToHTML(fullMarkdown);
+                contentDiv.setAttribute('data-raw', fullMarkdown);
                 resultBox.style.display = 'block'; resultBox.scrollIntoView({ behavior: 'smooth' });
             } else { alert("Lỗi AI: " + result.message); }
         } catch (error) { alert("Lỗi mạng! Không thể kết nối với máy chủ AI."); console.error(error); } 
@@ -428,18 +475,14 @@
         const toNonAccent = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
         const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}_LOP4.doc`;
 
-        // Lấy nội dung HTML đã được render từ web
+        // Lấy nội dung HTML đã được render hoàn hảo từ giao diện Web
         const content = document.getElementById('aiContent').innerHTML;
 
-        // Mã nhúng Word chuẩn: Cỡ giấy, lề, font, căn dòng, bảng biểu
+        // Mã nhúng Word chuẩn: Cỡ giấy A4, Lề chuẩn hồ sơ, Font Times New Roman 14, Bảng biểu nét liền màu đen
         const header = `
-        <html xmlns:v="urn:schemas-microsoft-com:vml"
-              xmlns:o="urn:schemas-microsoft-com:office:office"
-              xmlns:w="urn:schemas-microsoft-com:office:word"
-              xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
-              xmlns="http://www.w3.org/TR/REC-html40">
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <meta charset='utf-8'>
             <title>Kế Hoạch Bài Dạy</title>
             <!--[if gte mso 9]>
             <xml>
@@ -451,66 +494,47 @@
             </xml>
             <![endif]-->
             <style>
-                /* Cài đặt trang A4 chuẩn: 21cm x 29.7cm */
-                @page Section1 {
+                /* Khổ giấy A4 chuẩn */
+                @page Section1 { 
                     size: 595.3pt 841.9pt; 
-                    margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: trên 2cm, dưới 2cm, phải 2cm, trái 3cm */
+                    margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: Trái 3cm, Phải/Trên/Dưới 2cm */
                     mso-header-margin: 35.4pt;
                     mso-footer-margin: 35.4pt;
                     mso-paper-source: 0;
                 }
                 div.Section1 { page: Section1; }
                 
-                /* Định dạng văn bản chung */
-                body, p, td, th, li, span {
-                    font-family: "Times New Roman", serif;
-                    font-size: 14pt;
-                    line-height: 120%; /* Tương đương Multiple 1.2 */
+                /* Định dạng văn bản */
+                body, p, td, th, li, span { 
+                    font-family: 'Times New Roman', serif; 
+                    font-size: 14pt; 
+                    line-height: 120%; /* Giãn dòng Multiple 1.2 */
                     mso-line-height-rule: exactly;
                 }
                 
-                p {
-                    margin-top: 6pt;
-                    margin-bottom: 6pt;
-                }
-                
-                h1, h2, h3 { 
-                    font-family: "Times New Roman", serif;
-                    font-weight: bold; 
-                    margin-top: 12pt; 
-                    margin-bottom: 6pt; 
-                }
-                h1 { font-size: 16pt; text-transform: uppercase; } 
+                h1, h2, h3 { font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; font-family: 'Times New Roman', serif; } 
+                h1 { font-size: 16pt; } 
                 h2 { font-size: 15pt; } 
-                h3 { font-size: 14pt; }
+                h3 { font-size: 14pt; } 
                 
-                /* Định dạng Bảng biểu (Table) tự động ép vào lề */
+                /* Bảng tự động ép vào khung trang giấy */
                 table { 
                     border-collapse: collapse; 
-                    width: 100% !important; /* Ép bảng rộng 100% lề giấy */
-                    mso-table-layout-alt: fixed; /* Chống tràn lề */
-                    margin-top: 10pt;
-                    margin-bottom: 10pt;
+                    width: 100% !important; 
+                    mso-table-layout-alt: fixed; 
+                    margin-top: 10pt; 
+                    margin-bottom: 10pt; 
                 }
                 table, th, td { 
-                    border: 1pt solid windowtext; /* Viền đen chuẩn Word */
-                    padding: 4pt 6pt; 
+                    border: 1pt solid windowtext; 
+                    padding: 5pt; 
                     vertical-align: top; 
                 }
-                th { 
-                    text-align: center; 
-                    font-weight: bold; 
-                    background-color: #f2f2f2; 
-                }
-                ul, ol {
-                    margin-top: 0cm;
-                    margin-bottom: 0cm;
-                }
+                th { text-align: center; font-weight: bold; background-color: #f2f2f2; } 
+                p { margin-top: 5pt; margin-bottom: 5pt; }
             </style>
         </head>
-        <body>
-        <div class="Section1">
-        `;
+        <body><div class="Section1">`;
         
         const footer = "</div></body></html>";
         const sourceHTML = header + content + footer;
