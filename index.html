@@ -84,15 +84,15 @@
         .tag-diy { background: #ffedd5; color: #c2410c; } 
         .tag-default { background: #f1f5f9; color: #475569; }
         
-        /* PROMPT BOX: DÙNG MAX-HEIGHT ĐỂ TỰ ĐỘNG THU NHỎ NẾU TEXT NGẮN */
+        /* PROMPT BOX */
         .prompt-box { 
             background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px; 
-            max-height: 150px; /* Đổi từ height thành max-height để tránh viền dư thừa */
+            max-height: 150px; 
             overflow-y: auto; font-size: 1.02em; line-height: 1.5; color: #334155; margin-bottom: 8px; white-space: pre-wrap; 
         }
         .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: auto; }
         
-        /* REPAIR CARD CHI TIẾT (BỐ CỤC 2 CỘT) */
+        /* REPAIR CARD CHI TIẾT */
         .repair-info { font-size: 0.85em; line-height: 1.6; color: #334155; }
         .repair-grid { 
             display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
@@ -108,7 +108,7 @@
         @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
         .skeleton { background: #f1f5f9 linear-gradient(to right, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%) no-repeat; background-size: 800px 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; height: 180px; border: 1px solid var(--border); }
         
-        /* MODAL CẢI TIẾN MỜ KÍNH (BACKDROP-FILTER) */
+        /* MODAL CẢI TIẾN MỜ KÍNH */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); align-items: center; justify-content: center; padding: 10px; z-index: 1000; box-sizing: border-box; backdrop-filter: blur(2px);}
         .modal-content { background: white; padding: 15px; border-radius: 8px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; margin: auto; max-height: 95vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .modal-content h3 { margin: 0 0 5px 0; font-size: 1.1em; color: var(--text); }
@@ -134,7 +134,6 @@
             .header { margin-bottom: 10px; }
             .prompt-box { max-height: 120px; } 
             
-            /* Responsive cho Repair 2 cột biến thành 1 cột trên ĐTDĐ */
             .repair-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
             .repair-col-left { border-right: none; border-bottom: 1px dashed #cbd5e1; padding-right: 0; padding-bottom: 10px; }
         }
@@ -188,6 +187,18 @@
             <input type="file" id="fileInput" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
             <button class="btn btn-primary admin-only" onclick="uploadFileToDrive()" id="btnUpload" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên Drive ngay</button>
             <div id="uploadAlert" class="btn-login" style="color:var(--text-light); text-align:center; font-size:0.9em;">Vui lòng Đăng nhập Quản trị để Upload.</div>
+            
+            <!-- Thanh tiến độ tải lên -->
+            <div id="progressContainer" style="display: none; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
+                    <span id="progressStatus">Đang gửi dữ liệu...</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.2s;"></div>
+                </div>
+            </div>
+
             <div id="uploadResult" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
         </div>
     </div>
@@ -260,7 +271,8 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec";
+    // ĐÃ CẬP NHẬT ĐƯỜNG LINK API MỚI NHẤT
+    const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec"; 
     
     let adminPassword = sessionStorage.getItem('adminPassword') || "";
     let globalData = { prompts: [], repairs: [] };
@@ -340,28 +352,33 @@
         const html = data.map(item => {
             const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending';
             return `
-            <!-- MÀN HÌNH UPLOAD FILE -->
-    <div id="app-upload" class="app-section">
-        <div class="header"><h3>Upload File lên Google Drive</h3></div>
-        <div class="card" style="max-width: 500px; margin: 0 auto;">
-            <input type="file" id="fileInput" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
-            <button class="btn btn-primary admin-only" onclick="uploadFileToDrive()" id="btnUpload" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên Drive ngay</button>
-            <div id="uploadAlert" class="btn-login" style="color:var(--text-light); text-align:center; font-size:0.9em;">Vui lòng Đăng nhập Quản trị để Upload.</div>
-            
-            <!-- Thanh tiến độ (Mặc định ẩn, chỉ hiện khi đang tải) -->
-            <div id="progressContainer" style="display: none; margin-top: 15px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
-                    <span id="progressStatus">Đang gửi dữ liệu...</span>
-                    <span id="progressText">0%</span>
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div>
+                
+                <div class="repair-info">
+                    <div class="repair-grid">
+                        <div class="repair-col-left">
+                            <span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> 
+                            <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span>
+                            <span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span>
+                        </div>
+                        <div class="repair-col-right">
+                            <span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span>
+                            <span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span>
+                            <span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span>
+                        </div>
+                    </div>
+                    ${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}
                 </div>
-                <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;">
-                    <div id="progressBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.2s;"></div>
+                
+                <div class="card-footer">
+                    ${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}
+                    <div style="display:flex; gap: 4px;">
+                        <button class="btn btn-repair btn-sm admin-only" onclick="editRepair('${item.id}')">✏️ Sửa</button>
+                        <button class="btn btn-danger btn-sm admin-only" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button>
+                    </div>
                 </div>
-            </div>
-
-            <div id="uploadResult" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
-        </div>
-    </div>
+            </div>`}).join('');
         document.getElementById('repairContainer').innerHTML = html || emptyStateHTML;
     }
 
@@ -456,7 +473,7 @@
     
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
-    // HÀM UPLOAD FILE LÊN DRIVE (CÓ THANH TIẾN ĐỘ)
+    // HÀM UPLOAD FILE LÊN DRIVE (CÓ THANH TIẾN ĐỘ %)
     async function uploadFileToDrive() {
         if (!adminPassword) return alert("Vui lòng Đăng nhập Quản trị trước!");
         
@@ -467,14 +484,13 @@
         const btn = document.getElementById('btnUpload');
         const resultDiv = document.getElementById('uploadResult');
         
-        // Gọi các thành phần giao diện của thanh tiến độ
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
         const progressStatus = document.getElementById('progressStatus');
         
         btn.innerText = "Đang xử lý file..."; btn.disabled = true; resultDiv.innerHTML = "";
-        progressContainer.style.display = 'block'; // Hiện thanh tiến độ
+        progressContainer.style.display = 'block'; 
         progressBar.style.width = '0%'; progressText.innerText = '0%';
 
         const reader = new FileReader();
@@ -486,11 +502,9 @@
                 data: { fileName: file.name, mimeType: file.type, base64: base64Data }
             });
 
-            // Sử dụng XMLHttpRequest thay vì fetch để đo tiến độ (progress)
             const xhr = new XMLHttpRequest();
             xhr.open('POST', API_URL, true);
 
-            // Bắt sự kiện tải lên
             xhr.upload.onprogress = function(event) {
                 if (event.lengthComputable) {
                     const percentComplete = Math.round((event.loaded / event.total) * 100);
@@ -507,10 +521,9 @@
                 }
             };
 
-            // Nhận kết quả từ server trả về
             xhr.onload = function() {
                 btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false;
-                progressContainer.style.display = 'none'; // Ẩn thanh tiến độ
+                progressContainer.style.display = 'none'; 
                 
                 if (xhr.status === 200) {
                     try {
@@ -529,7 +542,6 @@
                 resultDiv.innerHTML = `❌ Lỗi mạng, mất kết nối!`;
             };
 
-            // Gửi dữ liệu đi
             xhr.send(payload); 
         };
         
