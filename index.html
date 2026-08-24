@@ -32,6 +32,7 @@
         .nav-btn { flex: 1; padding: 6px 5px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: bold; background: #e2e8f0; color: var(--text-light); text-align: center; transition: 0.2s;}
         .nav-btn.active[data-target="app-prompts"] { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
         .nav-btn.active[data-target="app-repairs"] { background: var(--repair); color: white; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3); }
+        .nav-btn.active[data-target="app-upload"] { background: #10b981; color: white; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
         .header h3 { margin: 0; font-size: 1.15em; }
@@ -120,19 +121,18 @@
         .app-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ĐIỀU CHỈNH CHO ĐIỆN THOẠI */
+        /* ĐIỀU CHỈNH CHO ĐIỆN THOẠI BỐ TRÍ 3 TAB CHUNG 1 HÀNG */
         @media (max-width: 768px) {
             body { font-size: 13.5px; padding: 6px; }
-            .main-nav { flex-direction: row; gap: 6px; margin-bottom: 10px; padding-bottom: 6px; }
-            .nav-tabs { flex: 1; min-width: unset; }
-            .nav-actions { width: auto; }
-            .nav-btn { font-size: 0.85em; padding: 6px 4px; }
-            .btn-login, .btn-danger { font-size: 0.85em; padding: 6px 10px; white-space: nowrap; }
+            .main-nav { flex-direction: row; gap: 6px; margin-bottom: 10px; padding-bottom: 6px; flex-wrap: wrap; }
+            .nav-tabs { flex: 1; min-width: 100%; display: flex; gap: 6px; }
+            .nav-actions { width: 100%; justify-content: space-between; display: flex; gap: 6px; }
+            .nav-btn, .btn-login, .btn-danger { font-size: 0.85em; padding: 6px 4px; flex: 1; text-align: center; white-space: nowrap;}
             .grid { grid-template-columns: 1fr; gap: 8px;}
             .tabs { margin-bottom: 10px; }
             .tab { flex: 1 1 30%; text-align: center; }
             .header { margin-bottom: 10px; }
-            .prompt-box { max-height: 120px; } /* Đổi từ height thành max-height trên điện thoại */
+            .prompt-box { max-height: 120px; } 
             
             /* Responsive cho Repair 2 cột biến thành 1 cột trên ĐTDĐ */
             .repair-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
@@ -147,6 +147,7 @@
         <div class="nav-tabs">
             <button class="nav-btn active" data-target="app-prompts" onclick="switchApp('app-prompts', this)">📚 Kho Prompt</button>
             <button class="nav-btn" data-target="app-repairs" onclick="switchApp('app-repairs', this)">🛠 Sổ Repairs</button>
+            <button class="nav-btn" data-target="app-upload" onclick="switchApp('app-upload', this)">📁 Upload Drive</button>
         </div>
         <div class="nav-actions">
             <button class="btn btn-primary btn-login" onclick="openModal('loginModal')">🔒 Đăng nhập</button>
@@ -178,6 +179,17 @@
             <button class="btn btn-repair btn-sm admin-only" onclick="openModalRepair()">➕ Thêm Báo Cáo</button>
         </div>
         <div class="grid" id="repairContainer"></div>
+    </div>
+    
+    <!-- MÀN HÌNH UPLOAD FILE -->
+    <div id="app-upload" class="app-section">
+        <div class="header"><h3>Upload File lên Google Drive</h3></div>
+        <div class="card" style="max-width: 500px; margin: 0 auto;">
+            <input type="file" id="fileInput" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+            <button class="btn btn-primary admin-only" onclick="uploadFileToDrive()" id="btnUpload" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên Drive ngay</button>
+            <div id="uploadAlert" class="btn-login" style="color:var(--text-light); text-align:center; font-size:0.9em;">Vui lòng Đăng nhập Quản trị để Upload.</div>
+            <div id="uploadResult" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+        </div>
     </div>
 </div>
 
@@ -286,7 +298,14 @@
 
     /* --- GIAO DIỆN --- */
     function showSkeleton(id) { document.getElementById(id).innerHTML = '<div class="skeleton"></div>'.repeat(3); }
-    function switchApp(appId, btn) { document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); document.getElementById(appId).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); appId === 'app-prompts' ? loadData('prompts') : loadData('repairs'); }
+    function switchApp(appId, btn) { 
+        document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); 
+        document.getElementById(appId).classList.add('active'); 
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
+        btn.classList.add('active'); 
+        if(appId === 'app-prompts') loadData('prompts'); 
+        else if(appId === 'app-repairs') loadData('repairs'); 
+    }
     function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
 
     /* --- TẢI DỮ LIỆU --- */
@@ -405,17 +424,17 @@
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
+    
+    // HÀM ĐĂNG NHẬP (Bảo mật gửi API)
     async function login() { 
         const inputPass = document.getElementById('adminPass').value;
         const btnLogin = document.querySelector('#loginModal .btn-primary');
         const originalText = btnLogin.innerText;
         
-        // Đổi chữ nút thành Đang kiểm tra để người dùng biết hệ thống đang xử lý
         btnLogin.innerText = "Đang kiểm tra..."; 
         btnLogin.disabled = true;
 
         try {
-            // Gửi mật khẩu lên Google Apps Script để hỏi xem đúng không
             const res = await fetch(API_URL, { 
                 method: 'POST', 
                 body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) 
@@ -423,16 +442,12 @@
             const result = await res.json();
 
             if (result.status === 'success') {
-                // Nếu Google trả lời mật khẩu ĐÚNG
                 adminPassword = inputPass; 
                 sessionStorage.setItem('adminPassword', adminPassword); 
                 document.body.classList.add('logged-in'); 
                 closeModal('loginModal'); 
                 document.getElementById('adminPass').value = ''; 
-                // Có thể bật dòng dưới nếu bạn muốn hiện thông báo
-                // alert("Đăng nhập thành công!");
             } else {
-                // Nếu Google trả lời mật khẩu SAI
                 alert("Sai mật khẩu quản trị!");
                 document.getElementById('adminPass').value = '';
             }
@@ -443,7 +458,44 @@
             btnLogin.disabled = false;
         }
     }
+    
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
+
+    // HÀM UPLOAD FILE LÊN DRIVE
+    async function uploadFileToDrive() {
+        if (!adminPassword) return alert("Vui lòng Đăng nhập Quản trị trước!");
+        
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) return alert("Vui lòng chọn một file!");
+        
+        const file = fileInput.files[0];
+        const btn = document.getElementById('btnUpload');
+        const resultDiv = document.getElementById('uploadResult');
+        
+        btn.innerText = "Đang tải lên... Vui lòng chờ!"; btn.disabled = true; resultDiv.innerHTML = "";
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64Data = e.target.result.split(',')[1];
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        adminPassword, 
+                        action: 'upload', 
+                        data: { fileName: file.name, mimeType: file.type, base64: base64Data }
+                    })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    resultDiv.innerHTML = `✅ Xong! <br><br> <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file vừa tải</a><br><br><span style="font-size:0.85em; color:gray">Copy đường link này dán vào ô 'Ảnh đính kèm' của Sổ Repairs nhé!</span>`;
+                    fileInput.value = '';
+                } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; }
+            } catch(error) { resultDiv.innerHTML = `❌ Lỗi mạng!`; } 
+            finally { btn.innerText = "🚀 Tải lên Drive ngay"; btn.disabled = false; }
+        };
+        reader.readAsDataURL(file); 
+    }
 
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
 </script>
