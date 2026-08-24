@@ -67,11 +67,17 @@
         .app-section { display: none; } .app-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KHU VỰC AI */
+        /* KHU VỰC AI & TICK BOXES */
         .ai-form-container { background: white; border: 1px solid var(--ai); border-radius: 8px; padding: 15px; box-shadow: 0 4px 15px -3px rgba(139, 92, 246, 0.2); }
         .ai-input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; font-family: inherit;}
         .ai-result-box { margin-top: 20px; padding: 15px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; display: none; }
         
+        .integration-section { background: #f1f5f9; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 8px;}
+        .checkbox-grid label { font-size: 0.85em; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;}
+        .checkbox-grid label:hover { color: var(--ai); }
+        .checkbox-grid input[type="checkbox"] { accent-color: var(--ai); cursor: pointer; width: 15px; height: 15px;}
+
         /* Hiển thị Markdown & Table trên Web */
         .markdown-body h1 { color: var(--ai); margin-top: 15px; margin-bottom: 10px; font-size: 1.4em;}
         .markdown-body h2 { color: #334155; margin-top: 15px; margin-bottom: 8px; font-size: 1.2em;}
@@ -94,6 +100,7 @@
             .nav-actions { width: 100%; justify-content: space-between; display: flex; gap: 6px; }
             .grid { grid-template-columns: 1fr; gap: 8px;} .tabs { margin-bottom: 10px; } .tab { flex: 1 1 30%; text-align: center; } .header { margin-bottom: 10px; }
             .repair-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; } .repair-col-left { border-right: none; border-bottom: 1px dashed #cbd5e1; padding-right: 0; padding-bottom: 10px; }
+            .checkbox-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -168,13 +175,29 @@
             <span style="font-size:0.85em; color:var(--text-light)">Sử dụng sức mạnh của Google Gemini</span>
         </div>
         
-        <div class="ai-form-container" style="max-width: 600px; margin: 0 auto;">
+        <div class="ai-form-container" style="max-width: 700px; margin: 0 auto;">
             <div class="form-grid">
                 <input type="text" id="aiGrade" class="ai-input" placeholder="Lớp (Ví dụ: Lớp 4)">
                 <input type="text" id="aiSubject" class="ai-input" placeholder="Môn học (Ví dụ: Toán)">
             </div>
             <input type="text" id="aiLesson" class="ai-input" placeholder="Tên bài dạy (Ví dụ: Phép cộng phân số)">
-            <input type="text" id="aiIntegrated" class="ai-input" placeholder="Nội dung tích hợp (GDMT, KNS, Địa phương...) - Tùy chọn">
+            
+            <!-- VÙNG TÍCH HỢP MỚI -->
+            <div class="integration-section">
+                <label style="font-weight: 600; color: #1e293b; display: block; margin-bottom: 5px;">📌 Chọn nội dung tích hợp (nếu có):</label>
+                <div class="checkbox-grid">
+                    <label><input type="checkbox" value="An toàn giao thông (ATGT)"> An toàn giao thông</label>
+                    <label><input type="checkbox" value="Bảo vệ môi trường, biến đổi khí hậu"> Bảo vệ môi trường</label>
+                    <label><input type="checkbox" value="Quyền và nghĩa vụ của trẻ em"> Quyền trẻ em</label>
+                    <label><input type="checkbox" value="Phòng cháy, chữa cháy và cứu nạn (PCCC)"> PCCC & Cứu nạn</label>
+                    <label><input type="checkbox" value="Kỹ năng sống (KNS)"> Kỹ năng sống (KNS)</label>
+                    <label><input type="checkbox" value="Giáo dục lý tưởng cách mạng, đạo đức"> Đạo đức, lý tưởng</label>
+                    <label><input type="checkbox" value="Chủ quyền quốc gia, biển đảo"> Chủ quyền biển đảo</label>
+                    <label><input type="checkbox" value="Năng lực số và ứng dụng AI"> Năng lực số & AI</label>
+                    <label><input type="checkbox" value="Giáo dục STEM"> Giáo dục STEM</label>
+                </div>
+                <input type="text" id="aiIntegratedOther" class="ai-input" style="margin-top: 10px; margin-bottom: 0;" placeholder="Hoặc nhập nội dung tích hợp khác...">
+            </div>
             
             <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
                 <p style="margin:0 0 10px 0; font-weight:bold; color:var(--text-light); font-size:0.9em;">📸 Tải lên ảnh SGK hoặc bài tập (Để AI lấy dữ liệu soạn bài)</p>
@@ -209,7 +232,6 @@
     let globalData = { prompts: [], repairs: [] };
     let editId = null;
 
-    // Các hàm tiện ích
     function parseDate(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; } return raw; }
     function parseLocation(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate()}/${d.getMonth() + 1}`; } return raw; }
     function formatMoney(amount) { if (!amount && amount !== 0) return '0đ'; const num = parseInt(amount.toString().replace(/\D/g, '')); return isNaN(num) ? amount : num.toLocaleString('vi-VN') + 'đ'; }
@@ -219,7 +241,6 @@
     function switchApp(appId, btn) { document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); document.getElementById(appId).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if(appId === 'app-prompts') loadData('prompts'); else if(appId === 'app-repairs') loadData('repairs'); }
     function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
 
-    // Gọi dữ liệu & Render
     async function loadData(type) { const cId = type === 'prompts' ? 'promptContainer' : 'repairContainer'; const cache = localStorage.getItem(`cache_${type}`); if (cache) { globalData[type] = JSON.parse(cache); type === 'prompts' ? renderPrompts(globalData[type]) : renderRepairs(globalData[type]); } else showSkeleton(cId); try { const res = await fetch(API_URL + "?type=" + type); const json = await res.json(); globalData[type] = json.data; localStorage.setItem(`cache_${type}`, JSON.stringify(json.data)); type === 'prompts' ? renderPrompts(json.data) : renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById(cId).innerHTML = 'Lỗi tải dữ liệu mạng.'; } }
     const emptyStateHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu nào ở mục này.</div>';
     
@@ -227,7 +248,6 @@
     function renderRepairs(data) { const html = data.map(item => { const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending'; return `<div class="card"><div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div><div class="repair-info"><div class="repair-grid"><div class="repair-col-left"><span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span><span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span></div><div class="repair-col-right"><span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span><span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span><span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span></div></div>${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}</div><div class="card-footer">${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}<div style="display:flex; gap: 4px;"><button class="btn btn-repair btn-sm admin-only btn-inline" onclick="editRepair('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button></div></div></div>`}).join(''); document.getElementById('repairContainer').innerHTML = html || emptyStateHTML; }
     function copyPrompt(id) { navigator.clipboard.writeText(document.getElementById(`content-${id}`).innerText).then(() => alert("Đã copy prompt!")); }
     
-    // Xử lý Modals & CRUD
     function openModalPrompt(id = null) { editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới"; if(id) { const item = globalData.prompts.find(x => x.id === id); document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category; document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content; } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); } document.getElementById('modalPrompt').style.display = 'flex'; }
     function openModalRepair(id = null) { editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới"; if(id) { const item = globalData.repairs.find(x => x.id === id); document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date; document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location; document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty; document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter; document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note; } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); } document.getElementById('modalRepair').style.display = 'flex'; }
     function editPrompt(id) { openModalPrompt(id); } function editRepair(id) { openModalRepair(id); }
@@ -238,7 +258,6 @@
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
     
-    // Đăng nhập
     async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
@@ -246,15 +265,11 @@
     // MODULE UPLOAD FILES (LIGHT & HEAVY)
     // ==========================================
     async function uploadLightFile() {
-        const fileInput = document.getElementById('fileInputLight');
-        const files = fileInput.files;
+        const fileInput = document.getElementById('fileInputLight'); const files = fileInput.files;
         if (files.length === 0) return alert("Vui lòng chọn ít nhất 1 file!");
-        const btn = document.getElementById('btnUploadLight');
-        const resultDiv = document.getElementById('uploadResultLight');
-        const pContainer = document.getElementById('progressContainerLight');
-        const pBar = document.getElementById('progressBarLight');
-        const pText = document.getElementById('progressTextLight');
-        const pStatus = document.getElementById('progressStatusLight');
+        const btn = document.getElementById('btnUploadLight'); const resultDiv = document.getElementById('uploadResultLight');
+        const pContainer = document.getElementById('progressContainerLight'); const pBar = document.getElementById('progressBarLight');
+        const pText = document.getElementById('progressTextLight'); const pStatus = document.getElementById('progressStatusLight');
         
         btn.disabled = true; pContainer.style.display = 'block'; 
         let listHTML = `<div class="file-list-container">`;
@@ -328,50 +343,27 @@
     }
 
     // ==========================================
-    // MODULE TRỢ GIẢNG AI (ÉP ẢNH & RENDER TABLE)
+    // MODULE TRỢ GIẢNG AI (CÓ GOM CHECKBOX TÍCH HỢP)
     // ==========================================
-    
-    // Hàm chuyển đổi Markdown sang HTML (Xử lý cả Table)
     function parseMarkdownToHTML(text) {
         let html = text;
-        // Xử lý các Heading
         html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
         html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
         html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-        // Xử lý in đậm, in nghiêng
         html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
-        // Xử lý Markdown Table cực nhạy
         html = html.replace(/(?:\|.*\|\n)+/g, (match) => {
-            let t = '<table>\n';
-            let lines = match.trim().split('\n');
+            let t = '<table>\n'; let lines = match.trim().split('\n');
             lines.forEach((line, index) => {
-                if (line.match(/^\|(?:\s*[-:]+\s*\|)+$/)) return; // Bỏ qua dòng phân cách ---|---
-                t += '<tr>';
-                let cells = line.split('|').slice(1, -1);
-                cells.forEach(cell => {
-                    let tag = index === 0 ? 'th' : 'td';
-                    // Xử lý xuống dòng trong ô (nếu AI dùng thẻ <br>)
-                    let cellContent = cell.trim().replace(/<br\s*\/?>/gi, '<br>');
-                    t += `<${tag}>${cellContent}</${tag}>`;
-                });
+                if (line.match(/^\|(?:\s*[-:]+\s*\|)+$/)) return; 
+                t += '<tr>'; let cells = line.split('|').slice(1, -1);
+                cells.forEach(cell => { let tag = index === 0 ? 'th' : 'td'; let cellContent = cell.trim().replace(/<br\s*\/?>/gi, '<br>'); t += `<${tag}>${cellContent}</${tag}>`; });
                 t += '</tr>\n';
             });
-            t += '</table>';
-            return t;
+            return t + '</table>';
         });
-
-        // Xuống dòng cho các đoạn văn thông thường (không nằm trong bảng/heading)
         html = html.replace(/\n(?!(?:.*?<\/td>|.*?<\/th>|.*?<\/tr>|.*?<\/table>))/g, '<br>'); 
-        
-        // Dọn dẹp các thẻ br thừa do replace newline sinh ra
-        html = html.replace(/<\/h1><br>/g, '</h1>');
-        html = html.replace(/<\/h2><br>/g, '</h2>');
-        html = html.replace(/<\/h3><br>/g, '</h3>');
-        html = html.replace(/<\/table><br>/g, '</table>');
-        html = html.replace(/<br><br>/g, '<br>'); 
-
+        html = html.replace(/<\/h1><br>/g, '</h1>').replace(/<\/h2><br>/g, '</h2>').replace(/<\/h3><br>/g, '</h3>').replace(/<\/table><br>/g, '</table>').replace(/<br><br>/g, '<br>'); 
         return html;
     }
 
@@ -379,8 +371,14 @@
         const grade = document.getElementById('aiGrade').value;
         const subject = document.getElementById('aiSubject').value;
         const lesson = document.getElementById('aiLesson').value;
-        const integrated = document.getElementById('aiIntegrated').value;
         const fileInput = document.getElementById('aiImage');
+        
+        // GOM DỮ LIỆU TỪ CÁC DẤU TÍCH VÀ Ô TEXT BOX KHÁC
+        const checkedBoxes = document.querySelectorAll('.checkbox-grid input[type="checkbox"]:checked');
+        let integratedArr = Array.from(checkedBoxes).map(cb => cb.value);
+        const otherIntegrated = document.getElementById('aiIntegratedOther').value.trim();
+        if(otherIntegrated) integratedArr.push(otherIntegrated);
+        const integrated = integratedArr.join(", ");
         
         if (!grade && !subject && !lesson && fileInput.files.length === 0) {
             return alert("Vui lòng nhập ít nhất thông tin bài học hoặc tải ảnh SGK lên!");
@@ -391,48 +389,33 @@
         const contentDiv = document.getElementById('aiContent');
         
         btn.innerText = "⏳ Đang nén ảnh & Chuẩn bị dữ liệu...";
-        btn.disabled = true;
-        resultBox.style.display = 'none';
-        contentDiv.innerHTML = '';
+        btn.disabled = true; resultBox.style.display = 'none'; contentDiv.innerHTML = '';
 
         try {
-            let base64Data = null;
-            let mimeType = null;
-
+            let base64Data = null; let mimeType = null;
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                
-                // Nén ảnh trực tiếp xuống JPEG chất lượng 70%, max ngang 1000px
                 const compressed = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = event => {
                         const img = new Image();
                         img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 1000;
+                            const canvas = document.createElement('canvas'); const MAX_WIDTH = 1000;
                             let width = img.width; let height = img.height;
                             if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
                             canvas.width = width; canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
+                            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                             resolve({ base64: dataUrl.split(',')[1], type: 'image/jpeg' });
                         };
-                        img.onerror = () => reject("Lỗi đọc ảnh");
-                        img.src = event.target.result;
+                        img.onerror = () => reject("Lỗi đọc ảnh"); img.src = event.target.result;
                     };
-                    reader.onerror = () => reject("Lỗi file");
-                    reader.readAsDataURL(file);
+                    reader.onerror = () => reject("Lỗi file"); reader.readAsDataURL(file);
                 });
-                base64Data = compressed.base64;
-                mimeType = compressed.type;
+                base64Data = compressed.base64; mimeType = compressed.type;
             }
 
-            const payload = {
-                action: 'generate_lesson_plan',
-                data: { grade, subject, lesson, integrated, imageBase64: base64Data, mimeType: mimeType }
-            };
-
+            const payload = { action: 'generate_lesson_plan', data: { grade, subject, lesson, integrated, imageBase64: base64Data, mimeType: mimeType } };
             btn.innerText = "🧠 AI Đang Đọc Và Viết Giáo Án (Chờ 5-10s)...";
 
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -440,79 +423,46 @@
 
             if (result.status === 'success') {
                 const rawText = result.result;
-                // Render ra HTML có bảng biểu đẹp mắt
                 contentDiv.innerHTML = parseMarkdownToHTML(rawText);
-                // Lưu lại raw text nếu cần
                 contentDiv.setAttribute('data-raw', rawText);
-                
-                resultBox.style.display = 'block';
-                resultBox.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                alert("Lỗi AI: " + result.message);
-            }
-        } catch (error) {
-            alert("Lỗi mạng! Không thể kết nối với máy chủ AI.");
-            console.error(error);
-        } finally {
-            btn.innerText = "✨ AI Bắt Đầu Soạn Giáo Án";
-            btn.disabled = false;
-        }
+                resultBox.style.display = 'block'; resultBox.scrollIntoView({ behavior: 'smooth' });
+            } else { alert("Lỗi AI: " + result.message); }
+        } catch (error) { alert("Lỗi mạng! Không thể kết nối với máy chủ AI."); console.error(error); } 
+        finally { btn.innerText = "✨ AI Bắt Đầu Soạn Giáo Án"; btn.disabled = false; }
     }
 
     function copyAIResult() {
-        const contentDiv = document.getElementById('aiContent');
-        const rawText = contentDiv.getAttribute('data-raw');
-        if (rawText) {
-            navigator.clipboard.writeText(rawText).then(() => {
-                alert("Đã Copy giáo án!");
-            });
-        }
+        const rawText = document.getElementById('aiContent').getAttribute('data-raw');
+        if (rawText) navigator.clipboard.writeText(rawText).then(() => alert("Đã Copy giáo án!"));
     }
 
-    // HÀM XUẤT FILE WORD (.doc) ĐỊNH DẠNG HỒ SƠ CHUẨN A4
     function exportToWord() {
         const subject = document.getElementById('aiSubject').value || 'MON';
         const lesson = document.getElementById('aiLesson').value || 'BAI';
-        
         const toNonAccent = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
         const fileName = `KHBD_${toNonAccent(subject)}_${toNonAccent(lesson)}_LOP4.doc`;
 
         const content = document.getElementById('aiContent').innerHTML;
-
         const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-            <meta charset='utf-8'>
-            <title>Kế Hoạch Bài Dạy</title>
+        <head><meta charset='utf-8'><title>Kế Hoạch Bài Dạy</title>
             <style>
-                @page Section1 {
-                    size: 595.3pt 841.9pt; /* A4 */
-                    margin: 56.7pt 56.7pt 56.7pt 85.05pt; /* Lề: trên 2cm, dưới 2cm, phải 2cm, trái 3cm */
-                }
+                @page Section1 { size: 595.3pt 841.9pt; margin: 56.7pt 56.7pt 56.7pt 85.05pt; }
                 div.Section1 { page: Section1; }
                 body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.2; }
-                h1, h2, h3 { font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; }
-                h1 { font-size: 16pt; } h2 { font-size: 15pt; } h3 { font-size: 14pt; }
+                h1, h2, h3 { font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; } h1 { font-size: 16pt; } h2 { font-size: 15pt; } h3 { font-size: 14pt; }
                 table { border-collapse: collapse; width: 100%; border: 1px solid black; margin-bottom: 10pt; }
                 table, th, td { border: 1px solid black; padding: 5px; vertical-align: top; }
-                th { text-align: center; font-weight: bold; background-color: #f2f2f2; }
-                p { margin-top: 5pt; margin-bottom: 5pt; }
+                th { text-align: center; font-weight: bold; background-color: #f2f2f2; } p { margin-top: 5pt; margin-bottom: 5pt; }
             </style>
         </head><body><div class="Section1">`;
-        
         const footer = "</div></body></html>";
-        const sourceHTML = header + content + footer;
-
-        const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const fileDownload = document.createElement("a");
-        document.body.appendChild(fileDownload);
-        fileDownload.href = url;
-        fileDownload.download = fileName;
-        fileDownload.click();
-        document.body.removeChild(fileDownload);
+        
+        const blob = new Blob(['\ufeff', header + content + footer], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob); const fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload); fileDownload.href = url; fileDownload.download = fileName;
+        fileDownload.click(); document.body.removeChild(fileDownload);
     }
 
-    // Khởi chạy khi tải trang
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
 </script>
 </body>
