@@ -8,7 +8,7 @@
         :root { 
             --primary: #4f46e5; --primary-hover: #4338ca; 
             --repair: #0ea5e9; --repair-hover: #0284c7; 
-            --heavy: #f59e0b; --heavy-hover: #d97706; /* Màu riêng cho Tải File Lớn */
+            --heavy: #f59e0b; --heavy-hover: #d97706; 
             --bg: #f8fafc; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; 
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px 15px; font-size: 14.5px; }
@@ -106,7 +106,7 @@
         <div class="grid" id="repairContainer"></div>
     </div>
     
-    <!-- MÀN HÌNH UPLOAD FILE (TÁCH 2 PHẦN) -->
+    <!-- MÀN HÌNH UPLOAD FILE -->
     <div id="app-upload" class="app-section">
         <div class="header" style="margin-bottom: 20px;">
             <h3>Trung tâm Upload Dữ Liệu</h3>
@@ -161,7 +161,7 @@
     </div>
 </div>
 
-<!-- Modal Prompt / Repair (Giữ nguyên) -->
+<!-- Modal Prompt / Repair -->
 <div class="modal" id="modalPrompt"><div class="modal-content"><h3 id="modalPromptTitle">Thêm Prompt Mới</h3><input type="text" id="pTitle" placeholder="Tiêu đề..."><div class="form-grid"><select id="pCategory"><option value="teaching">👨‍🏫 Giảng dạy</option><option value="admin">📋 Hành chính</option><option value="coding">💻 Lập trình</option><option value="media">🎨 Media</option><option value="diy">🔧 DIY</option></select><select id="pPlatform"><option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option><option value="Claude">🧠 Claude</option><option value="Suno AI">🎵 Suno AI</option><option value="Midjourney">🎨 Midjourney</option><option value="Khác">✨ Khác</option></select></div><textarea id="pContent" rows="5" placeholder="Dán nội dung prompt..."></textarea><div class="form-grid"><button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button><button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 <div class="modal" id="modalRepair"><div class="modal-content"><h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3><input type="text" id="rTask" class="full-width" placeholder="Công việc (VD: Sửa TV)"><div class="form-grid"><input type="text" id="rDate" placeholder="Ngày (VD: 16/8/2026)"><input type="text" id="rLocation" placeholder="Lớp (VD: 1/6)"><input type="text" id="rCost" placeholder="Chi phí (VD: 1500000)"><select id="rStatus"><option value="Đã hoàn thành">✅ Hoàn thành</option><option value="Đang chờ linh kiện">⏳ Đang chờ</option><option value="Cần theo dõi">🔍 Theo dõi</option></select><input type="text" id="rWarranty" placeholder="Thời hạn bảo hành (VD: 3 tháng)"><input type="text" id="rVendor" placeholder="Đơn vị sửa/mua"><input type="text" id="rReporter" placeholder="Người báo"><input type="text" id="rImageUrl" placeholder="Link ảnh đính kèm (Tùy chọn)"></div><textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea><div class="form-grid"><button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button><button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 
@@ -251,7 +251,7 @@
     }
 
     // ==========================================
-    // MỤC 2: HÀM UPLOAD FILE LỚN (RESUMABLE)
+    // MỤC 2: HÀM UPLOAD FILE LỚN (ĐÃ TÍCH HỢP GỬI ORIGIN CHỐNG LỖI CORS)
     // ==========================================
     async function uploadHeavyFile() {
         const fileInput = document.getElementById('fileInputHeavy');
@@ -270,10 +270,18 @@
         pStatus.innerText = "Đang xin quyền truyền dữ liệu lớn...";
 
         try {
-            // 1. Lấy link phân mảnh (Resumable URL) từ Apps Script
+            // Đóng gói thông tin File kèm tên miền website gửi lên Google
             const resUrl = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'getResumableUrl', data: { fileName: file.name, mimeType: file.type } })
+                body: JSON.stringify({ 
+                    action: 'getResumableUrl', 
+                    data: { 
+                        fileName: file.name, 
+                        mimeType: file.type || 'application/octet-stream', 
+                        fileSize: file.size,
+                        origin: window.location.origin
+                    } 
+                })
             });
             const urlData = await resUrl.json();
             
@@ -282,7 +290,6 @@
             const resumableUrl = urlData.resumableUrl;
             pStatus.innerText = "Đang truyền dữ liệu lên Google Drive...";
 
-            // 2. Sử dụng XMLHttpRequest để PUT thẳng lên Drive và lấy tiến độ % THỰC TẾ
             const xhr = new XMLHttpRequest();
             xhr.open('PUT', resumableUrl, true);
             
@@ -300,7 +307,6 @@
                     btn.innerText = "Đang hoàn thiện...";
                     const fileInfo = JSON.parse(xhr.responseText);
                     
-                    // 3. Mở quyền Public cho file vừa tải
                     const resPerm = await fetch(API_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: 'setPermission', data: { fileId: fileInfo.id } })
@@ -322,7 +328,7 @@
             };
             
             xhr.onerror = function() {
-                resultDiv.innerHTML = `❌ Rớt mạng hoặc gián đoạn kết nối!`;
+                resultDiv.innerHTML = `❌ Rớt mạng hoặc bị chặn bởi trình duyệt! Vui lòng tải lại trang và thử lại.`;
                 btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
             };
             
