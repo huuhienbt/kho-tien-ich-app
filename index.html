@@ -106,7 +106,7 @@
         <div class="grid" id="repairContainer"></div>
     </div>
     
-    <!-- MÀN HÌNH UPLOAD FILE -->
+    <!-- MÀN HÌNH UPLOAD FILE (TÁCH 2 PHẦN) -->
     <div id="app-upload" class="app-section">
         <div class="header" style="margin-bottom: 20px;">
             <h3>Trung tâm Upload Dữ Liệu</h3>
@@ -114,54 +114,47 @@
         </div>
         
         <div class="grid" style="gap: 20px;">
-            <!-- MỤC 1: FILE NHẸ -->
+            <!-- MỤC 1: FILE NHẸ (HỖ TRỢ CHỌN NHIỀU FILE) -->
             <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid #10b981;">
                 <div class="card-header"><h3 class="card-title">⚡ Tải File Nhỏ (Dưới 15MB)</h3></div>
-                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: Hình ảnh (png, jpg), Word, Excel, PDF giáo án. Xử lý tức thì.</div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: Hình ảnh, Word, Excel. Xử lý tức thì. Hỗ trợ chọn nhiều file.</div>
                 
-                <input type="file" id="fileInputLight" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+                <!-- THÊM THUỘC TÍNH multiple VÀO ĐÂY -->
+                <input type="file" id="fileInputLight" multiple style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
                 <button class="btn btn-primary" onclick="uploadLightFile()" id="btnUploadLight" style="width: 100%; padding: 10px; background:#10b981;">🚀 Tải lên (Chế độ Nhanh)</button>
                 
                 <div id="progressContainerLight" style="display: none; margin-top: 15px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
-                        <span id="progressStatusLight">Đang gửi dữ liệu...</span> <span id="progressTextLight">0%</span>
+                        <span id="progressStatusLight">Đang xử lý...</span> <span id="progressTextLight">0%</span>
                     </div>
                     <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;"><div id="progressBarLight" style="width: 0%; height: 100%; background: #10b981; transition: width 0.3s;"></div></div>
                 </div>
-                <div id="uploadResultLight" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+                <div id="uploadResultLight" style="margin-top: 15px; text-align: left; font-size: 0.9em; word-break: break-all; line-height: 1.6;"></div>
             </div>
 
-            <!-- MỤC 2: FILE LỚN (RESUMABLE UPLOAD) -->
+            <!-- MỤC 2: FILE LỚN (HỖ TRỢ CHỌN NHIỀU FILE) -->
             <div class="card" style="max-width: 500px; margin: 0 auto; width: 100%; border-top: 4px solid var(--heavy);">
                 <div class="card-header"><h3 class="card-title">📦 Tải File Lớn (Không giới hạn)</h3></div>
-                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: File Video, File Nén, Dữ liệu GB. Có thanh đo phần trăm (%) chạy thực tế.</div>
+                <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 12px; font-style: italic;">Phù hợp: Video, File Nén. Có thanh đo phần trăm (%) thật. Hỗ trợ chọn nhiều file.</div>
                 
-                <input type="file" id="fileInputHeavy" style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
+                <!-- THÊM THUỘC TÍNH multiple VÀO ĐÂY -->
+                <input type="file" id="fileInputHeavy" multiple style="margin-bottom:12px; width: 100%; border: 1px dashed var(--border); padding: 15px; border-radius: 6px;">
                 <button class="btn btn-primary" onclick="uploadHeavyFile()" id="btnUploadHeavy" style="width: 100%; padding: 10px; background:var(--heavy);">🚀 Tải lên (Chế độ Phân mảnh)</button>
                 
                 <div id="progressContainerHeavy" style="display: none; margin-top: 15px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px; color: var(--text-light); font-weight: bold;">
-                        <span id="progressStatusHeavy">Đang chuẩn bị luồng truyền dữ liệu...</span> <span id="progressTextHeavy">0%</span>
+                        <span id="progressStatusHeavy">Đang xử lý...</span> <span id="progressTextHeavy">0%</span>
                     </div>
                     <div style="width: 100%; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden;"><div id="progressBarHeavy" style="width: 0%; height: 100%; background: var(--heavy); transition: width 0.1s;"></div></div>
                 </div>
-                <div id="uploadResultHeavy" style="margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></div>
+                <div id="uploadResultHeavy" style="margin-top: 15px; text-align: left; font-size: 0.9em; word-break: break-all; line-height: 1.6;"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Đăng Nhập -->
-<div class="modal" id="loginModal">
-    <div class="modal-content" style="max-width: 320px;">
-        <h3>Mật khẩu Quản trị</h3>
-        <input type="password" id="adminPass" placeholder="Nhập mật khẩu...">
-        <button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button>
-        <button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button>
-    </div>
-</div>
-
-<!-- Modal Prompt / Repair -->
+<!-- Các Modal giữ nguyên -->
+<div class="modal" id="loginModal"><div class="modal-content" style="max-width: 320px;"><h3>Mật khẩu Quản trị</h3><input type="password" id="adminPass" placeholder="Nhập mật khẩu..."><button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button><button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button></div></div>
 <div class="modal" id="modalPrompt"><div class="modal-content"><h3 id="modalPromptTitle">Thêm Prompt Mới</h3><input type="text" id="pTitle" placeholder="Tiêu đề..."><div class="form-grid"><select id="pCategory"><option value="teaching">👨‍🏫 Giảng dạy</option><option value="admin">📋 Hành chính</option><option value="coding">💻 Lập trình</option><option value="media">🎨 Media</option><option value="diy">🔧 DIY</option></select><select id="pPlatform"><option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option><option value="Claude">🧠 Claude</option><option value="Suno AI">🎵 Suno AI</option><option value="Midjourney">🎨 Midjourney</option><option value="Khác">✨ Khác</option></select></div><textarea id="pContent" rows="5" placeholder="Dán nội dung prompt..."></textarea><div class="form-grid"><button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button><button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 <div class="modal" id="modalRepair"><div class="modal-content"><h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3><input type="text" id="rTask" class="full-width" placeholder="Công việc (VD: Sửa TV)"><div class="form-grid"><input type="text" id="rDate" placeholder="Ngày (VD: 16/8/2026)"><input type="text" id="rLocation" placeholder="Lớp (VD: 1/6)"><input type="text" id="rCost" placeholder="Chi phí (VD: 1500000)"><select id="rStatus"><option value="Đã hoàn thành">✅ Hoàn thành</option><option value="Đang chờ linh kiện">⏳ Đang chờ</option><option value="Cần theo dõi">🔍 Theo dõi</option></select><input type="text" id="rWarranty" placeholder="Thời hạn bảo hành (VD: 3 tháng)"><input type="text" id="rVendor" placeholder="Đơn vị sửa/mua"><input type="text" id="rReporter" placeholder="Người báo"><input type="text" id="rImageUrl" placeholder="Link ảnh đính kèm (Tùy chọn)"></div><textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea><div class="form-grid"><button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button><button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
 
@@ -177,45 +170,33 @@
     function formatMoney(amount) { if (!amount && amount !== 0) return '0đ'; const num = parseInt(amount.toString().replace(/\D/g, '')); return isNaN(num) ? amount : num.toLocaleString('vi-VN') + 'đ'; }
     function getExpirationDate(dateStr, wStr) { if (!wStr || wStr.toLowerCase() === 'không' || wStr == '0') return '<span style="color:#ef4444; font-weight:bold;">Không có</span>'; if (!dateStr || (typeof dateStr === 'string' && !dateStr.includes('T'))) return '<span style="color:var(--text-light);">Chưa xác định</span>'; let months = 0; const m = wStr.toLowerCase().match(/(\d+)/); if (m) { months = parseInt(m[1]); if (wStr.toLowerCase().includes('năm')) months *= 12; } else return `<span style="color:var(--text-light);">${wStr}</span>`; const endDate = new Date(dateStr); endDate.setMonth(endDate.getMonth() + months); const now = new Date(); now.setHours(0,0,0,0); const dateString = `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`; if (now > endDate) return `<span style="color:#ef4444; font-weight:bold;">${dateString} (Đã hết hạn)</span>`; const d = Math.ceil(Math.abs(endDate - now) / 86400000); if (d <= 30) return `<span style="color:#f59e0b; font-weight:bold;">${dateString} (Sắp hết: ${d} ngày)</span>`; return `<span style="color:#10b981; font-weight:bold;">${dateString}</span>`; }
     function getCategoryTag(cat) { const tags = { 'teaching': 'Giảng dạy', 'admin': 'Hành chính', 'coding': 'Code', 'media': 'Media', 'diy': 'DIY' }; return `<span class="tag tag-${cat || 'default'}">${tags[cat] || cat}</span>`; }
-
     function showSkeleton(id) { document.getElementById(id).innerHTML = '<div class="skeleton"></div>'.repeat(3); }
     function switchApp(appId, btn) { document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active')); document.getElementById(appId).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if(appId === 'app-prompts') loadData('prompts'); else if(appId === 'app-repairs') loadData('repairs'); }
     function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
 
-    async function loadData(type) {
-        const cId = type === 'prompts' ? 'promptContainer' : 'repairContainer';
-        const cache = localStorage.getItem(`cache_${type}`);
-        if (cache) { globalData[type] = JSON.parse(cache); type === 'prompts' ? renderPrompts(globalData[type]) : renderRepairs(globalData[type]); } else showSkeleton(cId);
-        try { const res = await fetch(API_URL + "?type=" + type); const json = await res.json(); globalData[type] = json.data; localStorage.setItem(`cache_${type}`, JSON.stringify(json.data)); type === 'prompts' ? renderPrompts(json.data) : renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById(cId).innerHTML = 'Lỗi tải dữ liệu mạng.'; }
-    }
+    async function loadData(type) { const cId = type === 'prompts' ? 'promptContainer' : 'repairContainer'; const cache = localStorage.getItem(`cache_${type}`); if (cache) { globalData[type] = JSON.parse(cache); type === 'prompts' ? renderPrompts(globalData[type]) : renderRepairs(globalData[type]); } else showSkeleton(cId); try { const res = await fetch(API_URL + "?type=" + type); const json = await res.json(); globalData[type] = json.data; localStorage.setItem(`cache_${type}`, JSON.stringify(json.data)); type === 'prompts' ? renderPrompts(json.data) : renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById(cId).innerHTML = 'Lỗi tải dữ liệu mạng.'; } }
     const emptyStateHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu nào ở mục này.</div>';
-
     function renderPrompts(data) { const html = data.map(item => `<div class="card prompt-card" data-category="${item.category}"><div class="card-header"><h3 class="card-title">${item.title}</h3>${getCategoryTag(item.category)}</div><div class="prompt-box" id="content-${item.id}">${item.content}</div><div class="card-footer"><span style="font-size: 0.8em; color: var(--text-light); font-weight: 600;">🤖 ${item.platform}</span><div style="display:flex; gap: 4px;"><button class="btn btn-primary btn-sm" onclick="copyPrompt('${item.id}')">📋 Copy</button><button class="btn btn-primary btn-sm admin-only btn-inline" onclick="editPrompt('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('prompts', '${item.id}')">🗑️ Xóa</button></div></div></div>`).join(''); document.getElementById('promptContainer').innerHTML = html || emptyStateHTML; filterTab('all', document.querySelector('.tab.active') || document.querySelector('.tab')); }
     function renderRepairs(data) { const html = data.map(item => { const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending'; return `<div class="card"><div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div><div class="repair-info"><div class="repair-grid"><div class="repair-col-left"><span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span><span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span></div><div class="repair-col-right"><span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span><span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span><span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span></div></div>${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}</div><div class="card-footer">${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}<div style="display:flex; gap: 4px;"><button class="btn btn-repair btn-sm admin-only btn-inline" onclick="editRepair('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('repairs', '${item.id}')">🗑️ Xóa</button></div></div></div>`}).join(''); document.getElementById('repairContainer').innerHTML = html || emptyStateHTML; }
     function copyPrompt(id) { navigator.clipboard.writeText(document.getElementById(`content-${id}`).innerText).then(() => alert("Đã copy prompt!")); }
-
     function openModalPrompt(id = null) { editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới"; if(id) { const item = globalData.prompts.find(x => x.id === id); document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category; document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content; } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); } document.getElementById('modalPrompt').style.display = 'flex'; }
     function openModalRepair(id = null) { editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới"; if(id) { const item = globalData.repairs.find(x => x.id === id); document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date; document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location; document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty; document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter; document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note; } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); } document.getElementById('modalRepair').style.display = 'flex'; }
     function editPrompt(id) { openModalPrompt(id); } function editRepair(id) { openModalRepair(id); }
-
     async function sendData(sheetType, action, dataObj, btnId) { if(btnId) document.getElementById(btnId).innerText = "..."; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType, action, data: dataObj }) }); const result = await res.json(); if(btnId) document.getElementById(btnId).innerText = "Lưu"; if(result.status === 'success') { closeModal('modalPrompt'); closeModal('modalRepair'); localStorage.removeItem(`cache_${sheetType}`); loadData(sheetType); } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); } } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; } }
     function savePrompt() { const data = { title: document.getElementById('pTitle').value, category: document.getElementById('pCategory').value, platform: document.getElementById('pPlatform').value, content: document.getElementById('pContent').value }; if(editId) { data.id = editId; sendData('prompts', 'update', data, 'btnSavePrompt'); } else sendData('prompts', 'create', data, 'btnSavePrompt'); }
     function saveRepair() { const data = { date: document.getElementById('rDate').value, task: document.getElementById('rTask').value, location: document.getElementById('rLocation').value, cost: document.getElementById('rCost').value, status: document.getElementById('rStatus').value, warranty: document.getElementById('rWarranty').value, vendor: document.getElementById('rVendor').value, reporter: document.getElementById('rReporter').value, asset_id: '', image_url: document.getElementById('rImageUrl').value, note: document.getElementById('rNote').value }; if(editId) { data.id = editId; sendData('repairs', 'update', data, 'btnSaveRepair'); } else sendData('repairs', 'create', data, 'btnSaveRepair'); }
     function deleteItem(type, id) { if(confirm("Xóa thẻ này?")) sendData(type, 'delete', { id }, null); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
-    
     async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu quản trị!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
     function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
 
     // ==========================================
-    // MỤC 1: HÀM UPLOAD FILE NHẸ (BASE64)
+    // MỤC 1: HÀM UPLOAD FILE NHẸ (HỖ TRỢ NHIỀU FILE TẢI NỐI TIẾP)
     // ==========================================
     async function uploadLightFile() {
         const fileInput = document.getElementById('fileInputLight');
-        if (fileInput.files.length === 0) return alert("Vui lòng chọn một file!");
-        const file = fileInput.files[0];
-        
-        if (file.size > 15 * 1024 * 1024) return alert("⚠️ Tệp quá lớn cho chế độ này!\nVui lòng sử dụng mục 'TẢI FILE LỚN' ở bên dưới.");
+        const files = fileInput.files;
+        if (files.length === 0) return alert("Vui lòng chọn ít nhất 1 file!");
 
         const btn = document.getElementById('btnUploadLight');
         const resultDiv = document.getElementById('uploadResultLight');
@@ -224,39 +205,69 @@
         const pText = document.getElementById('progressTextLight');
         const pStatus = document.getElementById('progressStatusLight');
         
-        btn.innerText = "Đang tải lên..."; btn.disabled = true; resultDiv.innerHTML = "";
-        pContainer.style.display = 'block'; pBar.style.width = '0%'; pText.innerText = '0%'; pStatus.innerText = "Đang gửi dữ liệu...";
+        btn.disabled = true; resultDiv.innerHTML = "";
+        pContainer.style.display = 'block'; 
         
-        let fakeProgress = 0;
-        const progressInterval = setInterval(() => { if (fakeProgress < 90) { fakeProgress += Math.floor(Math.random() * 8) + 1; if(fakeProgress > 90) fakeProgress = 90; pBar.style.width = fakeProgress + '%'; pText.innerText = fakeProgress + '%'; } }, 300);
+        let allResultsHTML = "";
 
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const base64Data = e.target.result.split(',')[1];
+        for(let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            if (file.size > 15 * 1024 * 1024) {
+                allResultsHTML += `❌ <b>${file.name}</b>: Quá lớn (>15MB).<br>`;
+                resultDiv.innerHTML = allResultsHTML;
+                continue; // Bỏ qua file lỗi, tải tiếp file sau
+            }
+
+            btn.innerText = `Đang tải ${i+1}/${files.length}...`;
+            pBar.style.width = '0%'; pText.innerText = '0%'; 
+            pStatus.innerText = `Đang tải: ${file.name}`;
+            
+            // Chạy số ảo cho file hiện tại
+            let fakeProgress = 0;
+            const progressInterval = setInterval(() => { if (fakeProgress < 90) { fakeProgress += Math.floor(Math.random() * 8) + 1; if(fakeProgress > 90) fakeProgress = 90; pBar.style.width = fakeProgress + '%'; pText.innerText = fakeProgress + '%'; } }, 300);
+
             try {
+                const base64Data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result.split(',')[1]);
+                    reader.onerror = e => reject(e);
+                    reader.readAsDataURL(file);
+                });
+
                 const res = await fetch(API_URL, {
                     method: 'POST', body: JSON.stringify({ action: 'upload', data: { fileName: file.name, mimeType: file.type, base64: base64Data } })
                 });
+                
                 clearInterval(progressInterval); 
                 const result = await res.json();
+                
                 if (result.status === 'success') {
-                    pBar.style.width = '100%'; pText.innerText = '100%'; pStatus.innerText = "Hoàn tất!";
-                    setTimeout(() => { resultDiv.innerHTML = `✅ Xong! <a href="${result.fileUrl}" target="_blank" style="color:var(--primary)">🔗 Mở file</a>`; fileInput.value = ''; pContainer.style.display = 'none'; }, 500);
-                } else { resultDiv.innerHTML = `❌ Lỗi: ${result.message}`; pContainer.style.display = 'none'; }
-            } catch(error) { clearInterval(progressInterval); resultDiv.innerHTML = `❌ Lỗi mạng!`; pContainer.style.display = 'none'; } 
-            finally { btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; btn.disabled = false; }
-        };
-        reader.onerror = () => { alert("Lỗi khi đọc file!"); btn.disabled = false; btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; pContainer.style.display = 'none'; }
-        reader.readAsDataURL(file); 
+                    pBar.style.width = '100%'; pText.innerText = '100%';
+                    allResultsHTML += `✅ <b>${file.name}</b>: <a href="${result.fileUrl}" target="_blank" style="color:#10b981;">🔗 Xem file</a><br>`;
+                } else { 
+                    allResultsHTML += `❌ <b>${file.name}</b>: Lỗi ${result.message}<br>`; 
+                }
+            } catch(error) { 
+                clearInterval(progressInterval); 
+                allResultsHTML += `❌ <b>${file.name}</b>: Lỗi mạng!<br>`; 
+            }
+            resultDiv.innerHTML = allResultsHTML;
+        } // Kết thúc vòng lặp tải từng file
+        
+        pStatus.innerText = "Đã hoàn thành danh sách!";
+        btn.innerText = "🚀 Tải lên (Chế độ Nhanh)"; btn.disabled = false;
+        setTimeout(() => pContainer.style.display = 'none', 3000);
+        fileInput.value = '';
     }
 
     // ==========================================
-    // MỤC 2: HÀM UPLOAD FILE LỚN (ĐÃ TÍCH HỢP GỬI ORIGIN CHỐNG LỖI CORS)
+    // MỤC 2: HÀM UPLOAD FILE LỚN (HỖ TRỢ NHIỀU FILE TẢI NỐI TIẾP)
     // ==========================================
     async function uploadHeavyFile() {
         const fileInput = document.getElementById('fileInputHeavy');
-        if (fileInput.files.length === 0) return alert("Vui lòng chọn một file!");
-        const file = fileInput.files[0];
+        const files = fileInput.files;
+        if (files.length === 0) return alert("Vui lòng chọn ít nhất 1 file!");
         
         const btn = document.getElementById('btnUploadHeavy');
         const resultDiv = document.getElementById('uploadResultHeavy');
@@ -265,79 +276,96 @@
         const pText = document.getElementById('progressTextHeavy');
         const pStatus = document.getElementById('progressStatusHeavy');
 
-        btn.innerText = "Khởi tạo luồng..."; btn.disabled = true; resultDiv.innerHTML = "";
-        pContainer.style.display = 'block'; pBar.style.width = '0%'; pText.innerText = '0%';
-        pStatus.innerText = "Đang xin quyền truyền dữ liệu lớn...";
+        btn.disabled = true; resultDiv.innerHTML = "";
+        pContainer.style.display = 'block'; 
+        
+        let allResultsHTML = "";
 
-        try {
-            // Đóng gói thông tin File kèm tên miền website gửi lên Google
-            const resUrl = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'getResumableUrl', 
-                    data: { 
-                        fileName: file.name, 
-                        mimeType: file.type || 'application/octet-stream', 
-                        fileSize: file.size,
-                        origin: window.location.origin
-                    } 
-                })
-            });
-            const urlData = await resUrl.json();
+        for(let i = 0; i < files.length; i++) {
+            const file = files[i];
             
-            if(urlData.status !== 'success') throw new Error("Không thể khởi tạo luồng truyền file!");
-            
-            const resumableUrl = urlData.resumableUrl;
-            pStatus.innerText = "Đang truyền dữ liệu lên Google Drive...";
+            btn.innerText = `Đang xử lý ${i+1}/${files.length}...`;
+            pBar.style.width = '0%'; pText.innerText = '0%';
+            pStatus.innerText = `Xin quyền tải: ${file.name}`;
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', resumableUrl, true);
-            
-            xhr.upload.onprogress = function(e) {
-                if(e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100);
-                    pBar.style.width = pct + '%'; pText.innerText = pct + '%';
-                    btn.innerText = `Đang truyền... ${pct}%`;
-                }
-            };
-            
-            xhr.onload = async function() {
-                if(xhr.status === 200 || xhr.status === 201) {
-                    pStatus.innerText = "Tải lên xong! Đang cấu hình quyền xem file...";
-                    btn.innerText = "Đang hoàn thiện...";
-                    const fileInfo = JSON.parse(xhr.responseText);
+            try {
+                const resUrl = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: 'getResumableUrl', 
+                        data: { fileName: file.name, mimeType: file.type || 'application/octet-stream', fileSize: file.size, origin: window.location.origin } 
+                    })
+                });
+                const urlData = await resUrl.json();
+                
+                if(urlData.status !== 'success') throw new Error("Không thể khởi tạo luồng!");
+                const resumableUrl = urlData.resumableUrl;
+                pStatus.innerText = `Đang truyền: ${file.name}`;
+
+                // Sử dụng Promise để chờ XHR tải xong từng file rồi mới chuyển sang file tiếp theo
+                await new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', resumableUrl, true);
                     
-                    const resPerm = await fetch(API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'setPermission', data: { fileId: fileInfo.id } })
-                    });
-                    const permData = await resPerm.json();
+                    xhr.upload.onprogress = function(e) {
+                        if(e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100);
+                            pBar.style.width = pct + '%'; pText.innerText = pct + '%';
+                            btn.innerText = `Tải file ${i+1}/${files.length}: ${pct}%`;
+                        }
+                    };
                     
-                    if(permData.status === 'success') {
-                        pStatus.innerText = "Hoàn tất!";
-                        resultDiv.innerHTML = `✅ Thành công! <br><br> <a href="${permData.fileUrl}" target="_blank" style="color:var(--heavy)">🔗 Mở file vừa tải</a>`;
-                        fileInput.value = '';
-                    } else {
-                        resultDiv.innerHTML = `⚠️ Đã tải nhưng lỗi cấp quyền xem: ${permData.message}`;
-                    }
-                } else {
-                    resultDiv.innerHTML = `❌ Lỗi máy chủ Google (${xhr.status})`;
-                }
-                btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
-                setTimeout(() => pContainer.style.display = 'none', 3000);
-            };
-            
-            xhr.onerror = function() {
-                resultDiv.innerHTML = `❌ Rớt mạng hoặc bị chặn bởi trình duyệt! Vui lòng tải lại trang và thử lại.`;
-                btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
-            };
-            
-            xhr.send(file);
-        } catch(error) {
-            resultDiv.innerHTML = `❌ Lỗi: ${error.message}`;
-            btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
-            pContainer.style.display = 'none';
-        }
+                    xhr.onload = async function() {
+                        if(xhr.status === 200 || xhr.status === 201 || xhr.status === 308) {
+                            pStatus.innerText = `Cấu hình quyền cho: ${file.name}`;
+                            let fileId = "";
+                            try {
+                                const fileInfo = JSON.parse(xhr.responseText);
+                                fileId = fileInfo.id;
+                            } catch(e) {
+                                // Nếu không lấy được ID, xem như bị lỗi cấu hình
+                                allResultsHTML += `⚠️ <b>${file.name}</b>: Đã đẩy lên nhưng không lấy được ID (Status: ${xhr.status}).<br>`;
+                                resultDiv.innerHTML = allResultsHTML;
+                                return resolve();
+                            }
+                            
+                            try {
+                                const resPerm = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'setPermission', data: { fileId: fileId } }) });
+                                const permData = await resPerm.json();
+                                if(permData.status === 'success') {
+                                    allResultsHTML += `✅ <b>${file.name}</b>: <a href="${permData.fileUrl}" target="_blank" style="color:var(--heavy);">🔗 Xem file</a><br>`;
+                                } else {
+                                    allResultsHTML += `⚠️ <b>${file.name}</b>: Lỗi mở quyền.<br>`;
+                                }
+                            } catch(err) {
+                                allResultsHTML += `⚠️ <b>${file.name}</b>: Đã tải, lỗi quyền.<br>`;
+                            }
+                        } else {
+                            allResultsHTML += `❌ <b>${file.name}</b>: Lỗi máy chủ (${xhr.status}).<br>`;
+                        }
+                        resultDiv.innerHTML = allResultsHTML;
+                        resolve(); // Tải xong, kết thúc Promise, vòng lặp chuyển sang file tiếp theo
+                    };
+                    
+                    xhr.onerror = function() {
+                        allResultsHTML += `❌ <b>${file.name}</b>: Rớt mạng!<br>`;
+                        resultDiv.innerHTML = allResultsHTML;
+                        resolve(); // Lỗi mạng cũng next sang file sau
+                    };
+                    
+                    xhr.send(file);
+                }); // Kết thúc một luồng XHR tải 1 file
+                
+            } catch(error) {
+                allResultsHTML += `❌ <b>${file.name}</b>: Lỗi - ${error.message}<br>`;
+                resultDiv.innerHTML = allResultsHTML;
+            }
+        } // Kết thúc vòng lặp for (duyệt hết danh sách file)
+        
+        pStatus.innerText = "Đã hoàn thành danh sách!";
+        btn.innerText = "🚀 Tải lên (Chế độ Phân mảnh)"; btn.disabled = false;
+        setTimeout(() => pContainer.style.display = 'none', 3000);
+        fileInput.value = '';
     }
 
     window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData('prompts'); };
