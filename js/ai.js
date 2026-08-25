@@ -79,6 +79,28 @@
         return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell.replace(/\s/g, '')));
     }
 
+    function isActivityTableBoundary(line) {
+        const value = String(line || '').trim();
+        return /^#{1,3}\s+/.test(value)
+            || /^[IVXLCDM]+\.\s+/i.test(value)
+            || /^\d+[.)]\s+/.test(value)
+            || /^[a-z]\)\s+(?:Mục\s+tiêu|Cách\s+tổ\s+chức)/i.test(value)
+            || /^```/.test(value);
+    }
+
+    function activityColumnIndex(value, columnCount) {
+        const text = String(value || '').trim().replace(/^\|+|\|+$/g, '').trim().replace(/^[-•]\s*/, '');
+        if (/^GV\b/i.test(text)) return 0;
+        if (/^HS\b/i.test(text)) return Math.min(1, Math.max(0, columnCount - 1));
+        return -1;
+    }
+
+    function normalizeActivityItem(value) {
+        const text = String(value || '').trim().replace(/^•\s*/, '- ');
+        if (/^(?:GV|HS)\b/i.test(text)) return `- ${text}`;
+        return text;
+    }
+
     function startsBlock(lines, index) {
         const line = lines[index] || '';
         return /^#{1,3}\s+/.test(line) || /^[IVXLCDM]+\.\s+/i.test(line) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
@@ -95,12 +117,46 @@
             if (line.includes('|') && isTableSeparator(lines[index + 1] || '')) {
                 const headers = splitTableRow(line);
                 index += 2;
-                const rows = [];
-                while (index < lines.length && lines[index].trim() && lines[index].includes('|')) {
-                    rows.push(splitTableRow(lines[index]));
+                const cellItems = headers.map(() => []);
+                let activeColumn = 0;
+                let hasActivityContent = false;
+
+                while (index < lines.length) {
+                    const activityLine = String(lines[index] || '').trim();
+                    if (!activityLine) {
+                        index += 1;
+                        continue;
+                    }
+                    if (isActivityTableBoundary(activityLine)) break;
+
+                    if (activityLine.includes('|')) {
+                        const cells = splitTableRow(activityLine);
+                        if (cells.length > 1) {
+                            headers.forEach((_, cellIndex) => {
+                                const cellValue = normalizeActivityItem(cells[cellIndex] || '');
+                                if (!cellValue) return;
+                                cellItems[cellIndex].push(cellValue);
+                                activeColumn = cellIndex;
+                                hasActivityContent = true;
+                            });
+                            index += 1;
+                            continue;
+                        }
+                    }
+
+                    const detectedColumn = activityColumnIndex(activityLine, headers.length);
+                    if (detectedColumn >= 0) activeColumn = detectedColumn;
+                    else if (!hasActivityContent) break;
+
+                    const item = normalizeActivityItem(activityLine);
+                    if (item) {
+                        cellItems[activeColumn].push(item);
+                        hasActivityContent = true;
+                    }
                     index += 1;
                 }
-                blocks.push(`<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${headers.map((_, cellIndex) => `<td>${inlineMarkdown(row[cellIndex] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+
+                blocks.push(`<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody><tr>${headers.map((_, cellIndex) => `<td>${cellItems[cellIndex].map(inlineMarkdown).join('<br>')}</td>`).join('')}</tr></tbody></table>`);
                 continue;
             }
 
