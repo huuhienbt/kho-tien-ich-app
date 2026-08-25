@@ -202,9 +202,21 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .info-dot { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; border-radius: 8px; background: var(--primary-soft); color: var(--primary); font-size: .72rem; font-weight: 800; }
 .file-list { display: grid; gap: 9px; margin-top: 16px; }
 .file-item { padding: 11px 13px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--border); border-radius: 11px; background: #fff; }
+.file-item-complete { border-color: #a7f3d0; background: linear-gradient(145deg,#fff,#f0fdf4); }
 .file-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8rem; font-weight: 700; }
 .file-size { display: block; color: var(--text-light); font-size: .68rem; }
 .file-status { font-size: .72rem; font-weight: 750; white-space: nowrap; }
+.file-status a { color: #047857; text-decoration: none; }
+.file-share-result { grid-column: 1/-1; padding-top: 11px; border-top: 1px solid #d1fae5; }
+.file-share-label { display: block; margin-bottom: 6px; color: #047857; font-size: .7rem; font-weight: 800; }
+.file-link-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 9px; }
+.file-result-link { min-width: 0; padding: 9px 11px; overflow: hidden; color: #334155; border: 1px solid #d7dee9; border-radius: 9px; background: #fff; font-family: Consolas,monospace; font-size: .7rem; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.file-result-link:hover { color: var(--primary); border-color: #a5b4fc; }
+.file-share-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.file-qr-panel { margin-top: 11px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px dashed #86efac; border-radius: 12px; background: #fff; text-align: center; }
+.file-qr-canvas { width: min(230px,100%); height: auto; border-radius: 8px; image-rendering: pixelated; }
+.file-qr-panel p { margin: 0; color: var(--text-light); font-size: .72rem; }
+.file-qr-panel .file-qr-error { color: var(--danger); }
 .progress-track { height: 8px; margin-top: 14px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
 .progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#10b981,#22c55e); transition: width 180ms ease; }
 
@@ -331,6 +343,8 @@ textarea.form-control { resize: vertical; min-height: 112px; }
     .upload-panel,.upload-sidebar { padding: 16px; }
     .drop-zone { min-height: 190px; padding: 20px 14px; }
     .file-item { grid-template-columns: minmax(0,1fr); }
+    .file-link-row { grid-template-columns: 1fr; }
+    .file-share-actions .btn { flex: 1; }
     .stepper { grid-template-columns: 1fr; }
     .toast-region { left: 12px; right: 12px; bottom: 12px; }
     .toast { min-width: 0; max-width: none; }

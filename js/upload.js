@@ -20,7 +20,13 @@
     }
 
     function setFiles(files) {
-        selectedFiles = Array.from(files).map(file => ({ file, status: 'Đang chờ', type: file.size <= App.config.LIGHT_UPLOAD_LIMIT ? 'Nhanh' : 'Tệp lớn', resultUrl: '' }));
+        selectedFiles = Array.from(files).map(file => ({
+            file,
+            status: 'Đang chờ',
+            type: file.size <= App.config.LIGHT_UPLOAD_LIMIT ? 'Nhanh' : 'Tệp lớn',
+            resultUrl: '',
+            qrVisible: false
+        }));
         renderFiles();
     }
 
@@ -34,8 +40,62 @@
         fileList.innerHTML = selectedFiles.map((entry, index) => {
             const url = App.safeUrl(entry.resultUrl);
             const status = url ? `<a href="${App.escapeHTML(url)}" target="_blank" rel="noopener noreferrer">✅ Mở tệp</a>` : App.escapeHTML(entry.status);
-            return `<div class="file-item" data-index="${index}"><div><span class="file-name" title="${App.escapeHTML(entry.file.name)}">${App.escapeHTML(entry.file.name)}</span><span class="file-size">${App.formatBytes(entry.file.size)} · ${entry.type}</span></div><span class="file-status">${status}</span></div>`;
+            const result = url ? `<div class="file-share-result">
+                <span class="file-share-label">Liên kết tệp vừa tải</span>
+                <div class="file-link-row">
+                    <a class="file-result-link" href="${App.escapeHTML(url)}" target="_blank" rel="noopener noreferrer" title="${App.escapeHTML(url)}">${App.escapeHTML(url)}</a>
+                    <div class="file-share-actions">
+                        <button class="btn btn-secondary btn-sm" type="button" data-file-action="copy-link">📋 Sao chép link</button>
+                        <button class="btn btn-success btn-sm" type="button" data-file-action="toggle-qr" aria-expanded="${entry.qrVisible}" aria-controls="file-qr-panel-${index}">${entry.qrVisible ? 'Ẩn QR' : '▦ Hiện QR'}</button>
+                    </div>
+                </div>
+                <div class="file-qr-panel" id="file-qr-panel-${index}"${entry.qrVisible ? '' : ' hidden'}>
+                    <canvas class="file-qr-canvas" id="file-qr-${index}" aria-label="Mã QR mở tệp ${App.escapeHTML(entry.file.name)}"></canvas>
+                    <p>Quét mã để mở tệp trên điện thoại.</p>
+                    <button class="btn btn-secondary btn-sm" type="button" data-file-action="download-qr">⬇ Tải mã QR</button>
+                </div>
+            </div>` : '';
+            return `<div class="file-item${url ? ' file-item-complete' : ''}" data-index="${index}"><div><span class="file-name" title="${App.escapeHTML(entry.file.name)}">${App.escapeHTML(entry.file.name)}</span><span class="file-size">${App.formatBytes(entry.file.size)} · ${entry.type}</span></div><span class="file-status">${status}</span>${result}</div>`;
         }).join('');
+        selectedFiles.forEach((entry, index) => {
+            if (entry.resultUrl && entry.qrVisible) renderQrCode(index);
+        });
+    }
+
+    function renderQrCode(index) {
+        const entry = selectedFiles[index];
+        const url = entry && App.safeUrl(entry.resultUrl);
+        const canvas = document.getElementById(`file-qr-${index}`);
+        if (!url || !canvas) return;
+        try {
+            if (!window.EGVQRCode) throw new Error('Thư viện QR chưa sẵn sàng.');
+            window.EGVQRCode.render(canvas, url, { errorLevel: 'M', cellSize: 10, margin: 4 });
+        } catch (error) {
+            const panel = canvas.closest('.file-qr-panel');
+            if (panel) panel.innerHTML = `<p class="file-qr-error">❌ ${App.escapeHTML(error.message)}</p>`;
+        }
+    }
+
+    async function copyText(text) {
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw new Error('Không thể sao chép liên kết.');
+    }
+
+    function qrDownloadName(fileName) {
+        const baseName = String(fileName || 'tep-drive').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9À-ỹ_-]+/g, '_');
+        return `QR_${baseName || 'tep-drive'}.png`;
     }
 
     function updateFile(index, status, resultUrl = '') {
@@ -142,6 +202,37 @@
     ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove('dragover'); }));
     dropZone.addEventListener('drop', event => setFiles(event.dataTransfer.files));
+    fileList.addEventListener('click', async event => {
+        const button = event.target.closest('[data-file-action]');
+        const item = event.target.closest('.file-item');
+        if (!button || !item) return;
+        const index = Number(item.dataset.index);
+        const entry = selectedFiles[index];
+        const url = entry && App.safeUrl(entry.resultUrl);
+        if (!entry || !url) return;
+
+        if (button.dataset.fileAction === 'copy-link') {
+            try {
+                await copyText(url);
+                App.toast('Đã sao chép liên kết tệp.', 'success');
+            } catch (error) {
+                App.toast(error.message, 'error');
+            }
+        }
+        if (button.dataset.fileAction === 'toggle-qr') {
+            entry.qrVisible = !entry.qrVisible;
+            renderFiles();
+        }
+        if (button.dataset.fileAction === 'download-qr') {
+            const canvas = document.getElementById(`file-qr-${index}`);
+            if (!canvas) return;
+            const downloadLink = document.createElement('a');
+            downloadLink.href = canvas.toDataURL('image/png');
+            downloadLink.download = qrDownloadName(entry.file.name);
+            downloadLink.click();
+            App.toast('Đã tải mã QR.', 'success');
+        }
+    });
     document.getElementById('clearFilesButton').addEventListener('click', () => { selectedFiles = []; fileInput.value = ''; renderFiles(); });
     uploadButton.addEventListener('click', uploadAll);
 })();

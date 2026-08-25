@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="js/config.js" defer></script>
     <script src="js/app.js" defer></script>
+    <script src="js/qr-code.js" defer></script>
     <script src="js/upload.js" defer></script>
 </head>
 <body>
@@ -16,7 +17,7 @@
     <main class="page-main">
         <div class="container">
             <header class="page-heading">
-                <div><p class="page-eyebrow">Google Drive</p><h1 class="page-title">Kho tệp Drive</h1><p class="page-description">Chọn nhiều tệp trong một lần; hệ thống tự chọn phương thức tải phù hợp theo dung lượng.</p></div>
+                <div><p class="page-eyebrow">Google Drive</p><h1 class="page-title">Kho tệp Drive</h1><p class="page-description">Chọn nhiều tệp trong một lần; sau khi hoàn tất có thể sao chép liên kết, chia sẻ hoặc tải mã QR của từng tệp.</p></div>
                 <div class="page-actions"><a class="btn btn-secondary admin-only" id="openDriveButton" target="_blank" rel="noopener noreferrer">📂 Mở thư mục Drive</a></div>
             </header>
 
@@ -26,7 +27,7 @@
                     <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Chọn tệp để tải lên">
                         <div><div class="drop-icon">↑</div><p class="drop-title">Kéo thả tệp vào đây</p><p class="drop-help">Hoặc bấm để chọn nhiều tệp. Tệp nhỏ được xử lý nhanh; tệp lớn dùng kênh tải trực tiếp.</p><button class="btn btn-success" id="chooseFilesButton" type="button">Chọn tệp</button></div>
                     </div>
-                    <div class="file-list" id="fileList"></div>
+                    <div class="file-list" id="fileList" aria-live="polite"></div>
                     <div id="uploadProgress" hidden><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><p class="drop-help" id="progressLabel">Đang chuẩn bị…</p></div>
                     <div class="form-actions" id="uploadActions" hidden><button class="btn btn-secondary" id="clearFilesButton" type="button">Bỏ chọn</button><button class="btn btn-success" id="uploadFilesButton" type="button">Tải các tệp lên</button></div>
                 </section>
@@ -37,6 +38,7 @@
                         <li><span class="info-dot">1</span><span>Mọi người đều có thể tải tệp lên mà không cần đăng nhập.</span></li>
                         <li><span class="info-dot">2</span><span>Tệp dưới 15 MB được gửi qua chế độ nhanh; tệp lớn dùng phiên tải trực tiếp.</span></li>
                         <li><span class="info-dot">3</span><span>Không đóng trang cho đến khi trạng thái của tất cả tệp chuyển sang hoàn tất.</span></li>
+                        <li><span class="info-dot">4</span><span>Sau khi hoàn tất, dùng liên kết hoặc mã QR để mở đúng tệp vừa tải.</span></li>
                     </ul>
                     <div class="access-card access-card-success" style="margin-top:18px">✅ Không yêu cầu đăng nhập. Nên giới hạn loại tệp, dung lượng và tần suất tải tại Google Apps Script để tránh lạm dụng.</div>
                 </aside>
