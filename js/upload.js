@@ -38,7 +38,7 @@
             return;
         }
         fileList.innerHTML = selectedFiles.map((entry, index) => {
-            const url = App.safeUrl(entry.resultUrl);
+            const url = entry.resultUrl ? App.safeUrl(entry.resultUrl) : '';
             const status = url ? `<a href="${App.escapeHTML(url)}" target="_blank" rel="noopener noreferrer">✅ Mở tệp</a>` : App.escapeHTML(entry.status);
             const result = url ? `<div class="file-share-result">
                 <span class="file-share-label">Liên kết tệp vừa tải</span>
@@ -46,7 +46,7 @@
                     <a class="file-result-link" href="${App.escapeHTML(url)}" target="_blank" rel="noopener noreferrer" title="${App.escapeHTML(url)}">${App.escapeHTML(url)}</a>
                     <div class="file-share-actions">
                         <button class="btn btn-secondary btn-sm" type="button" data-file-action="copy-link">📋 Sao chép link</button>
-                        <button class="btn btn-success btn-sm" type="button" data-file-action="toggle-qr" aria-expanded="${entry.qrVisible}" aria-controls="file-qr-panel-${index}">${entry.qrVisible ? 'Ẩn QR' : '▦ Hiện QR'}</button>
+                        <button class="btn btn-success btn-sm" type="button" data-file-action="toggle-qr" aria-expanded="${entry.qrVisible}" aria-controls="file-qr-panel-${index}">▦ ${entry.qrVisible ? 'Ẩn QR' : 'QR code'}</button>
                     </div>
                 </div>
                 <div class="file-qr-panel" id="file-qr-panel-${index}"${entry.qrVisible ? '' : ' hidden'}>
@@ -64,7 +64,7 @@
 
     function renderQrCode(index) {
         const entry = selectedFiles[index];
-        const url = entry && App.safeUrl(entry.resultUrl);
+        const url = entry?.resultUrl ? App.safeUrl(entry.resultUrl) : '';
         const canvas = document.getElementById(`file-qr-${index}`);
         if (!url || !canvas) return;
         try {
@@ -208,7 +208,7 @@
         if (!button || !item) return;
         const index = Number(item.dataset.index);
         const entry = selectedFiles[index];
-        const url = entry && App.safeUrl(entry.resultUrl);
+        const url = entry?.resultUrl ? App.safeUrl(entry.resultUrl) : '';
         if (!entry || !url) return;
 
         if (button.dataset.fileAction === 'copy-link') {
