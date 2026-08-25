@@ -100,7 +100,9 @@
     async function loadData() {
         container.setAttribute('aria-busy', 'true');
         try {
-            const result = await App.apiGet('prompts', { includeAuth: true });
+            const result = App.isAuthenticated()
+                ? await App.apiPost('get_prompts')
+                : await App.apiGet('prompts');
             state.items = Array.isArray(result.data) ? result.data : [];
             updateCounts();
             render();

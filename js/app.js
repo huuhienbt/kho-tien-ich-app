@@ -7,10 +7,20 @@
         try { return JSON.parse(localStorage.getItem(config.USER_PROFILE_KEY) || 'null'); } catch (_) { return null; }
     }
 
+    function getOrCreateClientId() {
+        let value = localStorage.getItem(config.CLIENT_ID_KEY) || '';
+        if (!value) {
+            value = window.crypto?.randomUUID?.() || `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            localStorage.setItem(config.CLIENT_ID_KEY, value);
+        }
+        return value;
+    }
+
     const state = {
-        adminPassword: sessionStorage.getItem(config.SESSION_KEY) || '',
+        adminToken: sessionStorage.getItem(config.SESSION_KEY) || '',
         userToken: localStorage.getItem(config.USER_TOKEN_KEY) || '',
         user: readStoredProfile(),
+        clientId: getOrCreateClientId(),
         pendingAction: null,
         authMode: 'login',
         googleInitialized: false
@@ -104,7 +114,7 @@
     }
 
     function isAuthenticated() {
-        return Boolean(state.adminPassword || state.userToken);
+        return Boolean(state.adminToken || state.userToken);
     }
 
     function initials(name) {
@@ -113,7 +123,7 @@
     }
 
     function syncAuthUi() {
-        const admin = Boolean(state.adminPassword);
+        const admin = Boolean(state.adminToken);
         const user = Boolean(state.userToken);
         document.body.classList.toggle('admin-logged-in', admin);
         document.body.classList.toggle('user-logged-in', user);
@@ -174,12 +184,13 @@
             const response = await fetch(config.API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'verify', adminPassword: password })
+                body: JSON.stringify({ action: 'verify', adminPassword: password, clientId: state.clientId })
             });
             const result = await response.json();
             if (result.status !== 'success') throw new Error(result.message || 'Sai mật khẩu');
-            state.adminPassword = password;
-            sessionStorage.setItem(config.SESSION_KEY, password);
+            if (!result.adminToken) throw new Error('Máy chủ chưa trả về token quản trị. Hãy triển khai Code.gs phiên bản mới.');
+            state.adminToken = result.adminToken;
+            sessionStorage.setItem(config.SESSION_KEY, result.adminToken);
             input.value = '';
             syncAuthUi();
             closeModal('loginModal');
@@ -209,11 +220,11 @@
     }
 
     async function apiPost(action, data = {}, options = {}) {
-        if (options.auth && !state.adminPassword) throw new Error('Vui lòng đăng nhập quản trị.');
+        if (options.auth && !state.adminToken) throw new Error('Vui lòng đăng nhập quản trị.');
         if (options.userAuth && !isAuthenticated()) throw new Error('Vui lòng đăng nhập thành viên.');
-        const payload = { action, data };
+        const payload = { action, data, clientId: state.clientId };
         if (options.sheetType) payload.sheetType = options.sheetType;
-        if (state.adminPassword) payload.adminPassword = state.adminPassword;
+        if (state.adminToken) payload.adminToken = state.adminToken;
         if (state.userToken) payload.userToken = state.userToken;
         const response = await fetch(config.API_URL, {
             method: 'POST',
@@ -225,7 +236,7 @@
         if (result.status !== 'success') {
             const message = result.message || 'Thao tác không thành công.';
             if (/mật khẩu quản trị/i.test(message)) logout();
-            if (/phiên đăng nhập|userToken|token hết hạn/i.test(message)) logout();
+            if (/phiên (đăng nhập|quản trị)|userToken|token.*hết hạn/i.test(message)) logout();
             throw new Error(message);
         }
         return result;
@@ -269,7 +280,7 @@
     async function handleGoogleCredential(response) {
         if (!response?.credential) return toast('Google không trả về thông tin đăng nhập.', 'error');
         try {
-            const result = await apiPost('google_login', { credential: response.credential });
+            const result = await apiPost('google_login', { credential: response.credential, origin: window.location.origin });
             saveUserSession(result);
         } catch (error) {
             toast(error.message || 'Không thể đăng nhập bằng Google.', 'error');
@@ -308,7 +319,7 @@
     }
 
     function logout() {
-        state.adminPassword = '';
+        state.adminToken = '';
         state.userToken = '';
         state.user = null;
         state.pendingAction = null;
@@ -321,7 +332,7 @@
     }
 
     function requireAdmin(action) {
-        if (state.adminPassword) {
+        if (state.adminToken) {
             if (typeof action === 'function') action();
             return true;
         }
@@ -415,9 +426,9 @@
         escapeHTML, safeUrl, formatBytes, debounce,
         isLoggedIn: isAuthenticated,
         isAuthenticated,
-        isAdmin: () => Boolean(state.adminPassword),
+        isAdmin: () => Boolean(state.adminToken),
         isGuest: () => Boolean(state.userToken),
-        getAdminPassword: () => state.adminPassword,
+        getAdminToken: () => state.adminToken,
         getUserToken: () => state.userToken,
         getUser: () => state.user,
         config

@@ -1,43 +1,29 @@
-# Sổ tay tiện ích Nguyễn Hiển
+# E-GV – Sổ tay tiện ích giáo viên
 
-Bộ giao diện HTML/CSS/JavaScript tĩnh, có thể triển khai trực tiếp trên Vercel.
+Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
-## Cấu trúc
+## Cấu trúc mã nguồn
 
-- `index.html`: Trang chủ và thống kê nhanh.
-- `prompts.html`: Kho Prompt thường/VIP, tìm kiếm, lọc, sắp xếp và ghim.
-- `repairs.html`: Nhật ký sửa chữa, thống kê, tìm kiếm và lọc trạng thái.
-- `upload.html`: Tải tệp công khai không cần đăng nhập, tự chọn chế độ theo dung lượng.
-- `ai.html`: Trợ giảng AI, xuất `.docx` thật và lưu tệp Word lên Drive.
-- `style.css`: Toàn bộ hệ thống giao diện và responsive.
-- `js/config.js`: Địa chỉ Apps Script, Drive và cấu hình dùng chung.
-- `js/app.js`: Header, đăng nhập, modal, toast, API và tiện ích an toàn.
-- `js/*.js`: Logic riêng của từng trang.
+- `index.html`, `prompts.html`, `repairs.html`, `upload.html`, `ai.html`: các trang giao diện.
+- `style.css`: giao diện và responsive.
+- `js/config.js`: URL Apps Script, Google Client ID và cấu hình chung.
+- `js/app.js`: xác thực quản trị/thành viên, Google Sign-In và API.
+- `js/*.js`: logic từng trang.
+- `Code.gs`: mã máy chủ Google Apps Script hoàn chỉnh.
+- `appsscript.json`: manifest quyền Sheets, Drive và gọi API ngoài.
+- `HUONG_DAN_CAI_DAT.md`: trình tự cài đặt chi tiết.
 
-## Triển khai Vercel
+## Chức năng phiên bản này
 
-Đưa toàn bộ nội dung trong thư mục này lên cùng một repository GitHub, bảo đảm thư mục `js` được giữ nguyên. Vercel có thể phục vụ trực tiếp vì trang chủ là `index.html`.
+- Tên Word: `KHBD_MON_LOP_TEN_BAI.docx`, tự loại dấu tiếng Việt và viết hoa.
+- Trợ giảng AI xuất `.docx` thật và lưu trực tiếp lên Google Drive.
+- Upload Drive công khai không cần đăng nhập, có giới hạn dung lượng và tần suất cơ bản.
+- Prompt thường xem công khai; Prompt VIP chỉ được máy chủ trả nội dung khi có token hợp lệ.
+- Quản trị đăng nhập một lần để nhận token phiên; mật khẩu không còn lưu trong `sessionStorage`.
+- Thành viên đăng ký bằng email/mật khẩu hoặc đăng nhập Google.
 
-## Cấu hình mới cần thực hiện
+## Bảo mật
 
-1. Thêm cột `access` vào sheet `Prompts`; giá trị hợp lệ là `normal` hoặc `vip`.
-2. Cập nhật các action tài khoản trong Apps Script theo tệp `GAS_REQUIRED_ACTIONS.md`.
-3. Điền Web Client ID vào `GOOGLE_CLIENT_ID` trong `js/config.js` nếu dùng đăng nhập Google.
-4. Cho phép các action tải tệp chạy công khai: `upload`, `getResumableUrl`, `setPermission`.
+Không đưa `ADMIN_PASSWORD`, `GEMINI_API_KEY`, `TOKEN_SECRET` hoặc khóa bí mật nào lên GitHub. Các giá trị này phải đặt trong **Apps Script > Project Settings > Script Properties**.
 
-## Lưu ý bảo mật Apps Script
-
-Prompt VIP phải được ẩn từ phía Apps Script. Chỉ che nội dung bằng CSS/JavaScript không đủ an toàn vì dữ liệu có thể vẫn xuất hiện trong phản hồi mạng.
-
-Phiên bản giao diện vẫn gửi `adminPassword` để tương thích máy chủ cũ. Nên đổi quản trị sang token ngắn hạn trong lần nâng cấp Apps Script tiếp theo.
-
-Khi nâng cấp Apps Script, nên đổi sang quy trình:
-
-1. `verify` trả về token ngắn hạn.
-2. Trình duyệt lưu token thay cho mật khẩu.
-3. Các action `generate_lesson_plan`, `create`, `update`, `delete` đều xác minh token quản trị.
-4. Nếu dữ liệu là riêng tư, `doGet` cũng phải yêu cầu token.
-
-Upload công khai nên có giới hạn dung lượng, loại tệp, số lượt theo IP/phiên và kiểm tra tên tệp tại máy chủ.
-
-Không xem việc ẩn nút trên giao diện là biện pháp bảo mật máy chủ.
+Các khóa hoặc mật khẩu từng bị gửi trong tin nhắn/công khai phải được thu hồi và tạo mới trước khi triển khai.

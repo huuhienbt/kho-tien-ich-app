@@ -145,6 +145,7 @@
 
     async function generatePlan() {
         const subject = document.getElementById('aiSubject').value.trim();
+        const grade = document.getElementById('aiClass').value.trim();
         const lesson = document.getElementById('aiLesson').value.trim();
         if (!subject && !lesson && !state.images.length) return App.toast('Nhập thông tin bài học hoặc cung cấp ít nhất một ảnh.', 'error');
         const original = generateButton.textContent;
@@ -163,13 +164,14 @@
             if (other) integrated.push(other);
             const result = await App.apiPost('generate_lesson_plan', {
                 subject,
+                grade,
                 lesson,
                 integrated: integrated.join(', '),
                 images
             }, { auth: true });
             state.rawText = normalizeAiText(result.result || '');
             if (!state.rawText.includes('KẾ HOẠCH BÀI DẠY')) {
-                state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Tên bài:** ${lesson || '…'}\n\n${state.rawText}`;
+                state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Lớp:** ${grade || '…'}\n**Tên bài:** ${lesson || '…'}\n\n${state.rawText}`;
             }
             content.innerHTML = parseMarkdown(state.rawText);
             content.contentEditable = 'false';
@@ -208,7 +210,7 @@
     }
 
     function safeFilePart(value, fallback) {
-        return (value || fallback).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+        return (value || fallback).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase();
     }
 
     function xmlEscape(value) {
@@ -292,8 +294,9 @@
     function makeDocumentEntries() {
         const now = new Date().toISOString();
         const subject = document.getElementById('aiSubject').value.trim() || 'Kế hoạch bài dạy';
+        const grade = document.getElementById('aiClass').value.trim();
         const lesson = document.getElementById('aiLesson').value.trim();
-        const title = `${subject}${lesson ? ` - ${lesson}` : ''}`;
+        const title = `${subject}${grade ? ` - Lớp ${grade}` : ''}${lesson ? ` - ${lesson}` : ''}`;
         const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${contentToDocumentBody()}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
         const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>`;
         return [
@@ -395,8 +398,9 @@
     function buildDocx() {
         if (!content.innerText.trim()) throw new Error('Chưa có nội dung để xuất Word.');
         const subject = safeFilePart(document.getElementById('aiSubject').value, 'MON');
-        const lesson = safeFilePart(document.getElementById('aiLesson').value, 'BAI');
-        const name = `KHBD_${subject}_${lesson}.docx`;
+        const grade = safeFilePart(document.getElementById('aiClass').value, 'LOP');
+        const lesson = safeFilePart(document.getElementById('aiLesson').value, 'TEN_BAI');
+        const name = `KHBD_${subject}_${grade}_${lesson}.docx`;
         const blob = new Blob([makeZip(makeDocumentEntries())], { type: DOCX_MIME });
         state.docxBlob = blob;
         state.docxName = name;
@@ -476,6 +480,7 @@
         App.requireAdmin(generatePlan);
     });
     content.addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; });
+    ['aiSubject', 'aiClass', 'aiLesson'].forEach(id => document.getElementById(id).addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; }));
     document.getElementById('editAiButton').addEventListener('click', toggleEditing);
     document.getElementById('copyAiButton').addEventListener('click', copyResult);
     document.getElementById('exportAiButton').addEventListener('click', exportWord);
