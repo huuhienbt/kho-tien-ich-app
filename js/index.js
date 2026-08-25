@@ -23,7 +23,7 @@
     }).format(now);
     document.getElementById('calendarDay').textContent = String(vietnamParts.day).padStart(2, '0');
     document.getElementById('calendarMonth').textContent = `Tháng ${String(vietnamParts.month).padStart(2, '0')}`;
-    document.getElementById('calendarYear').textContent = `Năm ${vietnamParts.year}`;
+    document.getElementById('calendarYear').textContent = vietnamParts.year;
 
     function jdFromDate(day, month, year) {
         const a = Math.floor((14 - month) / 12);

@@ -25,26 +25,29 @@
                     </div>
                 </div>
                 <div class="hero-visual">
-                    <article class="calendar-widget" aria-label="Lịch dương và âm hôm nay">
-                        <header class="calendar-widget-header">
-                            <span class="calendar-widget-label">Hôm nay</span>
-                            <span class="calendar-widget-weekday" id="calendarWeekday">Thứ Tư</span>
-                        </header>
-                        <div class="calendar-widget-solar">
-                            <strong class="calendar-widget-day" id="calendarDay">26</strong>
-                            <div class="calendar-widget-month-year">
+                    <article class="calendar-editorial" aria-label="Lịch dương và âm hôm nay">
+                        <strong class="calendar-editorial-day" id="calendarDay">26</strong>
+                        <div class="calendar-editorial-details">
+                            <header class="calendar-editorial-header">
+                                <span class="calendar-editorial-weekday" id="calendarWeekday">Thứ Tư</span>
+                                <span class="calendar-editorial-label">Hôm nay</span>
+                            </header>
+                            <p class="calendar-editorial-solar">
                                 <span id="calendarMonth">Tháng 08</span>
-                                <span id="calendarYear">Năm 2026</span>
+                                <i aria-hidden="true">·</i>
+                                <span id="calendarYear">2026</span>
+                            </p>
+                            <div class="calendar-editorial-lunar">
+                                <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
+                                <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
                             </div>
-                        </div>
-                        <div class="calendar-widget-lunar">
-                            <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
-                            <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
-                        </div>
-                        <div class="calendar-widget-tags" aria-label="Thông tin lịch cổ truyền">
-                            <span><small>Hành</small><strong id="currentDayElement">—</strong></span>
-                            <span><small>Sao</small><strong id="currentLunarMansion">—</strong></span>
-                            <span><small>Trực</small><strong id="currentDayOfficer">—</strong></span>
+                            <p class="calendar-editorial-meta">
+                                <span>Hành <strong id="currentDayElement">—</strong></span>
+                                <i aria-hidden="true">·</i>
+                                <span>Sao <strong id="currentLunarMansion">—</strong></span>
+                                <i aria-hidden="true">·</i>
+                                <span>Trực <strong id="currentDayOfficer">—</strong></span>
+                            </p>
                         </div>
                     </article>
                 </div>
