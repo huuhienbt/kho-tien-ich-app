@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho Prompt - Tiện Ích Nguyễn Hiển</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
+        .tab { padding: 4px 12px; background: white; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.85em; font-weight: 600; white-space: nowrap; color: var(--text-light); transition: 0.3s; }
+        .tab:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--text); } 
+        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .prompt-box { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 150px; overflow-y: auto; font-size: 1.02em; line-height: 1.5; color: #334155; margin-bottom: 8px; white-space: pre-wrap; }
+        .skeleton { background: #f1f5f9 linear-gradient(to right, #f1f5f9 0%, #e2e8f0 20%, #f1f5f9 40%, #f1f5f9 100%) no-repeat; background-size: 800px 100%; border-radius: 8px; height: 180px; border: 1px solid var(--border); }
+        @media (max-width: 768px) { .tab { flex: 1 1 30%; text-align: center; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="main-nav">
+        <div class="nav-tabs">
+            <a href="index.html" class="nav-btn active-prompt">📚 Kho Prompt</a>
+            <a href="repairs.html" class="nav-btn">🛠 Sổ Repairs</a>
+            <a href="upload.html" class="nav-btn">📁 Upload Drive</a>
+            <a href="ai.html" class="nav-btn">🤖 Trợ Giảng AI</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn btn-primary btn-login" onclick="openModal('loginModal')">🔒 Đăng nhập</button>
+            <button class="btn btn-danger admin-only btn-inline" onclick="logout()">Thoát quản trị</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h3>Danh sách Prompt</h3> 
+        <button class="btn btn-primary btn-sm admin-only btn-inline" onclick="openModalPrompt()">➕ Thêm Mới</button>
+    </div>
+    <div class="tabs" id="tabContainer">
+        <button class="tab active" onclick="filterTab('all', this)">Tất cả</button> 
+        <button class="tab" onclick="filterTab('teaching', this)">👨‍🏫 Giảng dạy</button> 
+        <button class="tab" onclick="filterTab('admin', this)">📋 Hành chính</button>
+        <button class="tab" onclick="filterTab('coding', this)">💻 Lập trình</button> 
+        <button class="tab" onclick="filterTab('media', this)">🎨 Media</button> 
+        <button class="tab" onclick="filterTab('diy', this)">🔧 DIY</button>
+    </div>
+    <div class="grid" id="promptContainer"></div>
+</div>
+
+<div class="modal" id="loginModal"><div class="modal-content" style="max-width: 320px;"><h3>Mật khẩu Quản trị</h3><input type="password" id="adminPass" placeholder="..."><button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button><button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button></div></div>
+<div class="modal" id="modalPrompt"><div class="modal-content"><h3 id="modalPromptTitle">Thêm Prompt Mới</h3><input type="text" id="pTitle" placeholder="Tiêu đề..."><div class="form-grid"><select id="pCategory"><option value="teaching">👨‍🏫 Giảng dạy</option><option value="admin">📋 Hành chính</option><option value="coding">💻 Lập trình</option><option value="media">🎨 Media</option><option value="diy">🔧 DIY</option></select><select id="pPlatform"><option value="ChatGPT / Gemini">🤖 ChatGPT/Gemini</option><option value="Claude">🧠 Claude</option><option value="Suno AI">🎵 Suno AI</option><option value="Midjourney">🎨 Midjourney</option><option value="Khác">✨ Khác</option></select></div><textarea id="pContent" rows="5" placeholder="Dán nội dung..."></textarea><div class="form-grid"><button class="btn btn-primary" onclick="savePrompt()" id="btnSavePrompt">Lưu</button><button class="btn" onclick="closeModal('modalPrompt')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec"; 
+    let adminPassword = sessionStorage.getItem('adminPassword') || "";
+    let globalData = { prompts: [] }; let editId = null;
+
+    function getCategoryTag(cat) { const tags = { 'teaching': 'Giảng dạy', 'admin': 'Hành chính', 'coding': 'Code', 'media': 'Media', 'diy': 'DIY' }; return `<span class="tag tag-${cat || 'default'}">${tags[cat] || cat}</span>`; }
+    function filterTab(cat, btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.prompt-card').forEach(card => { card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'flex' : 'none'; }); }
+
+    async function loadData() { 
+        const cache = localStorage.getItem(`cache_prompts`); 
+        if (cache) { globalData.prompts = JSON.parse(cache); renderPrompts(globalData.prompts); } 
+        else document.getElementById('promptContainer').innerHTML = '<div class="skeleton"></div>'.repeat(3); 
+        try { const res = await fetch(API_URL + "?type=prompts"); const json = await res.json(); globalData.prompts = json.data; localStorage.setItem(`cache_prompts`, JSON.stringify(json.data)); renderPrompts(json.data); } catch(e) { if(!cache) document.getElementById('promptContainer').innerHTML = 'Lỗi tải dữ liệu mạng.'; } 
+    }
+    
+    function renderPrompts(data) { 
+        const emptyHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu.</div>';
+        const html = data.map(item => `<div class="card prompt-card" data-category="${item.category}"><div class="card-header"><h3 class="card-title">${item.title}</h3>${getCategoryTag(item.category)}</div><div class="prompt-box" id="content-${item.id}">${item.content}</div><div class="card-footer"><span style="font-size: 0.8em; color: var(--text-light); font-weight: 600;">🤖 ${item.platform}</span><div style="display:flex; gap: 4px;"><button class="btn btn-primary btn-sm" onclick="copyPrompt('${item.id}')">📋 Copy</button><button class="btn btn-primary btn-sm admin-only btn-inline" onclick="editPrompt('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('${item.id}')">🗑️ Xóa</button></div></div></div>`).join(''); 
+        document.getElementById('promptContainer').innerHTML = html || emptyHTML; filterTab('all', document.querySelector('.tab.active') || document.querySelector('.tab')); 
+    }
+    
+    function copyPrompt(id) { navigator.clipboard.writeText(document.getElementById(`content-${id}`).innerText).then(() => alert("Đã copy prompt!")); }
+    function openModalPrompt(id = null) { editId = id; document.getElementById('modalPromptTitle').innerText = id ? "Sửa Prompt" : "Thêm Mới"; if(id) { const item = globalData.prompts.find(x => x.id === id); document.getElementById('pTitle').value = item.title; document.getElementById('pCategory').value = item.category; document.getElementById('pPlatform').value = item.platform; document.getElementById('pContent').value = item.content; } else { document.querySelectorAll('#modalPrompt input, #modalPrompt textarea').forEach(el => el.value = ''); } document.getElementById('modalPrompt').style.display = 'flex'; }
+    function editPrompt(id) { openModalPrompt(id); }
+    
+    async function sendData(action, dataObj, btnId) { if(btnId) document.getElementById(btnId).innerText = "..."; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType: 'prompts', action, data: dataObj }) }); const result = await res.json(); if(btnId) document.getElementById(btnId).innerText = "Lưu"; if(result.status === 'success') { closeModal('modalPrompt'); localStorage.removeItem(`cache_prompts`); loadData(); } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); } } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; } }
+    function savePrompt() { const data = { title: document.getElementById('pTitle').value, category: document.getElementById('pCategory').value, platform: document.getElementById('pPlatform').value, content: document.getElementById('pContent').value }; if(editId) { data.id = editId; sendData('update', data, 'btnSavePrompt'); } else sendData('create', data, 'btnSavePrompt'); }
+    function deleteItem(id) { if(confirm("Xóa thẻ này?")) sendData('delete', { id }, null); }
+    
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
+    async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
+    function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
+    
+    window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData(); };
+</script>
+</body>
+</html>
