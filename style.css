@@ -160,6 +160,8 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .prompt-box.expanded { max-height: none; }
 .prompt-box.expanded::after { display: none; }
 .favorite-btn.active { color: #d97706; background: var(--warning-soft); }
+.favorite-tab { color: #a16207; border-color: #fde68a; background: #fffbeb; }
+.favorite-tab.active { color: #fff; border-color: #d97706; background: #d97706; }
 .platform-label { color: var(--text-light); font-size: .76rem; font-weight: 650; }
 .prompt-action-group { display: flex; gap: 7px; flex-wrap: wrap; }
 .btn-use { color: #fff; background: linear-gradient(135deg,#4f46e5,#7c3aed); box-shadow: 0 5px 13px rgba(79,70,229,.2); }

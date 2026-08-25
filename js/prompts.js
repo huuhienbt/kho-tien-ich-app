@@ -3,6 +3,21 @@
 
     App.init('prompts');
 
+    const LOCAL_FAVORITES_KEY = 'prompt_favorites';
+
+    function readLocalFavorites() {
+        try {
+            const values = JSON.parse(localStorage.getItem(LOCAL_FAVORITES_KEY) || '[]');
+            return new Set(Array.isArray(values) ? values.map(String) : []);
+        } catch (_) {
+            return new Set();
+        }
+    }
+
+    function saveLocalFavorites(favorites) {
+        localStorage.setItem(LOCAL_FAVORITES_KEY, JSON.stringify([...favorites]));
+    }
+
     const state = {
         items: [],
         category: 'all',
@@ -10,7 +25,8 @@
         query: '',
         sort: 'newest',
         editId: null,
-        favorites: new Set(JSON.parse(localStorage.getItem('prompt_favorites') || '[]'))
+        favorites: readLocalFavorites(),
+        favoriteBusy: new Set()
     };
 
     const container = document.getElementById('promptContainer');
@@ -127,10 +143,12 @@
     function updateCounts() {
         const counts = state.items.reduce((acc, item) => {
             acc.all += 1;
+            const id = String(readField(item, ['id', 'ID']));
+            if (state.favorites.has(id)) acc.favorites += 1;
             const category = readField(item, ['category', 'Category'], 'default');
             acc[category] = (acc[category] || 0) + 1;
             return acc;
-        }, { all: 0 });
+        }, { all: 0, favorites: 0 });
         document.querySelectorAll('[data-count]').forEach(element => {
             element.textContent = counts[element.dataset.count] || 0;
         });
@@ -139,9 +157,11 @@
     function filteredItems() {
         const query = state.query.toLocaleLowerCase('vi');
         const result = state.items.filter(item => {
+            const id = String(readField(item, ['id', 'ID']));
             const category = readField(item, ['category', 'Category'], 'default');
             const access = isVip(item) ? 'vip' : 'normal';
-            const inCategory = state.category === 'all' || category === state.category;
+            const inCategory = state.category === 'all'
+                || (state.category === 'favorites' ? state.favorites.has(id) : category === state.category);
             const inAccess = state.access === 'all' || access === state.access;
             const haystack = `${readField(item, ['title', 'Title'])} ${readField(item, ['content', 'Content'])} ${readField(item, ['platform', 'Platform'])}`.toLocaleLowerCase('vi');
             return inCategory && inAccess && (!query || haystack.includes(query));
@@ -157,7 +177,9 @@
     function render() {
         const items = filteredItems();
         if (!items.length) {
-            container.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span>Không tìm thấy Prompt phù hợp.</div>';
+            container.innerHTML = state.category === 'favorites'
+                ? '<div class="empty-state"><span class="empty-icon">☆</span>Chưa có Prompt yêu thích. Nhấn ngôi sao trên Prompt để thêm vào mục này.</div>'
+                : '<div class="empty-state"><span class="empty-icon">📭</span>Không tìm thấy Prompt phù hợp.</div>';
             return;
         }
         container.innerHTML = items.map(item => {
@@ -169,6 +191,7 @@
             const category = App.escapeHTML(rawCategory);
             const platform = App.escapeHTML(readField(item, ['platform', 'Platform'], 'Khác'));
             const favorite = state.favorites.has(String(readField(item, ['id', 'ID'])));
+            const favoriteBusy = state.favoriteBusy.has(String(readField(item, ['id', 'ID'])));
             const vip = isVip(item);
             const locked = vip && !App.isAuthenticated();
             const body = locked
@@ -177,7 +200,7 @@
             return `<article class="card prompt-card${vip ? ' prompt-vip' : ''}" data-id="${id}">
                 <div class="card-header">
                     <div><h2 class="card-title">${title}</h2><div class="prompt-meta" style="margin-top:8px"><span class="tag tag-${category}">${App.escapeHTML(categoryNames[rawCategory] || rawCategory || 'Khác')}</span><span class="tag ${vip ? 'tag-vip' : 'tag-normal'}">${vip ? '👑 VIP' : 'Thường'}</span><span class="platform-label">${platform}</span></div></div>
-                    <button class="btn btn-ghost btn-icon favorite-btn${favorite ? ' active' : ''}" type="button" data-action="favorite" aria-label="${favorite ? 'Bỏ ghim' : 'Ghim'} Prompt" title="Ghim Prompt">★</button>
+                    <button class="btn btn-ghost btn-icon favorite-btn${favorite ? ' active' : ''}" type="button" data-action="favorite" aria-label="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích" title="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích"${favoriteBusy ? ' disabled' : ''}>★</button>
                 </div>
                 ${body}
                 <div class="card-footer">
@@ -196,10 +219,26 @@
     async function loadData() {
         container.setAttribute('aria-busy', 'true');
         try {
-            const result = App.isAuthenticated()
-                ? await App.apiPost('get_prompts')
-                : await App.apiGet('prompts');
+            const authenticated = App.isAuthenticated();
+            const result = authenticated ? await App.apiPost('get_prompts') : await App.apiGet('prompts');
             state.items = Array.isArray(result.data) ? result.data : [];
+            if (authenticated) {
+                state.favorites = new Set(Array.isArray(result.favorites) ? result.favorites.map(String) : []);
+                const localFavorites = readLocalFavorites();
+                if (localFavorites.size) {
+                    try {
+                        const synced = await App.apiPost('sync_favorites', { promptIds: [...localFavorites] }, { userAuth: true });
+                        state.favorites = new Set(Array.isArray(synced.favorites) ? synced.favorites.map(String) : [...state.favorites, ...localFavorites]);
+                        localStorage.removeItem(LOCAL_FAVORITES_KEY);
+                        App.toast('Đã nhập các Prompt đã ghim vào tài khoản.', 'success');
+                    } catch (_) {
+                        localFavorites.forEach(id => state.favorites.add(id));
+                        App.toast('Chưa đồng bộ được Prompt yêu thích. Vui lòng triển khai Code.gs mới.', 'error');
+                    }
+                }
+            } else {
+                state.favorites = readLocalFavorites();
+            }
             updateCounts();
             render();
         } catch (error) {
@@ -207,6 +246,40 @@
             App.toast('Không thể cập nhật dữ liệu Prompt.', 'error');
         } finally {
             container.removeAttribute('aria-busy');
+        }
+    }
+
+    async function toggleFavorite(id) {
+        const promptId = String(id);
+        const wasFavorite = state.favorites.has(promptId);
+        const nextFavorite = !wasFavorite;
+
+        if (!App.isAuthenticated()) {
+            if (nextFavorite) state.favorites.add(promptId); else state.favorites.delete(promptId);
+            saveLocalFavorites(state.favorites);
+            updateCounts();
+            render();
+            App.toast(nextFavorite
+                ? 'Đã lưu yêu thích trên thiết bị. Đăng nhập để đồng bộ.'
+                : 'Đã bỏ khỏi Prompt yêu thích.', 'success');
+            return;
+        }
+
+        state.favoriteBusy.add(promptId);
+        if (nextFavorite) state.favorites.add(promptId); else state.favorites.delete(promptId);
+        updateCounts();
+        render();
+        try {
+            const result = await App.apiPost('toggle_favorite', { promptId, favorite: nextFavorite }, { userAuth: true });
+            if (Array.isArray(result.favorites)) state.favorites = new Set(result.favorites.map(String));
+            App.toast(nextFavorite ? 'Đã thêm vào Prompt yêu thích.' : 'Đã bỏ khỏi Prompt yêu thích.', 'success');
+        } catch (error) {
+            if (wasFavorite) state.favorites.add(promptId); else state.favorites.delete(promptId);
+            App.toast(error.message, 'error');
+        } finally {
+            state.favoriteBusy.delete(promptId);
+            updateCounts();
+            render();
         }
     }
 
@@ -295,9 +368,7 @@
             actionButton.textContent = expanded ? 'Thu gọn ↑' : 'Xem đầy đủ ↓';
         }
         if (actionButton.dataset.action === 'favorite') {
-            if (state.favorites.has(String(id))) state.favorites.delete(String(id)); else state.favorites.add(String(id));
-            localStorage.setItem('prompt_favorites', JSON.stringify([...state.favorites]));
-            render();
+            await toggleFavorite(id);
         }
         if (actionButton.dataset.action === 'edit') App.requireAdmin(() => openForm(id));
         if (actionButton.dataset.action === 'delete') App.requireAdmin(() => deletePrompt(id));
