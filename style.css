@@ -161,6 +161,16 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .prompt-box.expanded::after { display: none; }
 .favorite-btn.active { color: #d97706; background: var(--warning-soft); }
 .platform-label { color: var(--text-light); font-size: .76rem; font-weight: 650; }
+.prompt-action-group { display: flex; gap: 7px; flex-wrap: wrap; }
+.btn-use { color: #fff; background: linear-gradient(135deg,#4f46e5,#7c3aed); box-shadow: 0 5px 13px rgba(79,70,229,.2); }
+.btn-use:hover { background: linear-gradient(135deg,#4338ca,#6d28d9); }
+.prompt-use-options { display: grid; gap: 10px; }
+.prompt-use-option { width: 100%; min-height: 66px; padding: 11px 13px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 11px; text-align: left; color: var(--text); border: 1px solid var(--border); border-radius: 13px; background: #fff; cursor: pointer; transition: 150ms ease; }
+.prompt-use-option:hover { border-color: #a5b4fc; background: var(--primary-soft); transform: translateY(-1px); }
+.prompt-use-option>span:nth-child(2) { display: flex; flex-direction: column; }
+.prompt-use-option small { margin-top: 2px; color: var(--text-light); font-size: .7rem; }
+.prompt-use-icon { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; border-radius: 12px; background: linear-gradient(145deg,#4f46e5,#7c3aed); font-size: 1.15rem; font-weight: 800; }
+.prompt-use-note { margin: 14px 0 0; padding: 11px 12px; color: #475569; border-radius: 11px; background: #f8fafc; font-size: .75rem; }
 
 /* Repairs */
 .repair-summary { margin-bottom: 16px; }
@@ -317,6 +327,7 @@ textarea.form-control { resize: vertical; min-height: 112px; }
     .form-grid,.repair-grid { grid-template-columns: 1fr; }
     .card-footer { align-items: flex-start; flex-direction: column; }
     .card-footer>div:last-child { width: 100%; display: flex; flex-wrap: wrap; }
+    .prompt-action-group .btn { flex: 1; }
     .upload-panel,.upload-sidebar { padding: 16px; }
     .drop-zone { min-height: 190px; padding: 20px 14px; }
     .file-item { grid-template-columns: minmax(0,1fr); }

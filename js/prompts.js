@@ -14,7 +14,17 @@
     };
 
     const container = document.getElementById('promptContainer');
+    const usePromptHelp = document.getElementById('usePromptHelp');
+    const usePromptOptions = document.getElementById('usePromptOptions');
     const categoryNames = { teaching: 'Giảng dạy', admin: 'Hành chính', coding: 'Lập trình', media: 'Media', diy: 'DIY' };
+    const promptDestinations = Object.freeze({
+        chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'] },
+        gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'] },
+        claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'] },
+        suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'] },
+        midjourney: { label: 'Midjourney', icon: '◇', url: 'https://www.midjourney.com/', aliases: ['midjourney'] }
+    });
+    let pendingUseItem = null;
 
     function readField(item, names, fallback = '') {
         for (const name of names) {
@@ -27,6 +37,91 @@
         const value = readField(item, ['access', 'Access', 'type', 'Type', 'level', 'Level', 'vip', 'VIP', 'isVip'], 'normal');
         if (value === true || Number(value) === 1) return true;
         return ['vip', 'premium', 'cao cấp', 'caocap'].includes(String(value).trim().toLocaleLowerCase('vi'));
+    }
+
+    function destinationKeys(item) {
+        const platform = String(readField(item, ['platform', 'Platform'], '')).trim().toLocaleLowerCase('vi');
+        const matches = Object.entries(promptDestinations)
+            .filter(([, destination]) => destination.aliases.some(alias => platform.includes(alias)))
+            .map(([key]) => key);
+        return matches.length ? matches : ['chatgpt', 'gemini'];
+    }
+
+    function isMobileDevice() {
+        if (navigator.userAgentData?.mobile) return true;
+        if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) return true;
+        return window.matchMedia?.('(max-width: 820px) and (pointer: coarse)').matches || false;
+    }
+
+    async function copyText(text) {
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw new Error('Trình duyệt không cho phép sao chép.');
+    }
+
+    function showUsePromptChooser(item) {
+        pendingUseItem = item;
+        const title = readField(item, ['title', 'Title'], 'Prompt');
+        const keys = destinationKeys(item);
+        usePromptHelp.textContent = `Chọn nơi sử dụng “${title}”.`;
+        usePromptOptions.innerHTML = keys.map(key => {
+            const destination = promptDestinations[key];
+            return `<button class="prompt-use-option" type="button" data-prompt-destination="${key}"><span class="prompt-use-icon" aria-hidden="true">${destination.icon}</span><span><strong>Mở ${destination.label}</strong><small>Sao chép Prompt và mở nền tảng</small></span><span aria-hidden="true">→</span></button>`;
+        }).join('');
+        App.openModal('usePromptModal');
+    }
+
+    async function launchPrompt(item, destinationKey) {
+        const destination = promptDestinations[destinationKey];
+        if (!destination) return;
+        const prompt = String(readField(item, ['content', 'Content']));
+        const targetWindow = window.open('', '_blank');
+        if (targetWindow) targetWindow.opener = null;
+        let copied = true;
+        try {
+            await copyText(prompt);
+        } catch (_) {
+            copied = false;
+        }
+        App.closeModal('usePromptModal');
+        if (targetWindow) targetWindow.location.replace(destination.url);
+        else window.location.assign(destination.url);
+        App.toast(copied
+            ? `Đã sao chép Prompt và mở ${destination.label}. Hãy dán vào ô chat.`
+            : `Đã mở ${destination.label}, nhưng trình duyệt chưa cho phép sao chép.`, copied ? 'success' : 'error');
+    }
+
+    async function usePrompt(item) {
+        const prompt = String(readField(item, ['content', 'Content']));
+        if (!prompt) return App.toast('Prompt này chưa có nội dung.', 'error');
+
+        if (isMobileDevice() && typeof navigator.share === 'function') {
+            try {
+                await navigator.share({
+                    title: `Prompt: ${readField(item, ['title', 'Title'], 'E-GV')}`,
+                    text: prompt
+                });
+                App.toast('Đã chuyển Prompt đến ứng dụng thầy chọn.', 'success');
+                return;
+            } catch (error) {
+                if (error?.name === 'AbortError') return;
+            }
+        }
+
+        const keys = destinationKeys(item);
+        if (keys.length === 1) launchPrompt(item, keys[0]);
+        else showUsePromptChooser(item);
     }
 
     function updateCounts() {
@@ -87,8 +182,9 @@
                 ${body}
                 <div class="card-footer">
                     <div>${locked ? '<span class="vip-note">Cần tài khoản thành viên</span>' : '<button class="btn btn-ghost btn-sm" type="button" data-action="expand">Xem đầy đủ ↓</button>'}</div>
-                    <div style="display:flex;gap:7px;flex-wrap:wrap">
+                    <div class="prompt-action-group">
                         ${locked ? '' : '<button class="btn btn-secondary btn-sm" type="button" data-action="copy">📋 Sao chép</button>'}
+                        ${locked ? '' : '<button class="btn btn-use btn-sm" type="button" data-action="use">↗ Sử dụng</button>'}
                         <button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit">✏️ Sửa</button>
                         <button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete">🗑️ Xóa</button>
                     </div>
@@ -190,8 +286,9 @@
         if (!item) return;
         if (actionButton.dataset.action === 'unlock') App.requireUser(loadData);
         if (actionButton.dataset.action === 'copy') {
-            try { await navigator.clipboard.writeText(readField(item, ['content', 'Content'])); App.toast('Đã sao chép Prompt.', 'success'); } catch (_) { App.toast('Không thể sao chép.', 'error'); }
+            try { await copyText(String(readField(item, ['content', 'Content']))); App.toast('Đã sao chép Prompt.', 'success'); } catch (_) { App.toast('Không thể sao chép.', 'error'); }
         }
+        if (actionButton.dataset.action === 'use') await usePrompt(item);
         if (actionButton.dataset.action === 'expand') {
             const box = card.querySelector('.prompt-box');
             const expanded = box.classList.toggle('expanded');
@@ -204,6 +301,11 @@
         }
         if (actionButton.dataset.action === 'edit') App.requireAdmin(() => openForm(id));
         if (actionButton.dataset.action === 'delete') App.requireAdmin(() => deletePrompt(id));
+    });
+    usePromptOptions.addEventListener('click', event => {
+        const button = event.target.closest('[data-prompt-destination]');
+        if (!button || !pendingUseItem) return;
+        launchPrompt(pendingUseItem, button.dataset.promptDestination);
     });
 
     window.addEventListener('app:auth-change', loadData);
