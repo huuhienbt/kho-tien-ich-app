@@ -174,6 +174,7 @@
                 state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Lớp:** ${grade || '…'}\n**Tên bài:** ${lesson || '…'}\n\n${state.rawText}`;
             }
             content.innerHTML = parseMarkdown(state.rawText);
+            syncPlanMetadataFields();
             content.contentEditable = 'false';
             state.editing = false;
             state.docxBlob = null;
@@ -213,6 +214,55 @@
         return (value || fallback).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase();
     }
 
+    function extractPlanValue(pattern) {
+        const lines = String(content.innerText || '').replace(/\r\n?/g, '\n').split('\n');
+        for (const line of lines) {
+            const match = line.trim().match(pattern);
+            if (match && String(match[1] || '').trim()) return String(match[1]).trim();
+        }
+        return '';
+    }
+
+    function cleanPlanValue(value, type) {
+        let result = String(value || '').trim();
+        if (type === 'subject') result = result.replace(/^m[oô]n(?:\s+h[oọ]c)?\s*[:\-–—]?\s*/i, '');
+        if (type === 'grade') result = result.replace(/^l[oớ]p\s*[:\-–—]?\s*/i, '');
+        if (type === 'lesson') result = result.replace(/^(?:t[eê]n\s+b[aà]i|b[aà]i)\s*[:\-–—]?\s*/i, '');
+        return result.trim();
+    }
+
+    function getPlanMetadata(requireComplete = false) {
+        const subjectInput = document.getElementById('aiSubject').value.trim();
+        const gradeInput = document.getElementById('aiClass').value.trim();
+        const lessonInput = document.getElementById('aiLesson').value.trim();
+        const metadata = {
+            subject: cleanPlanValue(subjectInput || extractPlanValue(/^M[oô]n(?:\s+h[oọ]c)?\s*:\s*(.+)$/i), 'subject'),
+            grade: cleanPlanValue(gradeInput || extractPlanValue(/^L[oớ]p\s*:\s*(.+)$/i), 'grade'),
+            lesson: cleanPlanValue(lessonInput || extractPlanValue(/^(?:T[eê]n\s+b[aà]i|B[aà]i)\s*:\s*(.+)$/i), 'lesson')
+        };
+        if (requireComplete) {
+            const missing = [];
+            if (!metadata.subject) missing.push('môn học');
+            if (!metadata.grade) missing.push('lớp');
+            if (!metadata.lesson) missing.push('tên bài');
+            if (missing.length) throw new Error(`Chưa xác định được ${missing.join(', ')}. Vui lòng điền đủ thông tin trước khi xuất Word.`);
+        }
+        return metadata;
+    }
+
+    function syncPlanMetadataFields() {
+        const metadata = getPlanMetadata(false);
+        const fields = [
+            ['aiSubject', metadata.subject],
+            ['aiClass', metadata.grade],
+            ['aiLesson', metadata.lesson]
+        ];
+        fields.forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (!field.value.trim() && value) field.value = value;
+        });
+    }
+
     function xmlEscape(value) {
         return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[character]));
     }
@@ -240,26 +290,53 @@
         return Array.from(node.childNodes).map(child => nodeRunsXml(child, next)).join('');
     }
 
-    function paragraphXml(element, options = {}) {
+    function paragraphFromNodesXml(nodes, options = {}) {
         const size = options.size || 28;
-        const runs = element
-            ? Array.from(element.childNodes).map(node => nodeRunsXml(node, { bold: options.bold, italic: false, size })).join('')
+        const runs = nodes
+            ? nodes.map(node => nodeRunsXml(node, { bold: options.bold, italic: false, size })).join('')
             : textRunXml(options.text || '', { bold: options.bold, size });
         const align = options.align ? `<w:jc w:val="${options.align}"/>` : '<w:jc w:val="both"/>';
         const indent = options.indent ? '<w:ind w:left="420" w:hanging="280"/>' : '';
         return `<w:p><w:pPr>${align}${indent}<w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
     }
 
+    function paragraphXml(element, options = {}) {
+        return paragraphFromNodesXml(element ? Array.from(element.childNodes) : null, options);
+    }
+
+    function splitParagraphXml(element, options = {}) {
+        const groups = [[]];
+        Array.from(element.childNodes).forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'br') groups.push([]);
+            else groups[groups.length - 1].push(node);
+        });
+        return groups.map(nodes => {
+            const lineText = nodes.map(node => node.textContent || '').join('').replace(/\s+/g, ' ').trim();
+            const lineOptions = Object.assign({}, options);
+            if (/^KẾ\s+HOẠCH\s+BÀI\s+DẠY$/i.test(lineText)) {
+                lineOptions.align = 'center';
+                lineOptions.bold = true;
+                lineOptions.size = 34;
+            } else if (/^(?:Môn(?:\s+học)?|Lớp|Tên\s+bài|Thời\s+lượng)\s*:/i.test(lineText)) {
+                lineOptions.align = 'left';
+            }
+            return paragraphFromNodesXml(nodes, lineOptions);
+        }).join('');
+    }
+
     function tableXml(table) {
+        const columnCount = Math.max(1, ...Array.from(table.rows).map(row => row.cells.length));
+        const columnWidth = Math.floor(9638 / columnCount);
+        const grid = Array.from({ length: columnCount }, () => `<w:gridCol w:w="${columnWidth}"/>`).join('');
         const rows = Array.from(table.rows).map(row => {
             const cells = Array.from(row.cells).map(cell => {
                 const heading = cell.tagName.toLowerCase() === 'th';
                 const shading = heading ? '<w:shd w:fill="EDE9FE"/>' : '';
-                return `<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>${shading}<w:vAlign w:val="top"/></w:tcPr>${paragraphXml(cell, { bold: heading, size: 26 })}</w:tc>`;
+                return `<w:tc><w:tcPr><w:tcW w:w="${columnWidth}" w:type="dxa"/>${shading}<w:vAlign w:val="top"/></w:tcPr>${splitParagraphXml(cell, { bold: heading, size: 26, align: 'left' })}</w:tc>`;
             }).join('');
             return `<w:tr>${cells}</w:tr>`;
         }).join('');
-        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="6" w:color="94A3B8"/><w:insideV w:val="single" w:sz="6" w:color="94A3B8"/></w:tblBorders><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr>${rows}</w:tbl>`;
+        return `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="6" w:color="94A3B8"/><w:insideV w:val="single" w:sz="6" w:color="94A3B8"/></w:tblBorders><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${rows}</w:tbl>`;
     }
 
     function contentToDocumentBody() {
@@ -285,7 +362,7 @@
                 const level = Number(tag[1]);
                 blocks.push(paragraphXml(node, { bold: true, size: level === 1 ? 34 : level === 2 ? 31 : 29, align: level === 1 ? 'center' : 'left' }));
             } else {
-                blocks.push(paragraphXml(node));
+                blocks.push(splitParagraphXml(node));
             }
         });
         return blocks.join('') || paragraphXml(null, { text: content.innerText });
@@ -293,9 +370,10 @@
 
     function makeDocumentEntries() {
         const now = new Date().toISOString();
-        const subject = document.getElementById('aiSubject').value.trim() || 'Kế hoạch bài dạy';
-        const grade = document.getElementById('aiClass').value.trim();
-        const lesson = document.getElementById('aiLesson').value.trim();
+        const metadata = getPlanMetadata(false);
+        const subject = metadata.subject || 'Kế hoạch bài dạy';
+        const grade = metadata.grade;
+        const lesson = metadata.lesson;
         const title = `${subject}${grade ? ` - Lớp ${grade}` : ''}${lesson ? ` - ${lesson}` : ''}`;
         const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${contentToDocumentBody()}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
         const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>`;
@@ -397,10 +475,11 @@
 
     function buildDocx() {
         if (!content.innerText.trim()) throw new Error('Chưa có nội dung để xuất Word.');
-        const subject = safeFilePart(document.getElementById('aiSubject').value, 'MON');
-        const grade = safeFilePart(document.getElementById('aiClass').value, 'LOP');
-        const lesson = safeFilePart(document.getElementById('aiLesson').value, 'TEN_BAI');
-        const name = `KHBD_${subject}_${grade}_${lesson}.docx`;
+        const metadata = getPlanMetadata(true);
+        const subject = safeFilePart(metadata.subject, 'MON');
+        const grade = safeFilePart(metadata.grade, 'LOP');
+        const lesson = safeFilePart(metadata.lesson, 'TEN_BAI');
+        const name = `KHBD_MON_${subject}_LOP_${grade}_${lesson}.docx`;
         const blob = new Blob([makeZip(makeDocumentEntries())], { type: DOCX_MIME });
         state.docxBlob = blob;
         state.docxName = name;
@@ -421,7 +500,7 @@
             link.click();
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
             link.remove();
-            App.toast('Đã tạo tệp Word .docx.', 'success');
+            App.toast(`Đã tải ${name}.`, 'success');
         } catch (error) {
             App.toast(error.message || 'Không thể tạo tệp Word.', 'error');
         }
@@ -451,7 +530,7 @@
                 driveLink.href = fileUrl;
                 driveLink.hidden = false;
             }
-            App.toast('Đã lưu kế hoạch bài dạy lên Drive.', 'success');
+            App.toast(`Đã lưu ${name} lên Drive.`, 'success');
         } catch (error) {
             App.toast(error.message || 'Không thể lưu tệp Word lên Drive.', 'error');
         } finally {
