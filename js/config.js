@@ -8,10 +8,10 @@
         USER_TOKEN_KEY: 'sotay_user_token',
         USER_PROFILE_KEY: 'sotay_user_profile',
         CLIENT_ID_KEY: 'sotay_client_id',
-        GOOGLE_CLIENT_ID: '',
+        GOOGLE_CLIENT_ID: '127841088573-n9kl89iirrda7e1p3mkhhdkm1s6cjj1e.apps.googleusercontent.com',
         APP_ORIGIN: 'https://e-gv.vercel.app',
         LIGHT_UPLOAD_LIMIT: 15 * 1024 * 1024,
-        APP_NAME: 'Sổ tay tiện ích',
+        APP_NAME: 'Tiện ích GV',
         OWNER_NAME: 'Thầy Hiển'
     });
 })();
