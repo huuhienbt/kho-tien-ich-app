@@ -81,7 +81,7 @@
 
     function startsBlock(lines, index) {
         const line = lines[index] || '';
-        return /^#{1,3}\s+/.test(line) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
+        return /^#{1,3}\s+/.test(line) || /^[IVXLCDM]+\.\s+/i.test(line) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
     }
 
     function parseMarkdown(value) {
@@ -112,13 +112,19 @@
                 continue;
             }
 
+            if (/^[IVXLCDM]+\.\s+/i.test(line)) {
+                blocks.push(`<p><strong>${inlineMarkdown(line)}</strong></p>`);
+                index += 1;
+                continue;
+            }
+
             if (/^[-•]\s+/.test(line)) {
                 const items = [];
                 while (index < lines.length && /^[-•]\s+/.test(lines[index])) {
                     items.push(`<li>${inlineMarkdown(lines[index].replace(/^[-•]\s+/, ''))}</li>`);
                     index += 1;
                 }
-                blocks.push(`<ul>${items.join('')}</ul>`);
+                blocks.push(`<ul class="dash-list">${items.join('')}</ul>`);
                 continue;
             }
 
@@ -128,7 +134,7 @@
                     items.push(`<li>${inlineMarkdown(lines[index].replace(/^\d+[.)]\s+/, ''))}</li>`);
                     index += 1;
                 }
-                blocks.push(`<ol>${items.join('')}</ol>`);
+                blocks.push(`<ol class="plan-numbered">${items.join('')}</ol>`);
                 continue;
             }
 
@@ -297,7 +303,7 @@
             : textRunXml(options.text || '', { bold: options.bold, size });
         const align = options.align ? `<w:jc w:val="${options.align}"/>` : '<w:jc w:val="both"/>';
         const indent = options.indent ? '<w:ind w:left="420" w:hanging="280"/>' : '';
-        return `<w:p><w:pPr>${align}${indent}<w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
+        return `<w:p><w:pPr>${align}${indent}<w:wordWrap w:val="1"/><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
     }
 
     function paragraphXml(element, options = {}) {
@@ -317,6 +323,9 @@
                 lineOptions.align = 'center';
                 lineOptions.bold = true;
                 lineOptions.size = 34;
+            } else if (/^(?:[IVXLCDM]+|\d+)\.\s+/i.test(lineText)) {
+                lineOptions.align = 'left';
+                lineOptions.bold = true;
             } else if (/^(?:Môn(?:\s+học)?|Lớp|Tên\s+bài|Thời\s+lượng)\s*:/i.test(lineText)) {
                 lineOptions.align = 'left';
             }
@@ -326,13 +335,18 @@
 
     function tableXml(table) {
         const columnCount = Math.max(1, ...Array.from(table.rows).map(row => row.cells.length));
-        const columnWidth = Math.floor(9638 / columnCount);
-        const grid = Array.from({ length: columnCount }, () => `<w:gridCol w:w="${columnWidth}"/>`).join('');
+        const columnWidths = columnCount === 2
+            ? [5783, 3855]
+            : Array.from({ length: columnCount }, (_, index) => index === columnCount - 1 ? 9638 - Math.floor(9638 / columnCount) * index : Math.floor(9638 / columnCount));
+        const grid = columnWidths.map(width => `<w:gridCol w:w="${width}"/>`).join('');
         const rows = Array.from(table.rows).map(row => {
-            const cells = Array.from(row.cells).map(cell => {
+            const cells = Array.from(row.cells).map((cell, cellIndex) => {
                 const heading = cell.tagName.toLowerCase() === 'th';
                 const shading = heading ? '<w:shd w:fill="EDE9FE"/>' : '';
-                return `<w:tc><w:tcPr><w:tcW w:w="${columnWidth}" w:type="dxa"/>${shading}<w:vAlign w:val="top"/></w:tcPr>${splitParagraphXml(cell, { bold: heading, size: 26, align: 'left' })}</w:tc>`;
+                const columnWidth = columnWidths[Math.min(cellIndex, columnWidths.length - 1)];
+                const verticalAlign = heading ? 'center' : 'top';
+                const textAlign = heading ? 'center' : 'left';
+                return `<w:tc><w:tcPr><w:tcW w:w="${columnWidth}" w:type="dxa"/>${shading}<w:vAlign w:val="${verticalAlign}"/></w:tcPr>${splitParagraphXml(cell, { bold: heading, size: 26, align: textAlign })}</w:tc>`;
             }).join('');
             return `<w:tr>${cells}</w:tr>`;
         }).join('');
@@ -352,11 +366,11 @@
                 blocks.push(tableXml(node));
             } else if (tag === 'ul' || tag === 'ol') {
                 Array.from(node.children).forEach((item, index) => {
-                    const prefix = tag === 'ol' ? `${index + 1}. ` : '• ';
+                    const prefix = tag === 'ol' ? `${index + 1}. ` : '- ';
                     const wrapper = document.createElement('span');
                     wrapper.append(document.createTextNode(prefix));
                     Array.from(item.childNodes).forEach(child => wrapper.append(child.cloneNode(true)));
-                    blocks.push(paragraphXml(wrapper, { indent: true }));
+                    blocks.push(paragraphXml(wrapper, { indent: true, bold: tag === 'ol', align: 'left' }));
                 });
             } else if (/^h[1-3]$/.test(tag)) {
                 const level = Number(tag[1]);
