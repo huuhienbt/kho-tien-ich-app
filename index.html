@@ -17,16 +17,6 @@
         <div class="container">
             <section class="hero" aria-labelledby="heroTitle">
                 <div class="hero-content">
-                    <div class="hero-date-block" aria-label="Ngày hiện tại">
-                        <p class="hero-kicker" id="currentDate">Hôm nay</p>
-                        <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
-                        <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
-                        <div class="hero-lunar-meta" aria-label="Thông tin lịch cổ truyền">
-                            <span><strong>Hành:</strong> <span id="currentDayElement">—</span></span>
-                            <span><strong>Sao:</strong> <span id="currentLunarMansion">—</span></span>
-                            <span><strong>Trực:</strong> <span id="currentDayOfficer">—</span></span>
-                        </div>
-                    </div>
                     <h1 id="heroTitle">Chào buổi sáng,<br>thầy Hiển!</h1>
                     <p>Quản lý câu lệnh AI, sửa chữa thiết bị, tài liệu Drive và kế hoạch bài dạy trong một không gian thống nhất.</p>
                     <div class="hero-actions">
@@ -34,7 +24,23 @@
                         <a class="btn btn-glass" href="prompts.html">Mở Kho Prompt →</a>
                     </div>
                 </div>
-                <div class="hero-visual" aria-hidden="true"><div class="hero-orbit"><div class="hero-core">📘</div></div></div>
+                <div class="hero-visual">
+                    <article class="calendar-sheet" aria-label="Lịch dương và âm hôm nay">
+                        <div class="calendar-rings" aria-hidden="true"><i></i><i></i></div>
+                        <header class="calendar-sheet-header">
+                            <p class="hero-kicker" id="currentDate">Hôm nay</p>
+                        </header>
+                        <div class="calendar-sheet-body">
+                            <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
+                            <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
+                            <p class="hero-lunar-meta">
+                                Hành <strong id="currentDayElement">—</strong>,
+                                Sao <strong id="currentLunarMansion">—</strong>,
+                                Trực <strong id="currentDayOfficer">—</strong>.
+                            </p>
+                        </div>
+                    </article>
+                </div>
             </section>
 
             <div class="section-heading"><h2>Tổng quan nhanh</h2><span>Dữ liệu được cập nhật từ hệ thống</span></div>

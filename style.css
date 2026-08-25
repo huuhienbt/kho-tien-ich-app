@@ -92,21 +92,23 @@ body.admin-logged-in .admin-only { display: inline-flex !important; }
 .hero::before { width: 280px; height: 280px; right: -70px; top: -120px; }
 .hero::after { width: 180px; height: 180px; right: 210px; bottom: -120px; }
 .hero-content,.hero-visual { position: relative; z-index: 1; }
-.hero-date-block { margin-bottom: 12px; }
-.hero-kicker { margin: 0; color: #ddd6fe; font-size: .8rem; font-weight: 700; text-transform: capitalize; }
-.hero-lunar-date { margin: 4px 0 0 !important; color: #fff !important; font-size: .78rem; font-weight: 700; }
-.hero-lunar-canchi { margin: 2px 0 0 !important; color: #dbeafe !important; font-size: .74rem; font-weight: 600; }
-.hero-lunar-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; color: #c7d2fe; font-size: .72rem; }
-.hero-lunar-meta span { white-space: nowrap; }
-.hero-lunar-meta strong { color: #fff; }
 .hero h1 { margin: 0; font-size: clamp(1.9rem,4vw,3rem); line-height: 1.16; letter-spacing: -.045em; }
 .hero p { max-width: 650px; margin: 14px 0 22px; color: #e0e7ff; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .hero .btn-light { color: var(--primary-dark); background: #fff; }
 .hero .btn-glass { color: #fff; border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.1); }
 .hero-visual { display: grid; place-items: center; }
-.hero-orbit { width: 170px; height: 170px; border: 1px solid rgba(255,255,255,.22); border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 50px rgba(255,255,255,.08); }
-.hero-core { width: 94px; height: 94px; border-radius: 28px; display: grid; place-items: center; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.24); font-size: 2.6rem; transform: rotate(-5deg); }
+.calendar-sheet { position: relative; width: min(100%,310px); overflow: visible; color: var(--text); border: 1px solid rgba(255,255,255,.72); border-radius: 18px; background: #fff; box-shadow: 0 22px 46px rgba(30,27,75,.28); transform: rotate(1deg); }
+.calendar-sheet::after { content: ''; position: absolute; inset: 8px -7px -8px 7px; z-index: -1; border-radius: 18px; background: rgba(255,255,255,.2); }
+.calendar-rings { position: absolute; top: -10px; left: 0; right: 0; z-index: 2; display: flex; justify-content: center; gap: 92px; }
+.calendar-rings i { width: 12px; height: 25px; border: 3px solid #dbe4f0; border-radius: 999px; background: #64748b; box-shadow: 0 2px 3px rgba(15,23,42,.22); }
+.calendar-sheet-header { padding: 20px 18px 13px; border-radius: 17px 17px 0 0; background: linear-gradient(135deg,#ef4444,#dc2626); text-align: center; }
+.calendar-sheet .hero-kicker { margin: 0; max-width: none; color: #fff; font-size: .88rem; font-weight: 800; letter-spacing: .01em; text-transform: capitalize; }
+.calendar-sheet-body { padding: 17px 17px 18px; text-align: center; }
+.calendar-sheet .hero-lunar-date { margin: 0 !important; max-width: none; color: var(--primary-dark) !important; font-size: 1.18rem; font-weight: 800; letter-spacing: -.02em; }
+.calendar-sheet .hero-lunar-canchi { margin: 8px 0 0 !important; max-width: none; color: #334155 !important; font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.calendar-sheet .hero-lunar-meta { margin: 12px 0 0 !important; padding-top: 11px; max-width: none; color: #64748b !important; border-top: 1px dashed #cbd5e1; font-size: .72rem; line-height: 1.5; }
+.calendar-sheet .hero-lunar-meta strong { color: var(--primary-dark); }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 30px 0 14px; }
 .section-heading h2 { margin: 0; font-size: 1.12rem; }
 .section-heading span { color: var(--text-light); font-size: .82rem; }
@@ -321,7 +323,8 @@ textarea.form-control { resize: vertical; min-height: 112px; }
     .user-chip { max-width: 160px; }
     #userDisplayName { display: block; max-width: 78px; }
     .hero { min-height: 0; padding: 28px 23px; grid-template-columns: 1fr; }
-    .hero-visual { display: none; }
+    .hero-visual { display: grid; margin-top: 5px; }
+    .calendar-sheet { width: min(100%,340px); transform: none; }
     .hero h1 { font-size: 2rem; }
     .page-heading { align-items: flex-start; flex-direction: column; }
     .page-actions { width: 100%; }

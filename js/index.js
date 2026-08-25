@@ -176,12 +176,14 @@
 
     const lunarDate = solarToLunar(vietnamParts.day, vietnamParts.month, vietnamParts.year, LUNAR_TIME_ZONE);
     const julianDay = jdFromDate(vietnamParts.day, vietnamParts.month, vietnamParts.year);
-    const lunarMonthText = `${lunarDate.month}${lunarDate.isLeap ? ' nhuận' : ''}`;
-    document.getElementById('currentLunarDate').textContent = `Âm lịch: ${lunarDate.day}-${lunarMonthText}-${lunarDate.year}`;
-    document.getElementById('currentLunarCanChi').textContent = `Ngày ${lunarDayName(julianDay)}, tháng ${lunarMonthName(lunarDate.month, lunarDate.year)}, năm ${lunarYearName(lunarDate.year)}`;
-    document.getElementById('currentDayElement').textContent = `Ngày ${dayElement(julianDay)}`;
-    document.getElementById('currentLunarMansion').textContent = `Sao ${lunarMansion(julianDay)}`;
-    document.getElementById('currentDayOfficer').textContent = `Trực ${dayOfficer(julianDay, LUNAR_TIME_ZONE)}`;
+    const lunarDayText = String(lunarDate.day).padStart(2, '0');
+    const lunarMonthText = String(lunarDate.month).padStart(2, '0');
+    const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
+    document.getElementById('currentLunarDate').textContent = `Âm lịch: ${lunarDayText}-${lunarMonthText}-${lunarDate.year}${lunarLeapText}`;
+    document.getElementById('currentLunarCanChi').textContent = `${lunarDayName(julianDay)}-${lunarMonthName(lunarDate.month, lunarDate.year)}-${lunarYearName(lunarDate.year)}`;
+    document.getElementById('currentDayElement').textContent = dayElement(julianDay);
+    document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
+    document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
 
     async function loadOverview() {
         try {
