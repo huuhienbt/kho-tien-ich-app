@@ -1,0 +1,148 @@
+(function () {
+    'use strict';
+
+    App.init('upload');
+
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const fileList = document.getElementById('fileList');
+    const actions = document.getElementById('uploadActions');
+    const progress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressLabel = document.getElementById('progressLabel');
+    const uploadButton = document.getElementById('uploadFilesButton');
+    let selectedFiles = [];
+
+    document.getElementById('openDriveButton').href = App.config.DRIVE_FOLDER_URL;
+
+    function chooseFiles() {
+        App.requireAdmin(() => fileInput.click());
+    }
+
+    function setFiles(files) {
+        selectedFiles = Array.from(files).map(file => ({ file, status: 'Đang chờ', type: file.size <= App.config.LIGHT_UPLOAD_LIMIT ? 'Nhanh' : 'Tệp lớn', resultUrl: '' }));
+        renderFiles();
+    }
+
+    function renderFiles() {
+        actions.hidden = selectedFiles.length === 0;
+        if (!selectedFiles.length) {
+            fileList.innerHTML = '';
+            progress.hidden = true;
+            return;
+        }
+        fileList.innerHTML = selectedFiles.map((entry, index) => {
+            const url = App.safeUrl(entry.resultUrl);
+            const status = url ? `<a href="${App.escapeHTML(url)}" target="_blank" rel="noopener noreferrer">✅ Mở tệp</a>` : App.escapeHTML(entry.status);
+            return `<div class="file-item" data-index="${index}"><div><span class="file-name" title="${App.escapeHTML(entry.file.name)}">${App.escapeHTML(entry.file.name)}</span><span class="file-size">${App.formatBytes(entry.file.size)} · ${entry.type}</span></div><span class="file-status">${status}</span></div>`;
+        }).join('');
+    }
+
+    function updateFile(index, status, resultUrl = '') {
+        selectedFiles[index].status = status;
+        selectedFiles[index].resultUrl = resultUrl;
+        renderFiles();
+    }
+
+    function setProgress(value, label) {
+        progress.hidden = false;
+        progressBar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+        progressLabel.textContent = label;
+    }
+
+    function readBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = event => resolve(String(event.target.result).split(',')[1]);
+            reader.onerror = () => reject(new Error('Không thể đọc tệp.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function uploadLight(entry, index) {
+        updateFile(index, 'Đang mã hóa…');
+        const base64 = await readBase64(entry.file);
+        updateFile(index, 'Đang gửi…');
+        const result = await App.apiPost('upload', {
+            fileName: entry.file.name,
+            mimeType: entry.file.type || 'application/octet-stream',
+            base64
+        }, { auth: true });
+        updateFile(index, 'Hoàn tất', result.fileUrl || '');
+    }
+
+    function putLargeFile(url, file, onProgress) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', url, true);
+            xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+            xhr.upload.onprogress = event => {
+                if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+            };
+            xhr.onload = () => {
+                if (![200, 201].includes(xhr.status)) return reject(new Error(`Tải tệp thất bại (${xhr.status}).`));
+                try { resolve(JSON.parse(xhr.responseText)); } catch (_) { reject(new Error('Không nhận được mã tệp từ Google Drive.')); }
+            };
+            xhr.onerror = () => reject(new Error('Mất kết nối khi tải tệp.'));
+            xhr.send(file);
+        });
+    }
+
+    async function uploadLarge(entry, index, baseProgress, stepSize) {
+        updateFile(index, 'Đang khởi tạo…');
+        const session = await App.apiPost('getResumableUrl', {
+            fileName: entry.file.name,
+            mimeType: entry.file.type || 'application/octet-stream',
+            fileSize: entry.file.size,
+            origin: window.location.origin
+        }, { auth: true });
+        if (!session.resumableUrl) throw new Error('Máy chủ chưa tạo được phiên tải tệp.');
+        updateFile(index, 'Đang tải 0%');
+        const fileInfo = await putLargeFile(session.resumableUrl, entry.file, percent => {
+            updateFile(index, `Đang tải ${percent}%`);
+            setProgress(baseProgress + stepSize * percent / 100, `Đang tải ${entry.file.name}: ${percent}%`);
+        });
+        if (!fileInfo.id) throw new Error('Không nhận được mã tệp.');
+        updateFile(index, 'Đang thiết lập quyền…');
+        const permission = await App.apiPost('setPermission', { fileId: fileInfo.id }, { auth: true });
+        updateFile(index, 'Hoàn tất', permission.fileUrl || '');
+    }
+
+    async function uploadAll() {
+        if (!selectedFiles.length) return;
+        if (!App.requireAdmin()) return;
+        uploadButton.disabled = true;
+        const original = uploadButton.textContent;
+        const stepSize = 100 / selectedFiles.length;
+        let success = 0;
+        for (let index = 0; index < selectedFiles.length; index += 1) {
+            const entry = selectedFiles[index];
+            const baseProgress = index * stepSize;
+            uploadButton.textContent = `Đang tải ${index + 1}/${selectedFiles.length}`;
+            setProgress(baseProgress, `Đang xử lý ${entry.file.name}`);
+            try {
+                if (entry.file.size <= App.config.LIGHT_UPLOAD_LIMIT) await uploadLight(entry, index);
+                else await uploadLarge(entry, index, baseProgress, stepSize);
+                success += 1;
+            } catch (error) {
+                updateFile(index, `❌ ${error.message}`);
+            }
+            setProgress((index + 1) * stepSize, `Đã xử lý ${index + 1}/${selectedFiles.length} tệp`);
+        }
+        uploadButton.disabled = false;
+        uploadButton.textContent = original;
+        App.toast(`Hoàn tất ${success}/${selectedFiles.length} tệp.`, success === selectedFiles.length ? 'success' : 'error');
+    }
+
+    document.getElementById('chooseFilesButton').addEventListener('click', event => { event.stopPropagation(); chooseFiles(); });
+    dropZone.addEventListener('click', chooseFiles);
+    dropZone.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); chooseFiles(); }
+    });
+    fileInput.addEventListener('change', () => setFiles(fileInput.files));
+    ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove('dragover'); }));
+    dropZone.addEventListener('drop', event => App.requireAdmin(() => setFiles(event.dataTransfer.files)));
+    document.getElementById('clearFilesButton').addEventListener('click', () => { selectedFiles = []; fileInput.value = ''; renderFiles(); });
+    uploadButton.addEventListener('click', uploadAll);
+})();

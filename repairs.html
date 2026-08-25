@@ -1,72 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Repairs - Tiện Ích</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Nhật ký theo dõi sửa chữa, bảo hành và chi phí cơ sở vật chất.">
+    <meta name="theme-color" content="#0284c7">
+    <title>Nhật ký sửa chữa - Sổ tay tiện ích</title>
     <link rel="stylesheet" href="style.css">
+    <script src="js/config.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="js/repairs.js" defer></script>
 </head>
 <body>
-<div class="container">
-    <div class="main-nav">
-        <div class="nav-tabs">
-            <a href="index.html" class="nav-btn">🏠 Trang Chủ</a>
-            <a href="prompts.html" class="nav-btn">📚 Kho Prompt</a>
-            <a href="repairs.html" class="nav-btn active-repair">🛠 Sổ Repairs</a>
-            <a href="upload.html" class="nav-btn">📁 Upload Drive</a>
-            <a href="ai.html" class="nav-btn">🤖 Trợ Giảng AI</a>
+    <div id="appShell"></div>
+    <main class="page-main">
+        <div class="container">
+            <header class="page-heading">
+                <div><p class="page-eyebrow">Cơ sở vật chất</p><h1 class="page-title">Nhật ký sửa chữa</h1><p class="page-description">Theo dõi sự cố, đơn vị xử lý, chi phí và thời hạn bảo hành của thiết bị trong trường.</p></div>
+                <div class="page-actions"><button class="btn btn-repair admin-only" id="addRepairButton" type="button">＋ Thêm báo cáo</button></div>
+            </header>
+
+            <section class="overview-grid repair-summary" aria-label="Thống kê sửa chữa">
+                <article class="stat-card"><span class="stat-label">Tổng hạng mục</span><strong class="stat-value" id="repairTotal">—</strong><div class="stat-hint">Tất cả báo cáo</div></article>
+                <article class="stat-card"><span class="stat-label">Đang chờ</span><strong class="stat-value" id="repairPending">—</strong><div class="stat-hint">Chưa hoàn thành</div></article>
+                <article class="stat-card"><span class="stat-label">Cần theo dõi</span><strong class="stat-value" id="repairWatch">—</strong><div class="stat-hint">Cần kiểm tra lại</div></article>
+                <article class="stat-card"><span class="stat-label">Tổng chi phí</span><strong class="stat-value" id="repairCost">—</strong><div class="stat-hint">Theo dữ liệu đang lưu</div></article>
+            </section>
+
+            <section class="panel toolbar" aria-label="Tìm kiếm và lọc sửa chữa">
+                <div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><label class="sr-only" for="repairSearch">Tìm kiếm</label><input class="search-input" id="repairSearch" type="search" placeholder="Tìm công việc, lớp hoặc đơn vị sửa chữa…"></div>
+                <label class="sr-only" for="repairStatus">Lọc trạng thái</label>
+                <select class="select-input" id="repairStatus"><option value="all">Tất cả trạng thái</option><option value="Đã hoàn thành">Đã hoàn thành</option><option value="Đang chờ linh kiện">Đang chờ linh kiện</option><option value="Cần theo dõi">Cần theo dõi</option></select>
+            </section>
+
+            <section class="grid" id="repairContainer" aria-live="polite"><div class="skeleton"></div><div class="skeleton"></div></section>
         </div>
-        <div class="nav-actions">
-            <button class="btn btn-primary btn-login" onclick="openModal('loginModal')">🔒 Đăng nhập</button>
-            <button class="btn btn-danger admin-only btn-inline" onclick="logout()">Thoát quản trị</button>
+    </main>
+
+    <div class="modal" id="repairModal" role="dialog" aria-modal="true" aria-labelledby="repairModalTitle">
+        <div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title" id="repairModalTitle">Thêm báo cáo sửa chữa</h2><button class="modal-close" type="button" data-close-modal="repairModal" aria-label="Đóng">×</button></div>
+            <form id="repairForm">
+                <div class="form-grid">
+                    <div class="form-group full-width"><label class="form-label" for="rTask">Công việc/sự cố</label><input class="form-control" id="rTask" required maxlength="180"></div>
+                    <div class="form-group"><label class="form-label" for="rDate">Ngày ghi nhận</label><input class="form-control" type="date" id="rDate" required></div>
+                    <div class="form-group"><label class="form-label" for="rLocation">Lớp/phòng</label><input class="form-control" id="rLocation" placeholder="Ví dụ: Lớp 4/6"></div>
+                    <div class="form-group"><label class="form-label" for="rCost">Chi phí (đồng)</label><input class="form-control" type="number" min="0" step="1000" id="rCost"></div>
+                    <div class="form-group"><label class="form-label" for="rStatus">Trạng thái</label><select class="form-control" id="rStatus"><option value="Đang chờ linh kiện">Đang chờ linh kiện</option><option value="Cần theo dõi">Cần theo dõi</option><option value="Đã hoàn thành">Đã hoàn thành</option></select></div>
+                    <div class="form-group"><label class="form-label" for="rWarranty">Bảo hành</label><select class="form-control" id="rWarranty"><option value="Không">Không có</option><option value="1 tháng">1 tháng</option><option value="3 tháng">3 tháng</option><option value="6 tháng">6 tháng</option><option value="12 tháng">12 tháng</option><option value="24 tháng">24 tháng</option></select></div>
+                    <div class="form-group"><label class="form-label" for="rVendor">Đơn vị sửa/mua</label><input class="form-control" id="rVendor"></div>
+                    <div class="form-group"><label class="form-label" for="rReporter">Người báo</label><input class="form-control" id="rReporter"></div>
+                    <div class="form-group"><label class="form-label" for="rImageUrl">Liên kết ảnh</label><input class="form-control" type="url" id="rImageUrl" placeholder="https://…"></div>
+                    <div class="form-group full-width"><label class="form-label" for="rNote">Ghi chú</label><textarea class="form-control" id="rNote" rows="3"></textarea></div>
+                </div>
+                <div class="form-actions"><button class="btn btn-secondary" type="button" data-close-modal="repairModal">Hủy</button><button class="btn btn-repair" id="saveRepairButton" type="submit">Lưu báo cáo</button></div>
+            </form>
         </div>
     </div>
-
-    <div class="header">
-        <h3>Nhật ký Sửa chữa</h3> 
-        <button class="btn btn-repair btn-sm admin-only btn-inline" onclick="openModalRepair()">➕ Thêm Mới</button>
-    </div>
-    <div class="grid" id="repairContainer"></div>
-</div>
-
-<div class="modal" id="loginModal"><div class="modal-content" style="max-width: 320px;"><h3>Mật khẩu Quản trị</h3><input type="password" id="adminPass" placeholder="..."><button class="btn btn-primary" onclick="login()" style="width:100%; padding: 8px;">Đăng nhập</button><button class="btn" onclick="closeModal('loginModal')" style="width:100%; padding: 8px; background:#e2e8f0; color:#475569">Hủy</button></div></div>
-<div class="modal" id="modalRepair"><div class="modal-content"><h3 id="modalRepairTitle">Báo Cáo Sửa Chữa</h3><input type="text" id="rTask" class="full-width" placeholder="Công việc"><div class="form-grid"><input type="text" id="rDate" placeholder="Ngày"><input type="text" id="rLocation" placeholder="Lớp"><input type="text" id="rCost" placeholder="Chi phí"><select id="rStatus"><option value="Đã hoàn thành">✅ Hoàn thành</option><option value="Đang chờ linh kiện">⏳ Đang chờ</option><option value="Cần theo dõi">🔍 Theo dõi</option></select><input type="text" id="rWarranty" placeholder="Thời hạn bảo hành"><input type="text" id="rVendor" placeholder="Đơn vị sửa/mua"><input type="text" id="rReporter" placeholder="Người báo"><input type="text" id="rImageUrl" placeholder="Link ảnh (Tùy chọn)"></div><textarea id="rNote" class="full-width" rows="2" placeholder="Ghi chú..."></textarea><div class="form-grid"><button class="btn btn-repair" onclick="saveRepair()" id="btnSaveRepair">Lưu</button><button class="btn" onclick="closeModal('modalRepair')" style="background:#e2e8f0; color:var(--text);">Hủy</button></div></div></div>
-
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec"; 
-    let adminPassword = sessionStorage.getItem('adminPassword') || "";
-    let globalData = { repairs: [] }; let editId = null;
-
-    function parseDate(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; } return raw; }
-    function parseLocation(raw) { if (!raw) return '---'; if (typeof raw === 'string' && raw.includes('T')) { const d = new Date(raw); return `${d.getDate()}/${d.getMonth() + 1}`; } return raw; }
-    function formatMoney(amount) { if (!amount && amount !== 0) return '0đ'; const num = parseInt(amount.toString().replace(/\D/g, '')); return isNaN(num) ? amount : num.toLocaleString('vi-VN') + 'đ'; }
-    function getExpirationDate(dateStr, wStr) { if (!wStr || wStr.toLowerCase() === 'không' || wStr == '0') return '<span style="color:#ef4444; font-weight:bold;">Không có</span>'; if (!dateStr || (typeof dateStr === 'string' && !dateStr.includes('T'))) return '<span style="color:var(--text-light);">Chưa xác định</span>'; let months = 0; const m = wStr.toLowerCase().match(/(\d+)/); if (m) { months = parseInt(m[1]); if (wStr.toLowerCase().includes('năm')) months *= 12; } else return `<span style="color:var(--text-light);">${wStr}</span>`; const endDate = new Date(dateStr); endDate.setMonth(endDate.getMonth() + months); const now = new Date(); now.setHours(0,0,0,0); const dateString = `${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`; if (now > endDate) return `<span style="color:#ef4444; font-weight:bold;">${dateString} (Đã hết hạn)</span>`; const d = Math.ceil(Math.abs(endDate - now) / 86400000); if (d <= 30) return `<span style="color:#f59e0b; font-weight:bold;">${dateString} (Sắp hết: ${d} ngày)</span>`; return `<span style="color:#10b981; font-weight:bold;">${dateString}</span>`; }
-
-    async function loadData() { 
-        const cache = localStorage.getItem(`cache_repairs`); 
-        if (cache) { globalData.repairs = JSON.parse(cache); renderRepairs(globalData.repairs); } 
-        else document.getElementById('repairContainer').innerHTML = '<div class="skeleton"></div>'.repeat(3); 
-        try { const res = await fetch(API_URL + "?type=repairs"); const json = await res.json(); globalData.repairs = json.data; localStorage.setItem(`cache_repairs`, JSON.stringify(json.data)); renderRepairs(json.data); } catch(e) { if(!cache) document.getElementById('repairContainer').innerHTML = 'Lỗi tải dữ liệu mạng.'; } 
-    }
-    
-    function renderRepairs(data) { 
-        const emptyHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-light); background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">📭 Hiện chưa có dữ liệu.</div>';
-        const html = data.map(item => { const statusClass = item.status === 'Đã hoàn thành' ? 'status-done' : 'status-pending'; return `<div class="card"><div class="card-header"><h3 class="card-title">🛠 ${item.task}</h3><span class="status-badge ${statusClass}">${item.status || 'Chưa rõ'}</span></div><div class="repair-info"><div class="repair-grid"><div class="repair-col-left"><span>📅 <b>Ngày:</b> ${parseDate(item.date)}</span> <span>📍 <b>Lớp:</b> ${parseLocation(item.location)}</span><span>🏭 <b>Đơn vị sửa chữa:</b> ${item.vendor || '---'}</span></div><div class="repair-col-right"><span>💰 <b>Giá tiền:</b> <b style="color:var(--repair); font-size:1.05em">${formatMoney(item.cost)}</b></span><span>⏱️ <b>Bảo hành:</b> ${item.warranty || 'Không'}</span><span>🛡️ <b>Còn bảo hành đến:</b> ${getExpirationDate(item.date, item.warranty)}</span></div></div>${item.note ? `<div style="color:var(--text-light); font-size:0.9em; font-style:italic; padding-bottom: 5px;">📝 Ghi chú: ${item.note}</div>` : ''}</div><div class="card-footer">${item.image_url ? `<a href="${item.image_url}" target="_blank" class="btn btn-sm" style="background:#e2e8f0; color:var(--text); text-decoration:none;">📎 Ảnh đính kèm</a>` : '<div></div>'}<div style="display:flex; gap: 4px;"><button class="btn btn-repair btn-sm admin-only btn-inline" onclick="editRepair('${item.id}')">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only btn-inline" onclick="deleteItem('${item.id}')">🗑️ Xóa</button></div></div></div>`}).join(''); 
-        document.getElementById('repairContainer').innerHTML = html || emptyHTML; 
-    }
-    
-    function openModalRepair(id = null) { editId = id; document.getElementById('modalRepairTitle').innerText = id ? "Sửa Báo Cáo" : "Thêm Mới"; if(id) { const item = globalData.repairs.find(x => x.id === id); document.getElementById('rTask').value = item.task; document.getElementById('rDate').value = parseDate(item.date) !== '---' ? parseDate(item.date) : item.date; document.getElementById('rLocation').value = parseLocation(item.location) !== '---' ? parseLocation(item.location) : item.location; document.getElementById('rCost').value = item.cost; document.getElementById('rStatus').value = item.status; document.getElementById('rWarranty').value = item.warranty; document.getElementById('rVendor').value = item.vendor; document.getElementById('rReporter').value = item.reporter; document.getElementById('rImageUrl').value = item.image_url; document.getElementById('rNote').value = item.note; } else { document.querySelectorAll('#modalRepair input, #modalRepair textarea').forEach(el => el.value = ''); } document.getElementById('modalRepair').style.display = 'flex'; }
-    function editRepair(id) { openModalRepair(id); }
-    
-    async function sendData(action, dataObj, btnId) { if(btnId) document.getElementById(btnId).innerText = "..."; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword, sheetType: 'repairs', action, data: dataObj }) }); const result = await res.json(); if(btnId) document.getElementById(btnId).innerText = "Lưu"; if(result.status === 'success') { closeModal('modalRepair'); localStorage.removeItem(`cache_repairs`); loadData(); } else { alert("Lỗi: " + result.message); if(result.message.includes("mật khẩu")) logout(); } } catch(e) { alert("Lỗi mạng!"); if(btnId) document.getElementById(btnId).innerText = "Lưu"; } }
-    function saveRepair() { const data = { date: document.getElementById('rDate').value, task: document.getElementById('rTask').value, location: document.getElementById('rLocation').value, cost: document.getElementById('rCost').value, status: document.getElementById('rStatus').value, warranty: document.getElementById('rWarranty').value, vendor: document.getElementById('rVendor').value, reporter: document.getElementById('rReporter').value, asset_id: '', image_url: document.getElementById('rImageUrl').value, note: document.getElementById('rNote').value }; if(editId) { data.id = editId; sendData('update', data, 'btnSaveRepair'); } else sendData('create', data, 'btnSaveRepair'); }
-    function deleteItem(id) { if(confirm("Xóa thẻ này?")) sendData('delete', { id }, null); }
-    
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; editId = null; }
-    async function login() { const inputPass = document.getElementById('adminPass').value; const btnLogin = document.querySelector('#loginModal .btn-primary'); const originalText = btnLogin.innerText; btnLogin.innerText = "Đang kiểm tra..."; btnLogin.disabled = true; try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); const result = await res.json(); if (result.status === 'success') { adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); closeModal('loginModal'); document.getElementById('adminPass').value = ''; } else { alert("Sai mật khẩu!"); document.getElementById('adminPass').value = ''; } } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } }
-    function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
-    
-    window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); loadData(); };
-</script>
 </body>
 </html>
