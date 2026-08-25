@@ -184,13 +184,11 @@
                 continue;
             }
 
-            if (/^\d+[.)]\s+/.test(line)) {
-                const items = [];
-                while (index < lines.length && /^\d+[.)]\s+/.test(lines[index])) {
-                    items.push(`<li>${inlineMarkdown(lines[index].replace(/^\d+[.)]\s+/, ''))}</li>`);
-                    index += 1;
-                }
-                blocks.push(`<ol class="plan-numbered">${items.join('')}</ol>`);
+            const numberedHeading = line.match(/^(\d+)[.)]\s+(.+)$/);
+            if (numberedHeading) {
+                const normalizedHeading = `${numberedHeading[1]}. ${numberedHeading[2]}`;
+                blocks.push(`<p class="plan-numbered-item"><strong>${inlineMarkdown(normalizedHeading)}</strong></p>`);
+                index += 1;
                 continue;
             }
 

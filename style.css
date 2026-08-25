@@ -231,7 +231,7 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .markdown-body .dash-list { padding-left: 1.2rem; list-style: none; }
 .markdown-body .dash-list li { position: relative; padding-left: .8rem; }
 .markdown-body .dash-list li::before { position: absolute; left: 0; content: '-'; font-weight: 700; }
-.markdown-body .plan-numbered { font-weight: 700; }
+.markdown-body .plan-numbered-item { margin: .9rem 0 .45rem; font-weight: 700; }
 .markdown-body code { padding: 1px 5px; border-radius: 5px; background: #f1f5f9; font-family: Consolas,monospace; font-size: .88em; }
 .markdown-body table { width: 100%; margin: 14px 0; border-collapse: collapse; table-layout: fixed; background: #fff; }
 .markdown-body th,.markdown-body td { min-width: 0; padding: 9px; border: 1px solid #94a3b8; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
