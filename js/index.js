@@ -183,7 +183,7 @@
     const lunarMonthText = String(lunarDate.month).padStart(2, '0');
     const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
     document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
-    document.getElementById('currentLunarCanChi').textContent = `Ngày ${lunarDayName(julianDay)} · ${lunarMonthName(lunarDate.month, lunarDate.year)} · ${lunarYearName(lunarDate.year)}`;
+    document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayName(julianDay)}<br>Tháng ${lunarMonthName(lunarDate.month, lunarDate.year)} năm ${lunarYearName(lunarDate.year)}`;
     document.getElementById('currentDayElement').textContent = dayElement(julianDay);
     document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
     document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
