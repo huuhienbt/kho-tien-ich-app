@@ -25,19 +25,26 @@
                     </div>
                 </div>
                 <div class="hero-visual">
-                    <article class="calendar-sheet" aria-label="Lịch dương và âm hôm nay">
-                        <div class="calendar-rings" aria-hidden="true"><i></i><i></i></div>
-                        <header class="calendar-sheet-header">
-                            <p class="hero-kicker" id="currentDate">Hôm nay</p>
+                    <article class="calendar-widget" aria-label="Lịch dương và âm hôm nay">
+                        <header class="calendar-widget-header">
+                            <span class="calendar-widget-label">Hôm nay</span>
+                            <span class="calendar-widget-weekday" id="calendarWeekday">Thứ Tư</span>
                         </header>
-                        <div class="calendar-sheet-body">
+                        <div class="calendar-widget-solar">
+                            <strong class="calendar-widget-day" id="calendarDay">26</strong>
+                            <div class="calendar-widget-month-year">
+                                <span id="calendarMonth">Tháng 08</span>
+                                <span id="calendarYear">Năm 2026</span>
+                            </div>
+                        </div>
+                        <div class="calendar-widget-lunar">
                             <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
                             <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
-                            <p class="hero-lunar-meta">
-                                Hành <strong id="currentDayElement">—</strong>,
-                                Sao <strong id="currentLunarMansion">—</strong>,
-                                Trực <strong id="currentDayOfficer">—</strong>.
-                            </p>
+                        </div>
+                        <div class="calendar-widget-tags" aria-label="Thông tin lịch cổ truyền">
+                            <span><small>Hành</small><strong id="currentDayElement">—</strong></span>
+                            <span><small>Sao</small><strong id="currentLunarMansion">—</strong></span>
+                            <span><small>Trực</small><strong id="currentDayOfficer">—</strong></span>
                         </div>
                     </article>
                 </div>

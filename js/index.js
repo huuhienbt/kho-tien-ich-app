@@ -17,10 +17,13 @@
     const hour = vietnamParts.hour;
     const greeting = hour < 11 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
     document.getElementById('heroTitle').innerHTML = `${greeting},<br>thầy Hiển!`;
-    document.getElementById('currentDate').textContent = new Intl.DateTimeFormat('vi-VN', {
+    document.getElementById('calendarWeekday').textContent = new Intl.DateTimeFormat('vi-VN', {
         timeZone: VIETNAM_TIME_ZONE,
-        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+        weekday: 'long'
     }).format(now);
+    document.getElementById('calendarDay').textContent = String(vietnamParts.day).padStart(2, '0');
+    document.getElementById('calendarMonth').textContent = `Tháng ${String(vietnamParts.month).padStart(2, '0')}`;
+    document.getElementById('calendarYear').textContent = `Năm ${vietnamParts.year}`;
 
     function jdFromDate(day, month, year) {
         const a = Math.floor((14 - month) / 12);
@@ -179,8 +182,8 @@
     const lunarDayText = String(lunarDate.day).padStart(2, '0');
     const lunarMonthText = String(lunarDate.month).padStart(2, '0');
     const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
-    document.getElementById('currentLunarDate').textContent = `Âm lịch: ${lunarDayText}-${lunarMonthText}-${lunarDate.year}${lunarLeapText}`;
-    document.getElementById('currentLunarCanChi').textContent = `${lunarDayName(julianDay)}-${lunarMonthName(lunarDate.month, lunarDate.year)}-${lunarYearName(lunarDate.year)}`;
+    document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
+    document.getElementById('currentLunarCanChi').textContent = `${lunarDayName(julianDay)} · ${lunarMonthName(lunarDate.month, lunarDate.year)} · ${lunarYearName(lunarDate.year)}`;
     document.getElementById('currentDayElement').textContent = dayElement(julianDay);
     document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
     document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
