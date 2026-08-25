@@ -25,7 +25,7 @@
 
     <!-- BANNER GIỚI THIỆU -->
     <div class="banner">
-        <h1>👋 Xin chào, Thầy Hiển!</h1>
+        <h1 id="welcomeMessage">👋 Xin chào!</h1>
         <p>Hệ thống Quản lý Tiện ích Cá nhân & Hỗ trợ Giảng dạy tích hợp Trí tuệ Nhân tạo.</p>
     </div>
 
@@ -66,6 +66,22 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; } 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
+    // Hàm cập nhật câu chào theo thời gian thực và trạng thái đăng nhập
+    function updateWelcomeMessage(isLoggedIn) {
+        const welcomeEl = document.getElementById('welcomeMessage');
+        if (isLoggedIn) {
+            welcomeEl.innerText = "👋 Xin chào, Thầy Hiển!";
+        } else {
+            const hour = new Date().getHours();
+            let greeting = "👋 Xin chào!";
+            if (hour >= 5 && hour < 11) greeting = "👋 Chào buổi sáng!";
+            else if (hour >= 11 && hour < 14) greeting = "👋 Chào buổi trưa!";
+            else if (hour >= 14 && hour < 18) greeting = "👋 Chào buổi chiều!";
+            else greeting = "👋 Chào buổi tối!";
+            welcomeEl.innerText = greeting;
+        }
+    }
+
     async function login() { 
         const inputPass = document.getElementById('adminPass').value; 
         const btnLogin = document.querySelector('#loginModal .btn-primary'); 
@@ -74,13 +90,29 @@
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ adminPassword: inputPass, action: 'verify' }) }); 
             const result = await res.json(); 
             if (result.status === 'success') { 
-                adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); document.body.classList.add('logged-in'); 
+                adminPassword = inputPass; sessionStorage.setItem('adminPassword', adminPassword); 
+                document.body.classList.add('logged-in'); 
+                updateWelcomeMessage(true); // Cập nhật lại lời chào khi đăng nhập thành công
                 closeModal('loginModal'); document.getElementById('adminPass').value = ''; 
             } else { alert("Sai mật khẩu!"); document.getElementById('adminPass').value = ''; } 
         } catch(e) { alert("Lỗi mạng!"); } finally { btnLogin.innerText = originalText; btnLogin.disabled = false; } 
     }
-    function logout() { adminPassword = ""; sessionStorage.removeItem('adminPassword'); document.body.classList.remove('logged-in'); }
-    window.onload = () => { if(adminPassword) document.body.classList.add('logged-in'); };
+    
+    function logout() { 
+        adminPassword = ""; 
+        sessionStorage.removeItem('adminPassword'); 
+        document.body.classList.remove('logged-in'); 
+        updateWelcomeMessage(false); // Cập nhật lại lời chào khi đăng xuất
+    }
+
+    window.onload = () => { 
+        if(adminPassword) {
+            document.body.classList.add('logged-in'); 
+            updateWelcomeMessage(true);
+        } else {
+            updateWelcomeMessage(false);
+        }
+    };
 </script>
 </body>
 </html>
