@@ -228,10 +228,16 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .markdown-body h3 { margin-top: 1.2rem; color: #475569; font-size: 1rem; }
 .markdown-body p { margin: .65rem 0; }
 .markdown-body ul,.markdown-body ol { padding-left: 1.45rem; }
+.markdown-body .dash-list { padding-left: 1.2rem; list-style: none; }
+.markdown-body .dash-list li { position: relative; padding-left: .8rem; }
+.markdown-body .dash-list li::before { position: absolute; left: 0; content: '-'; font-weight: 700; }
+.markdown-body .plan-numbered { font-weight: 700; }
 .markdown-body code { padding: 1px 5px; border-radius: 5px; background: #f1f5f9; font-family: Consolas,monospace; font-size: .88em; }
 .markdown-body table { width: 100%; margin: 14px 0; border-collapse: collapse; table-layout: fixed; background: #fff; }
-.markdown-body th,.markdown-body td { padding: 9px; border: 1px solid #94a3b8; vertical-align: top; }
-.markdown-body th { background: #f1f5f9; text-align: center; }
+.markdown-body th,.markdown-body td { min-width: 0; padding: 9px; border: 1px solid #94a3b8; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+.markdown-body th:first-child,.markdown-body td:first-child { width: 60%; }
+.markdown-body th:last-child,.markdown-body td:last-child { width: 40%; }
+.markdown-body th { background: #f1f5f9; text-align: center; vertical-align: middle; }
 
 /* Modal, thông báo và trạng thái */
 .modal { position: fixed; inset: 0; z-index: 1000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(15,23,42,.58); backdrop-filter: blur(5px); }
