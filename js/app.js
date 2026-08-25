@@ -45,9 +45,9 @@
         const items = [
             ['home', 'index.html', 'Trang chủ', 'home'],
             ['prompts', 'prompts.html', 'Kho Prompt', 'book'],
-            ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench'],
             ['upload', 'upload.html', 'Kho tệp Drive', 'upload'],
-            ['ai', 'ai.html', 'Trợ giảng AI', 'sparkle']
+            ['ai', 'ai.html', 'Trợ giảng AI', 'sparkle'],
+            ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench']
         ];
         return items.map(([key, href, label, iconName]) =>
             `<a href="${href}" class="nav-link${activePage === key ? ' active' : ''}"${activePage === key ? ' aria-current="page"' : ''}>${icon(iconName)}<span>${label}</span></a>`
