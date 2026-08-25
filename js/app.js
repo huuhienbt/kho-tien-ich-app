@@ -131,7 +131,10 @@
         const name = admin ? config.OWNER_NAME : (state.user?.name || state.user?.email || 'Thành viên');
         const display = document.getElementById('userDisplayName');
         const avatar = document.getElementById('userAvatar');
-        if (display) display.textContent = name;
+        if (display) {
+            display.textContent = name;
+            display.title = name;
+        }
         if (avatar) avatar.textContent = initials(name);
         window.dispatchEvent(new CustomEvent('app:auth-change', { detail: { admin, user, authenticated: admin || user } }));
     }
