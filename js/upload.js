@@ -16,7 +16,7 @@
     document.getElementById('openDriveButton').href = App.config.DRIVE_FOLDER_URL;
 
     function chooseFiles() {
-        App.requireAdmin(() => fileInput.click());
+        fileInput.click();
     }
 
     function setFiles(files) {
@@ -67,7 +67,7 @@
             fileName: entry.file.name,
             mimeType: entry.file.type || 'application/octet-stream',
             base64
-        }, { auth: true });
+        });
         updateFile(index, 'Hoàn tất', result.fileUrl || '');
     }
 
@@ -95,7 +95,7 @@
             mimeType: entry.file.type || 'application/octet-stream',
             fileSize: entry.file.size,
             origin: window.location.origin
-        }, { auth: true });
+        });
         if (!session.resumableUrl) throw new Error('Máy chủ chưa tạo được phiên tải tệp.');
         updateFile(index, 'Đang tải 0%');
         const fileInfo = await putLargeFile(session.resumableUrl, entry.file, percent => {
@@ -104,13 +104,12 @@
         });
         if (!fileInfo.id) throw new Error('Không nhận được mã tệp.');
         updateFile(index, 'Đang thiết lập quyền…');
-        const permission = await App.apiPost('setPermission', { fileId: fileInfo.id }, { auth: true });
+        const permission = await App.apiPost('setPermission', { fileId: fileInfo.id });
         updateFile(index, 'Hoàn tất', permission.fileUrl || '');
     }
 
     async function uploadAll() {
         if (!selectedFiles.length) return;
-        if (!App.requireAdmin()) return;
         uploadButton.disabled = true;
         const original = uploadButton.textContent;
         const stepSize = 100 / selectedFiles.length;
@@ -142,7 +141,7 @@
     fileInput.addEventListener('change', () => setFiles(fileInput.files));
     ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove('dragover'); }));
-    dropZone.addEventListener('drop', event => App.requireAdmin(() => setFiles(event.dataTransfer.files)));
+    dropZone.addEventListener('drop', event => setFiles(event.dataTransfer.files));
     document.getElementById('clearFilesButton').addEventListener('click', () => { selectedFiles = []; fileInput.value = ''; renderFiles(); });
     uploadButton.addEventListener('click', uploadAll);
 })();

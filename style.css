@@ -46,10 +46,12 @@ a { color: inherit; }
 .menu-toggle { display: none; }
 .user-chip { display: none; align-items: center; gap: 8px; min-height: 42px; padding: 5px 10px 5px 6px; border: 1px solid var(--border); border-radius: 999px; background: #fff; font-size: .8rem; font-weight: 600; }
 .user-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--primary-soft); color: var(--primary-dark); font-weight: 800; }
-body.logged-in .user-chip { display: inline-flex; }
-body.logged-in .btn-login { display: none; }
+body.authenticated .user-chip { display: inline-flex; }
+body.authenticated .btn-login { display: none; }
+.authenticated-only { display: none !important; }
+body.authenticated .authenticated-only { display: inline-flex !important; }
 .admin-only { display: none !important; }
-body.logged-in .admin-only { display: inline-flex !important; }
+body.admin-logged-in .admin-only { display: inline-flex !important; }
 
 /* Nút */
 .btn { min-height: 42px; padding: 9px 15px; border: 1px solid transparent; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; font-size: .86rem; font-weight: 700; text-decoration: none; transition: transform 150ms ease,box-shadow 150ms ease,background 150ms ease,border-color 150ms ease; }
@@ -146,6 +148,13 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .tag-media { color: #6d28d9; background: #f3e8ff; }
 .tag-diy { color: #9a3412; background: #ffedd5; }
 .tag-default { color: #475569; background: #f1f5f9; }
+.tag-normal { color: #047857; background: #d1fae5; }
+.tag-vip { color: #92400e; background: linear-gradient(135deg,#fef3c7,#fde68a); border: 1px solid #f59e0b; }
+.prompt-vip { border-color: #f6d365; box-shadow: 0 8px 24px rgba(217,119,6,.08); }
+.vip-lock { min-height: 150px; margin-top: 14px; padding: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; text-align: center; border: 1px dashed #f59e0b; border-radius: 12px; background: linear-gradient(145deg,#fffbeb,#fff7ed); color: #92400e; }
+.vip-lock-icon { font-size: 1.65rem; }
+.vip-lock span:not(.vip-lock-icon) { color: #9a6b21; font-size: .77rem; }
+.vip-note { color: #a16207; font-size: .72rem; font-weight: 700; }
 .prompt-box { position: relative; max-height: 150px; overflow: hidden; margin-top: 14px; padding: 15px; border: 1px solid #e7ebf2; border-radius: 12px; background: var(--surface-muted); color: #334155; font-family: 'Segoe UI',Arial,sans-serif; font-size: .92rem; white-space: pre-wrap; }
 .prompt-box::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 42px; background: linear-gradient(transparent,var(--surface-muted)); pointer-events: none; }
 .prompt-box.expanded { max-height: none; }
@@ -217,6 +226,9 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .markdown-body h1 { color: var(--ai); font-size: 1.45rem; }
 .markdown-body h2 { margin-top: 1.4rem; color: #334155; font-size: 1.15rem; }
 .markdown-body h3 { margin-top: 1.2rem; color: #475569; font-size: 1rem; }
+.markdown-body p { margin: .65rem 0; }
+.markdown-body ul,.markdown-body ol { padding-left: 1.45rem; }
+.markdown-body code { padding: 1px 5px; border-radius: 5px; background: #f1f5f9; font-family: Consolas,monospace; font-size: .88em; }
 .markdown-body table { width: 100%; margin: 14px 0; border-collapse: collapse; table-layout: fixed; background: #fff; }
 .markdown-body th,.markdown-body td { padding: 9px; border: 1px solid #94a3b8; vertical-align: top; }
 .markdown-body th { background: #f1f5f9; text-align: center; }
@@ -230,6 +242,17 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .modal-title { margin: 0; font-size: 1.08rem; }
 .modal-close { width: 38px; height: 38px; border: 0; border-radius: 10px; background: #f1f5f9; color: #64748b; cursor: pointer; }
 .modal-help { margin: -8px 0 15px; color: var(--text-light); font-size: .78rem; }
+.auth-modal { width: min(100%,430px); }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: -3px 0 18px; padding: 4px; border-radius: 12px; background: #f1f5f9; }
+.auth-tab { min-height: 38px; padding: 7px 10px; border: 0; border-radius: 9px; background: transparent; color: #64748b; cursor: pointer; font-size: .78rem; font-weight: 700; }
+.auth-tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(15,23,42,.08); }
+#guestAuthForm { display: grid; gap: 12px; }
+.auth-submit { width: 100%; margin-top: 2px; }
+.auth-switch { width: 100%; padding: 10px; border: 0; color: var(--primary); background: transparent; cursor: pointer; font-size: .78rem; font-weight: 700; }
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; color: #94a3b8; font-size: .72rem; }
+.auth-divider::before,.auth-divider::after { content: ''; height: 1px; flex: 1; background: var(--border); }
+.google-button-wrap { min-height: 42px; display: flex; justify-content: center; }
+.auth-config-note { margin: 0; padding: 10px; border-radius: 9px; color: #9a3412; background: #fff7ed; text-align: center; font-size: .72rem; }
 .toast-region { position: fixed; right: 20px; bottom: 20px; z-index: 1200; display: grid; gap: 8px; pointer-events: none; }
 .toast { min-width: 240px; max-width: 360px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; color: #fff; background: #172033; box-shadow: var(--shadow); font-size: .8rem; font-weight: 650; animation: toast-in 180ms ease; }
 .toast.success { background: #047857; }
@@ -239,6 +262,7 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .skeleton { height: 150px; border-radius: var(--radius); background: linear-gradient(90deg,#edf1f6 25%,#f7f9fb 38%,#edf1f6 63%); background-size: 400% 100%; animation: shimmer 1.3s infinite; }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 .access-card { padding: 18px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff7ed; color: #9a3412; font-size: .79rem; }
+.access-card-success { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
 
 /* Responsive */
 @media (max-width: 1020px) {

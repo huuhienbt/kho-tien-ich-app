@@ -3,7 +3,8 @@
 
     App.init('ai');
 
-    const state = { images: [], rawText: '', editing: false };
+    const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const state = { images: [], rawText: '', editing: false, docxBlob: null, docxName: '' };
     const fileInput = document.getElementById('aiImage');
     const preview = document.getElementById('aiImageTags');
     const dropZone = document.getElementById('aiDropZone');
@@ -48,22 +49,98 @@
         });
     }
 
-    function parseMarkdown(text) {
-        let html = App.escapeHTML(text || '').replace(/\r\n/g, '\n');
-        html = html.replace(/^\|(.+)\|\n\|(?:\s*[-:]+\s*\|)+\n((?:\|.*\|\n?)*)/gm, (_, header, body) => {
-            const headers = header.split('|').map(cell => cell.trim());
-            const rows = body.trim().split('\n').filter(Boolean).map(row => row.split('|').slice(1, -1).map(cell => cell.trim()));
-            return `<table><thead><tr>${headers.map(cell => `<th>${cell}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-        });
-        html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-        html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-        html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        html = html.replace(/^[-•]\s+(.+)$/gm, '<div>• $1</div>');
-        html = html.replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>');
-        html = `<p>${html}</p>`;
-        return html.replace(/<p>\s*(<h[1-3]>)/g, '$1').replace(/(<\/h[1-3]>)\s*<\/p>/g, '$1').replace(/<p>\s*(<table>)/g, '$1').replace(/(<\/table>)\s*<\/p>/g, '$1');
+    function normalizeAiText(value) {
+        return String(value || '')
+            .replace(/\r\n?/g, '\n')
+            .replace(/&lt;br\s*\/?&gt;/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\u00a0/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    function inlineMarkdown(value) {
+        return App.escapeHTML(value)
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+    }
+
+    function splitTableRow(line) {
+        let value = String(line || '').trim();
+        if (value.startsWith('|')) value = value.slice(1);
+        if (value.endsWith('|')) value = value.slice(0, -1);
+        return value.split('|').map(cell => cell.trim());
+    }
+
+    function isTableSeparator(line) {
+        const cells = splitTableRow(line);
+        return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell.replace(/\s/g, '')));
+    }
+
+    function startsBlock(lines, index) {
+        const line = lines[index] || '';
+        return /^#{1,3}\s+/.test(line) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
+    }
+
+    function parseMarkdown(value) {
+        const lines = normalizeAiText(value).split('\n');
+        const blocks = [];
+        let index = 0;
+        while (index < lines.length) {
+            const line = lines[index];
+            if (!line.trim()) { index += 1; continue; }
+
+            if (line.includes('|') && isTableSeparator(lines[index + 1] || '')) {
+                const headers = splitTableRow(line);
+                index += 2;
+                const rows = [];
+                while (index < lines.length && lines[index].trim() && lines[index].includes('|')) {
+                    rows.push(splitTableRow(lines[index]));
+                    index += 1;
+                }
+                blocks.push(`<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${headers.map((_, cellIndex) => `<td>${inlineMarkdown(row[cellIndex] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+                continue;
+            }
+
+            const heading = line.match(/^(#{1,3})\s+(.+)$/);
+            if (heading) {
+                const level = heading[1].length;
+                blocks.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+                index += 1;
+                continue;
+            }
+
+            if (/^[-•]\s+/.test(line)) {
+                const items = [];
+                while (index < lines.length && /^[-•]\s+/.test(lines[index])) {
+                    items.push(`<li>${inlineMarkdown(lines[index].replace(/^[-•]\s+/, ''))}</li>`);
+                    index += 1;
+                }
+                blocks.push(`<ul>${items.join('')}</ul>`);
+                continue;
+            }
+
+            if (/^\d+[.)]\s+/.test(line)) {
+                const items = [];
+                while (index < lines.length && /^\d+[.)]\s+/.test(lines[index])) {
+                    items.push(`<li>${inlineMarkdown(lines[index].replace(/^\d+[.)]\s+/, ''))}</li>`);
+                    index += 1;
+                }
+                blocks.push(`<ol>${items.join('')}</ol>`);
+                continue;
+            }
+
+            const paragraph = [line];
+            index += 1;
+            while (index < lines.length && lines[index].trim() && !startsBlock(lines, index)) {
+                paragraph.push(lines[index]);
+                index += 1;
+            }
+            blocks.push(`<p>${paragraph.map(inlineMarkdown).join('<br>')}</p>`);
+        }
+        return blocks.join('');
     }
 
     async function generatePlan() {
@@ -90,13 +167,16 @@
                 integrated: integrated.join(', '),
                 images
             }, { auth: true });
-            state.rawText = String(result.result || '');
+            state.rawText = normalizeAiText(result.result || '');
             if (!state.rawText.includes('KẾ HOẠCH BÀI DẠY')) {
                 state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Tên bài:** ${lesson || '…'}\n\n${state.rawText}`;
             }
             content.innerHTML = parseMarkdown(state.rawText);
             content.contentEditable = 'false';
             state.editing = false;
+            state.docxBlob = null;
+            state.docxName = '';
+            document.getElementById('driveWordLink').hidden = true;
             document.getElementById('editAiButton').textContent = '✏️ Chỉnh sửa';
             document.getElementById('aiPlaceholder').hidden = true;
             document.getElementById('aiResult').hidden = false;
@@ -115,6 +195,7 @@
         content.contentEditable = String(state.editing);
         document.getElementById('editAiButton').textContent = state.editing ? '✅ Hoàn tất' : '✏️ Chỉnh sửa';
         if (state.editing) content.focus();
+        else state.docxBlob = null;
     }
 
     async function copyResult() {
@@ -130,18 +211,249 @@
         return (value || fallback).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
     }
 
-    function exportWord() {
+    function xmlEscape(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[character]));
+    }
+
+    function textRunXml(value, format = {}) {
+        const parts = String(value ?? '').replace(/\r\n?/g, '\n').split('\n');
+        const properties = `${format.bold ? '<w:b/>' : ''}${format.italic ? '<w:i/>' : ''}${format.size ? `<w:sz w:val="${format.size}"/><w:szCs w:val="${format.size}"/>` : ''}`;
+        return parts.map((part, index) => {
+            const breakXml = index ? '<w:br/>' : '';
+            const textXml = part ? `<w:t xml:space="preserve">${xmlEscape(part)}</w:t>` : '';
+            return `<w:r>${properties ? `<w:rPr>${properties}</w:rPr>` : ''}${breakXml}${textXml}</w:r>`;
+        }).join('');
+    }
+
+    function nodeRunsXml(node, format = {}) {
+        if (node.nodeType === Node.TEXT_NODE) return textRunXml(node.nodeValue, format);
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = node.tagName.toLowerCase();
+        if (tag === 'br') return textRunXml('\n', format);
+        const next = {
+            bold: format.bold || ['strong', 'b'].includes(tag),
+            italic: format.italic || ['em', 'i'].includes(tag),
+            size: format.size
+        };
+        return Array.from(node.childNodes).map(child => nodeRunsXml(child, next)).join('');
+    }
+
+    function paragraphXml(element, options = {}) {
+        const size = options.size || 28;
+        const runs = element
+            ? Array.from(element.childNodes).map(node => nodeRunsXml(node, { bold: options.bold, italic: false, size })).join('')
+            : textRunXml(options.text || '', { bold: options.bold, size });
+        const align = options.align ? `<w:jc w:val="${options.align}"/>` : '<w:jc w:val="both"/>';
+        const indent = options.indent ? '<w:ind w:left="420" w:hanging="280"/>' : '';
+        return `<w:p><w:pPr>${align}${indent}<w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
+    }
+
+    function tableXml(table) {
+        const rows = Array.from(table.rows).map(row => {
+            const cells = Array.from(row.cells).map(cell => {
+                const heading = cell.tagName.toLowerCase() === 'th';
+                const shading = heading ? '<w:shd w:fill="EDE9FE"/>' : '';
+                return `<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/>${shading}<w:vAlign w:val="top"/></w:tcPr>${paragraphXml(cell, { bold: heading, size: 26 })}</w:tc>`;
+            }).join('');
+            return `<w:tr>${cells}</w:tr>`;
+        }).join('');
+        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="6" w:color="94A3B8"/><w:insideV w:val="single" w:sz="6" w:color="94A3B8"/></w:tblBorders><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr>${rows}</w:tbl>`;
+    }
+
+    function contentToDocumentBody() {
+        const blocks = [];
+        Array.from(content.childNodes).forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.nodeValue.trim()) blocks.push(paragraphXml(null, { text: node.nodeValue }));
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            const tag = node.tagName.toLowerCase();
+            if (tag === 'table') {
+                blocks.push(tableXml(node));
+            } else if (tag === 'ul' || tag === 'ol') {
+                Array.from(node.children).forEach((item, index) => {
+                    const prefix = tag === 'ol' ? `${index + 1}. ` : '• ';
+                    const wrapper = document.createElement('span');
+                    wrapper.append(document.createTextNode(prefix));
+                    Array.from(item.childNodes).forEach(child => wrapper.append(child.cloneNode(true)));
+                    blocks.push(paragraphXml(wrapper, { indent: true }));
+                });
+            } else if (/^h[1-3]$/.test(tag)) {
+                const level = Number(tag[1]);
+                blocks.push(paragraphXml(node, { bold: true, size: level === 1 ? 34 : level === 2 ? 31 : 29, align: level === 1 ? 'center' : 'left' }));
+            } else {
+                blocks.push(paragraphXml(node));
+            }
+        });
+        return blocks.join('') || paragraphXml(null, { text: content.innerText });
+    }
+
+    function makeDocumentEntries() {
+        const now = new Date().toISOString();
+        const subject = document.getElementById('aiSubject').value.trim() || 'Kế hoạch bài dạy';
+        const lesson = document.getElementById('aiLesson').value.trim();
+        const title = `${subject}${lesson ? ` - ${lesson}` : ''}`;
+        const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${contentToDocumentBody()}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+        const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>`;
+        return [
+            ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`],
+            ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`],
+            ['word/document.xml', documentXml],
+            ['word/styles.xml', stylesXml],
+            ['word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+            ['docProps/core.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xmlEscape(title)}</dc:title><dc:creator>${xmlEscape(App.config.OWNER_NAME)}</dc:creator><cp:lastModifiedBy>${xmlEscape(App.config.OWNER_NAME)}</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`],
+            ['docProps/app.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Sổ tay tiện ích</Application><AppVersion>2.0</AppVersion></Properties>`]
+        ];
+    }
+
+    const crcTable = (() => {
+        const table = new Uint32Array(256);
+        for (let index = 0; index < 256; index += 1) {
+            let value = index;
+            for (let bit = 0; bit < 8; bit += 1) value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+            table[index] = value >>> 0;
+        }
+        return table;
+    })();
+
+    function crc32(bytes) {
+        let crc = 0xffffffff;
+        for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+        return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function zipTimestamp(date = new Date()) {
+        const year = Math.max(1980, date.getFullYear());
+        return {
+            time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+            date: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+        };
+    }
+
+    function concatBytes(parts) {
+        const length = parts.reduce((total, part) => total + part.length, 0);
+        const output = new Uint8Array(length);
+        let offset = 0;
+        parts.forEach(part => { output.set(part, offset); offset += part.length; });
+        return output;
+    }
+
+    function makeZip(entries) {
+        const encoder = new TextEncoder();
+        const localParts = [];
+        const centralParts = [];
+        const stamp = zipTimestamp();
+        let offset = 0;
+        entries.forEach(([name, text]) => {
+            const nameBytes = encoder.encode(name);
+            const data = encoder.encode(text);
+            const crc = crc32(data);
+            const localHeader = new Uint8Array(30);
+            const localView = new DataView(localHeader.buffer);
+            localView.setUint32(0, 0x04034b50, true);
+            localView.setUint16(4, 20, true);
+            localView.setUint16(6, 0x0800, true);
+            localView.setUint16(8, 0, true);
+            localView.setUint16(10, stamp.time, true);
+            localView.setUint16(12, stamp.date, true);
+            localView.setUint32(14, crc, true);
+            localView.setUint32(18, data.length, true);
+            localView.setUint32(22, data.length, true);
+            localView.setUint16(26, nameBytes.length, true);
+
+            const centralHeader = new Uint8Array(46);
+            const centralView = new DataView(centralHeader.buffer);
+            centralView.setUint32(0, 0x02014b50, true);
+            centralView.setUint16(4, 20, true);
+            centralView.setUint16(6, 20, true);
+            centralView.setUint16(8, 0x0800, true);
+            centralView.setUint16(10, 0, true);
+            centralView.setUint16(12, stamp.time, true);
+            centralView.setUint16(14, stamp.date, true);
+            centralView.setUint32(16, crc, true);
+            centralView.setUint32(20, data.length, true);
+            centralView.setUint32(24, data.length, true);
+            centralView.setUint16(28, nameBytes.length, true);
+            centralView.setUint32(42, offset, true);
+
+            localParts.push(localHeader, nameBytes, data);
+            centralParts.push(centralHeader, nameBytes);
+            offset += localHeader.length + nameBytes.length + data.length;
+        });
+        const centralDirectory = concatBytes(centralParts);
+        const end = new Uint8Array(22);
+        const endView = new DataView(end.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(8, entries.length, true);
+        endView.setUint16(10, entries.length, true);
+        endView.setUint32(12, centralDirectory.length, true);
+        endView.setUint32(16, offset, true);
+        return concatBytes([...localParts, centralDirectory, end]);
+    }
+
+    function buildDocx() {
+        if (!content.innerText.trim()) throw new Error('Chưa có nội dung để xuất Word.');
         const subject = safeFilePart(document.getElementById('aiSubject').value, 'MON');
         const lesson = safeFilePart(document.getElementById('aiLesson').value, 'BAI');
-        const html = `<!doctype html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>@page{size:A4;margin:2cm}body,p,td,th,li,span{font-family:'Times New Roman',serif;font-size:14pt;line-height:1.15}h1,h2,h3{font-family:'Times New Roman',serif;font-weight:bold}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #000;padding:6pt;vertical-align:top}th{background:#f2f2f2}</style></head><body>${content.innerHTML}</body></html>`;
-        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `KHBD_${subject}_${lesson}.doc`;
-        document.body.appendChild(link);
-        link.click();
-        URL.revokeObjectURL(link.href);
-        link.remove();
+        const name = `KHBD_${subject}_${lesson}.docx`;
+        const blob = new Blob([makeZip(makeDocumentEntries())], { type: DOCX_MIME });
+        state.docxBlob = blob;
+        state.docxName = name;
+        return { blob, name };
+    }
+
+    function currentDocx() {
+        return state.docxBlob && state.docxName ? { blob: state.docxBlob, name: state.docxName } : buildDocx();
+    }
+
+    function exportWord() {
+        try {
+            const { blob, name } = buildDocx();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            link.remove();
+            App.toast('Đã tạo tệp Word .docx.', 'success');
+        } catch (error) {
+            App.toast(error.message || 'Không thể tạo tệp Word.', 'error');
+        }
+    }
+
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result).split(',')[1]);
+            reader.onerror = () => reject(new Error('Không đọc được tệp Word vừa tạo.'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function uploadWordToDrive() {
+        const button = document.getElementById('uploadWordButton');
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang tạo Word…';
+        try {
+            const { blob, name } = currentDocx();
+            button.textContent = 'Đang tải lên Drive…';
+            const result = await App.apiPost('upload', { fileName: name, mimeType: DOCX_MIME, base64: await blobToBase64(blob) });
+            const fileUrl = App.safeUrl(result.fileUrl || result.url || '');
+            const driveLink = document.getElementById('driveWordLink');
+            if (fileUrl) {
+                driveLink.href = fileUrl;
+                driveLink.hidden = false;
+            }
+            App.toast('Đã lưu kế hoạch bài dạy lên Drive.', 'success');
+        } catch (error) {
+            App.toast(error.message || 'Không thể lưu tệp Word lên Drive.', 'error');
+        } finally {
+            button.disabled = false;
+            button.textContent = original;
+        }
     }
 
     document.getElementById('chooseAiImages').addEventListener('click', () => fileInput.click());
@@ -163,7 +475,9 @@
         event.preventDefault();
         App.requireAdmin(generatePlan);
     });
+    content.addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; });
     document.getElementById('editAiButton').addEventListener('click', toggleEditing);
     document.getElementById('copyAiButton').addEventListener('click', copyResult);
     document.getElementById('exportAiButton').addEventListener('click', exportWord);
+    document.getElementById('uploadWordButton').addEventListener('click', uploadWordToDrive);
 })();
