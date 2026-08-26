@@ -1,4 +1,4 @@
-# E-GV v5.4 – Modern Educational SaaS
+# E-GV v5.5 – Đăng nhập Google mượt hơn
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,10 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Hiển thị ngay hộp “Đang xác minh tài khoản Google” sau khi người dùng chọn tài khoản, không còn cảm giác trang bị đứng.
+- Ngăn gửi trùng yêu cầu đăng nhập và tự thông báo nếu máy chủ phản hồi quá lâu.
+- Dùng `CacheService` để giảm thao tác lặp với token và tài khoản Google đã xác minh.
+- Chỉ cập nhật `last_login` tối đa một lần trong 30 phút và rút ngắn thời gian giữ khóa ghi dữ liệu.
 - Nhận diện E-GV mới với hệ màu xanh dương, gradient xanh–tím, thẻ trắng và bóng đổ nhẹ.
 - Banner và các thẻ thống kê được chuẩn hóa theo phong cách dashboard hiện đại.
 - Thanh điều hướng cố định dưới màn hình điện thoại, trong đó nút Trợ giảng AI được làm nổi ở vị trí trung tâm để thao tác nhanh.

@@ -23,7 +23,8 @@
         clientId: getOrCreateClientId(),
         pendingAction: null,
         authMode: 'login',
-        googleInitialized: false
+        googleInitialized: false,
+        googleSigningIn: false
     };
 
     const iconPaths = {
@@ -124,6 +125,16 @@
         }
         if (!document.getElementById('toastRegion')) {
             document.body.insertAdjacentHTML('beforeend', '<div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>');
+        }
+        if (!document.getElementById('googleAuthProgress')) {
+            document.body.insertAdjacentHTML('beforeend', `
+                <div class="google-auth-progress" id="googleAuthProgress" role="status" aria-live="assertive" aria-busy="true" hidden>
+                    <div class="google-auth-progress-card">
+                        <span class="google-auth-spinner" aria-hidden="true"></span>
+                        <strong>Đang xác minh tài khoản Google</strong>
+                        <span>Vui lòng chờ trong giây lát…</span>
+                    </div>
+                </div>`);
         }
     }
 
@@ -243,20 +254,31 @@
         if (options.sheetType) payload.sheetType = options.sheetType;
         if (state.adminToken) payload.adminToken = state.adminToken;
         if (state.userToken) payload.userToken = state.userToken;
-        const response = await fetch(config.API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Máy chủ không phản hồi.');
-        const result = await response.json();
-        if (result.status !== 'success') {
-            const message = result.message || 'Thao tác không thành công.';
-            if (/mật khẩu quản trị/i.test(message)) logout();
-            if (/phiên (đăng nhập|quản trị)|userToken|token.*hết hạn/i.test(message)) logout();
-            throw new Error(message);
+        const timeoutMs = Math.max(0, Number(options.timeoutMs) || 0);
+        const controller = timeoutMs && typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+        try {
+            const response = await fetch(config.API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload),
+                signal: controller?.signal
+            });
+            if (!response.ok) throw new Error('Máy chủ không phản hồi.');
+            const result = await response.json();
+            if (result.status !== 'success') {
+                const message = result.message || 'Thao tác không thành công.';
+                if (/mật khẩu quản trị/i.test(message)) logout();
+                if (/phiên (đăng nhập|quản trị)|userToken|token.*hết hạn/i.test(message)) logout();
+                throw new Error(message);
+            }
+            return result;
+        } catch (error) {
+            if (error?.name === 'AbortError') throw new Error('Đăng nhập mất quá nhiều thời gian. Vui lòng thử lại.');
+            throw error;
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
         }
-        return result;
     }
 
     async function guestAuth(event) {
@@ -294,13 +316,36 @@
         document.getElementById('guestAuthHelp').textContent = registering ? 'Tạo tài khoản để sử dụng Prompt VIP.' : 'Đăng nhập để mở Prompt VIP và lưu các tiện ích cá nhân.';
     }
 
+    function setGoogleAuthProgress(visible) {
+        const overlay = document.getElementById('googleAuthProgress');
+        const buttonWrap = document.getElementById('googleSignInButton');
+        if (overlay) overlay.hidden = !visible;
+        if (buttonWrap) buttonWrap.classList.toggle('is-busy', visible);
+        document.body.classList.toggle('google-auth-busy', visible);
+    }
+
+    function waitForInterfacePaint() {
+        if (typeof requestAnimationFrame !== 'function') return Promise.resolve();
+        return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
     async function handleGoogleCredential(response) {
         if (!response?.credential) return toast('Google không trả về thông tin đăng nhập.', 'error');
+        if (state.googleSigningIn) return;
+        state.googleSigningIn = true;
+        setGoogleAuthProgress(true);
         try {
-            const result = await apiPost('google_login', { credential: response.credential, origin: window.location.origin });
+            await waitForInterfacePaint();
+            const result = await apiPost('google_login', {
+                credential: response.credential,
+                origin: window.location.origin
+            }, { timeoutMs: 25000 });
             saveUserSession(result);
         } catch (error) {
             toast(error.message || 'Không thể đăng nhập bằng Google.', 'error');
+        } finally {
+            state.googleSigningIn = false;
+            setGoogleAuthProgress(false);
         }
     }
 

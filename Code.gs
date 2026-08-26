@@ -179,36 +179,131 @@ function handleGoogleLogin(data, clientId) {
   enforceRateLimit(clientId, 'google', 20);
   if (String(data.origin || '') !== APP_ORIGIN) return createResponse({ status: 'error', message: 'Tên miền đăng nhập không hợp lệ.' });
   const googleUser = verifyGoogleIdToken(String(data.credential || ''));
-  const lock = LockService.getScriptLock();
-  lock.waitLock(15000);
-  try {
-    let found = findUserByEmail(googleUser.email);
-    if (!found) {
-      const sheet = ensureSheet('Users', USER_HEADERS);
-      const user = {
-        id: 'USR-' + Date.now(), name: googleUser.name || googleUser.email,
-        email: googleUser.email, password_hash: '', salt: '', provider: 'google',
-        google_sub: googleUser.sub, status: 'active', created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      };
-      appendRecord(sheet, user);
-      found = findUserByEmail(googleUser.email);
-    } else {
-      updateRecordAtRow(found.sheet, found.row, {
-        name: readInsensitive(found.data, 'name') || googleUser.name,
-        google_sub: googleUser.sub,
-        last_login: new Date().toISOString()
-      });
-    }
-    return userSessionResponse(found.data);
-  } finally {
-    lock.releaseLock();
+
+  const cachedUser = getCachedGoogleUser(googleUser.email);
+  if (cachedUser) {
+    const cachedSub = String(readInsensitive(cachedUser, 'google_sub') || '');
+    if (!cachedSub || cachedSub === googleUser.sub) return userSessionResponse(cachedUser);
   }
+
+  let found = findUserByEmail(googleUser.email);
+  if (found) {
+    const prepared = prepareExistingGoogleUser(found.data, googleUser);
+    if (Object.keys(prepared.changes).length) {
+      const updateLock = LockService.getScriptLock();
+      if (updateLock.tryLock(2000)) {
+        try {
+          updateRecordAtRow(found.sheet, found.row, prepared.changes);
+        } finally {
+          updateLock.releaseLock();
+        }
+      }
+    }
+    putCachedGoogleUser(prepared.user);
+    return userSessionResponse(prepared.user);
+  }
+
+  const createLock = LockService.getScriptLock();
+  createLock.waitLock(5000);
+  try {
+    found = findUserByEmail(googleUser.email);
+    if (found) {
+      const prepared = prepareExistingGoogleUser(found.data, googleUser);
+      if (Object.keys(prepared.changes).length) updateRecordAtRow(found.sheet, found.row, prepared.changes);
+      putCachedGoogleUser(prepared.user);
+      return userSessionResponse(prepared.user);
+    }
+
+    const sheet = ensureSheet('Users', USER_HEADERS);
+    const now = new Date().toISOString();
+    const user = {
+      id: 'USR-' + Date.now(), name: googleUser.name || googleUser.email,
+      email: googleUser.email, password_hash: '', salt: '', provider: 'google',
+      google_sub: googleUser.sub, status: 'active', created_at: now, last_login: now
+    };
+    appendRecord(sheet, user);
+    putCachedGoogleUser(user);
+    return userSessionResponse(user);
+  } finally {
+    createLock.releaseLock();
+  }
+}
+
+function prepareExistingGoogleUser(user, googleUser) {
+  const status = String(readInsensitive(user, 'status') || 'active').toLowerCase();
+  if (status !== 'active') throw new Error('Tài khoản này đang bị khóa.');
+
+  const storedSub = String(readInsensitive(user, 'google_sub') || '');
+  if (storedSub && storedSub !== googleUser.sub) throw new Error('Tài khoản Google không khớp với tài khoản đã lưu.');
+
+  const merged = Object.assign({}, user);
+  const changes = {};
+  const storedName = String(readInsensitive(user, 'name') || '');
+  const loginTime = Date.parse(String(readInsensitive(user, 'last_login') || ''));
+  const shouldUpdateLoginTime = !isFinite(loginTime) || Date.now() - loginTime > 30 * 60 * 1000;
+
+  if (!storedName && googleUser.name) {
+    merged.name = googleUser.name;
+    changes.name = googleUser.name;
+  }
+  if (!storedSub) {
+    merged.google_sub = googleUser.sub;
+    changes.google_sub = googleUser.sub;
+  }
+  if (shouldUpdateLoginTime) {
+    merged.last_login = new Date().toISOString();
+    changes.last_login = merged.last_login;
+  }
+  return { user: merged, changes: changes };
+}
+
+function googleCacheKey(prefix, value) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value || ''), Utilities.Charset.UTF_8);
+  return prefix + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 40);
+}
+
+function getCachedGoogleUser(email) {
+  try {
+    const value = CacheService.getScriptCache().get(googleCacheKey('google-user:', normalizeEmail(email)));
+    if (!value) return null;
+    const user = JSON.parse(value);
+    return String(readInsensitive(user, 'status') || 'active').toLowerCase() === 'active' ? user : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function putCachedGoogleUser(user) {
+  try {
+    const safeUser = {
+      id: String(readInsensitive(user, 'id') || ''),
+      name: String(readInsensitive(user, 'name') || ''),
+      email: normalizeEmail(readInsensitive(user, 'email')),
+      google_sub: String(readInsensitive(user, 'google_sub') || ''),
+      status: String(readInsensitive(user, 'status') || 'active'),
+      last_login: String(readInsensitive(user, 'last_login') || '')
+    };
+    if (safeUser.id && safeUser.email) {
+      CacheService.getScriptCache().put(googleCacheKey('google-user:', safeUser.email), JSON.stringify(safeUser), 300);
+    }
+  } catch (_) {}
 }
 
 function verifyGoogleIdToken(credential) {
   if (!credential) throw new Error('Thiếu Google ID token.');
   const clientId = getSetting('GOOGLE_CLIENT_ID', true);
+  const cache = CacheService.getScriptCache();
+  const cacheKey = googleCacheKey('google-token:', credential);
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      const value = JSON.parse(cached);
+      if (value.aud === clientId && Number(value.exp || 0) > Math.floor(Date.now() / 1000)) {
+        return { sub: String(value.sub), email: normalizeEmail(value.email), name: cleanText(value.name || value.email, 120) };
+      }
+    }
+  } catch (_) {}
+
   const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential), { muteHttpExceptions: true });
   if (response.getResponseCode() !== 200) throw new Error('Google ID token không hợp lệ.');
   const token = JSON.parse(response.getContentText());
@@ -218,7 +313,15 @@ function verifyGoogleIdToken(credential) {
   if (token.aud !== clientId || !issuerValid || !notExpired || !emailVerified || !token.sub || !token.email) {
     throw new Error('Không thể xác minh tài khoản Google.');
   }
-  return { sub: String(token.sub), email: normalizeEmail(token.email), name: cleanText(token.name || token.email, 120) };
+  const googleUser = { sub: String(token.sub), email: normalizeEmail(token.email), name: cleanText(token.name || token.email, 120) };
+  try {
+    const ttl = Math.max(1, Math.min(300, Number(token.exp) - Math.floor(Date.now() / 1000)));
+    cache.put(cacheKey, JSON.stringify({
+      sub: googleUser.sub, email: googleUser.email, name: googleUser.name,
+      aud: String(token.aud), exp: Number(token.exp)
+    }), ttl);
+  } catch (_) {}
+  return googleUser;
 }
 
 function userSessionResponse(user) {
