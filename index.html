@@ -3,20 +3,22 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="description" content="Sổ tay tiện ích hỗ trợ quản lý công việc, tài liệu và giảng dạy dành cho giáo viên.">
-    <meta name="theme-color" content="#4f46e5">
-    <title>Sổ tay tiện ích Nguyễn Hiển</title>
+    <meta name="description" content="E-GV hỗ trợ giáo viên quản lý Prompt, tài liệu Drive, kế hoạch bài dạy và nhật ký sửa chữa.">
+    <meta name="theme-color" content="#2563eb">
+    <title>E-GV – Tiện ích giáo viên</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modern-saas.css">
     <script src="js/config.js" defer></script>
     <script src="js/app.js" defer></script>
     <script src="js/index.js" defer></script>
 </head>
-<body>
+<body class="page-home">
     <div id="appShell"></div>
     <main class="page-main">
         <div class="container">
             <section class="hero" aria-labelledby="heroTitle">
                 <div class="hero-content">
+                    <span class="hero-kicker"><span class="status-dot"></span> Không gian làm việc dành cho giáo viên</span>
                     <h1 id="heroTitle">Chào buổi sáng,<br>thầy Hiển!</h1>
                     <p>Quản lý câu lệnh AI, sửa chữa thiết bị, tài liệu Drive và kế hoạch bài dạy trong một không gian thống nhất.</p>
                     <div class="hero-actions">
@@ -56,18 +58,18 @@
 
             <div class="section-heading"><h2>Tổng quan nhanh</h2><span>Dữ liệu được cập nhật từ hệ thống</span></div>
             <section class="overview-grid" aria-label="Thống kê tổng quan">
-                <article class="stat-card"><span class="stat-label">Prompt đang lưu</span><strong class="stat-value" id="statPrompts">—</strong><div class="stat-hint">Câu lệnh hỗ trợ công việc</div></article>
-                <article class="stat-card"><span class="stat-label">Đang cần xử lý</span><strong class="stat-value" id="statPending">—</strong><div class="stat-hint">Hạng mục chưa hoàn thành</div></article>
-                <article class="stat-card"><span class="stat-label">Cần theo dõi</span><strong class="stat-value" id="statWatch">—</strong><div class="stat-hint">Thiết bị cần kiểm tra lại</div></article>
-                <article class="stat-card"><span class="stat-label">Tiện ích chính</span><strong class="stat-value">04</strong><div class="stat-hint">Sẵn sàng sử dụng</div></article>
+                <article class="stat-card stat-blue"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span><div><span class="stat-label">Prompt đang lưu</span><strong class="stat-value" id="statPrompts">—</strong><div class="stat-hint">Câu lệnh hỗ trợ công việc</div></div></article>
+                <article class="stat-card stat-orange"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.8 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg></span><div><span class="stat-label">Đang cần xử lý</span><strong class="stat-value" id="statPending">—</strong><div class="stat-hint">Hạng mục chưa hoàn thành</div></div></article>
+                <article class="stat-card stat-teal"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><span class="stat-label">Cần theo dõi</span><strong class="stat-value" id="statWatch">—</strong><div class="stat-hint">Thiết bị cần kiểm tra lại</div></div></article>
+                <article class="stat-card stat-violet"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><div><span class="stat-label">Tiện ích chính</span><strong class="stat-value">04</strong><div class="stat-hint">Sẵn sàng sử dụng</div></div></article>
             </section>
 
             <div class="section-heading"><h2>Không gian làm việc</h2><span>Chọn công cụ cần sử dụng</span></div>
             <section class="dashboard-grid">
-                <a href="prompts.html" class="dash-card"><div class="dash-icon-wrap tone-prompt">📚</div><div class="dash-title">Kho Prompt</div><div class="dash-desc">Prompt thường dùng công khai; Prompt VIP dành cho thành viên đăng nhập.</div><div class="dash-link">Mở công cụ →</div></a>
-                <a href="upload.html" class="dash-card"><div class="dash-icon-wrap tone-upload">📁</div><div class="dash-title">Kho tệp Drive</div><div class="dash-desc">Tải nhiều tệp lên Drive không cần đăng nhập và theo dõi tiến trình.</div><div class="dash-link">Tải tệp lên →</div></a>
-                <a href="ai.html" class="dash-card"><div class="dash-icon-wrap tone-ai">✨</div><div class="dash-title">Trợ giảng AI</div><div class="dash-desc">Soạn kế hoạch bài dạy, xuất Word .docx và lưu trực tiếp lên Drive.</div><div class="dash-link">Bắt đầu soạn →</div></a>
-                <a href="repairs.html" class="dash-card"><div class="dash-icon-wrap tone-repair">🛠️</div><div class="dash-title">Nhật ký sửa chữa</div><div class="dash-desc">Theo dõi sự cố, tiến độ xử lý, chi phí và thời hạn bảo hành.</div><div class="dash-link">Xem nhật ký →</div></a>
+                <a href="prompts.html" class="dash-card dash-prompt"><div class="dash-card-top"><div class="dash-icon-wrap tone-prompt"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></div><span class="dash-badge">Thư viện</span></div><div class="dash-title">Kho Prompt</div><div class="dash-desc">Prompt thường dùng công khai; Prompt VIP dành cho thành viên đăng nhập.</div><div class="dash-link">Mở công cụ <span>→</span></div></a>
+                <a href="upload.html" class="dash-card dash-upload"><div class="dash-card-top"><div class="dash-icon-wrap tone-upload"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m12-7-3-3-3 3m3-3v12"/></svg></div><span class="dash-badge">Không cần đăng nhập</span></div><div class="dash-title">Kho tệp Drive</div><div class="dash-desc">Tải nhiều tệp lên Drive không cần đăng nhập và theo dõi tiến trình.</div><div class="dash-link">Tải tệp lên <span>→</span></div></a>
+                <a href="ai.html" class="dash-card dash-ai"><div class="dash-card-top"><div class="dash-icon-wrap tone-ai"><svg viewBox="0 0 24 24"><path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8ZM19 14l-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/></svg></div><span class="dash-badge">Gemini AI</span></div><div class="dash-title">Trợ giảng AI</div><div class="dash-desc">Soạn kế hoạch bài dạy, xuất Word .docx và lưu trực tiếp lên Drive.</div><div class="dash-link">Bắt đầu soạn <span>→</span></div></a>
+                <a href="repairs.html" class="dash-card dash-repair"><div class="dash-card-top"><div class="dash-icon-wrap tone-repair"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-3.4 3.4-2.2-2.2a4 4 0 0 0 5 5l6.7 6.7a2.1 2.1 0 1 0 3-3Z"/><path d="m6.5 12.5-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8"/></svg></div><span class="dash-badge">Theo dõi</span></div><div class="dash-title">Nhật ký sửa chữa</div><div class="dash-desc">Theo dõi sự cố, tiến độ xử lý, chi phí và thời hạn bảo hành.</div><div class="dash-link">Xem nhật ký <span>→</span></div></a>
             </section>
         </div>
     </main>

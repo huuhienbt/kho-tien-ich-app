@@ -54,6 +54,19 @@
         ).join('');
     }
 
+    function mobileNavigation(activePage) {
+        const items = [
+            ['home', 'index.html', 'Trang chủ', 'home'],
+            ['prompts', 'prompts.html', 'Prompt', 'book'],
+            ['ai', 'ai.html', 'Trợ giảng', 'sparkle'],
+            ['upload', 'upload.html', 'Drive', 'upload'],
+            ['repairs', 'repairs.html', 'Nhật ký', 'wrench']
+        ];
+        return items.map(([key, href, label, iconName]) =>
+            `<a href="${href}" class="mobile-nav-link${key === 'ai' ? ' mobile-nav-primary' : ''}${activePage === key ? ' active' : ''}"${activePage === key ? ' aria-current="page"' : ''}>${icon(iconName, 'mobile-nav-icon')}<span>${label}</span></a>`
+        ).join('');
+    }
+
     function renderShell(activePage) {
         const shell = document.getElementById('appShell');
         if (!shell) return;
@@ -61,8 +74,8 @@
             <header class="app-header">
                 <div class="container header-inner">
                     <a class="brand" href="index.html" aria-label="Về Trang chủ">
-                        <span class="brand-mark">NH</span>
-                        <span class="brand-copy"><span class="brand-title">${config.APP_NAME}</span><span class="brand-subtitle">Công cụ làm việc dành cho giáo viên</span></span>
+                        <span class="brand-mark">E</span>
+                        <span class="brand-copy"><span class="brand-title">${config.APP_NAME}</span><span class="brand-subtitle">Tiện ích dành cho giáo viên</span></span>
                     </a>
                     <nav class="nav-list" id="mainNavigation" aria-label="Điều hướng chính">${navigation(activePage)}</nav>
                     <div class="nav-actions">
@@ -72,7 +85,8 @@
                         <button class="btn btn-danger btn-sm authenticated-only" id="logoutButton" type="button" title="Đăng xuất">${icon('logout')}<span>Đăng xuất</span></button>
                     </div>
                 </div>
-            </header>`;
+            </header>
+            <nav class="mobile-bottom-nav" aria-label="Điều hướng trên điện thoại">${mobileNavigation(activePage)}</nav>`;
     }
 
     function ensureGlobalUi() {

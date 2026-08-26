@@ -15,6 +15,8 @@ Trước khi triển khai, hãy đổi mật khẩu quản trị và thu hồi k
 | `ADMIN_PASSWORD` | Mật khẩu quản trị mới |
 | `FOLDER_ID` | ID thư mục Drive nhận tệp |
 | `GEMINI_API_KEY` | Khóa Gemini mới |
+| `GEMINI_API_KEY_2` | Khóa Gemini dự phòng; nên thuộc Project khác |
+| `GEMINI_API_KEY_3` | Tùy chọn; khóa dự phòng thứ ba |
 | `TOKEN_SECRET` | Có thể bỏ trống; `setupApplication` sẽ tự tạo. Không đổi sau khi đã có người dùng |
 | `GOOGLE_CLIENT_ID` | Web Client ID của Google Sign-In; bỏ trống nếu chưa dùng |
 | `GEMINI_MODEL` | Tùy chọn; mặc định `gemini-3.6-flash` |
@@ -66,11 +68,13 @@ id | title | category | content | platform | access | created_at
 Mẫu:
 
 ```text
-KHBD_MON_LOP_TEN_BAI.docx
+KHBD_MON_<MÔN>_LOP_<LỚP>_<TÊN_BÀI>.docx
 ```
 
-Ví dụ môn Toán, lớp 4, bài Phân số:
+Ví dụ môn Tiếng Việt, lớp 4, bài Điều kì diệu:
 
 ```text
-KHBD_TOAN_4_PHAN_SO.docx
+KHBD_MON_TIENG_VIET_LOP_4_DIEU_KI_DIEU.docx
 ```
+
+Website ưu tiên thông tin đã nhập trong biểu mẫu. Nếu để trống, website tự đọc các dòng `Môn:`, `Lớp:` và `Tên bài:` trong kết quả AI. Nếu vẫn thiếu một trong ba nội dung, hệ thống yêu cầu điền bổ sung trước khi xuất Word để không tạo tên chung chung.
