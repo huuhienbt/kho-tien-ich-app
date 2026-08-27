@@ -17,13 +17,12 @@
     const hour = vietnamParts.hour;
     const greeting = hour < 11 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
     document.getElementById('heroTitle').innerHTML = `${greeting},<br>thầy Hiển!`;
-    document.getElementById('calendarWeekday').textContent = new Intl.DateTimeFormat('vi-VN', {
-        timeZone: VIETNAM_TIME_ZONE,
-        weekday: 'long'
-    }).format(now);
-    document.getElementById('calendarDay').textContent = String(vietnamParts.day).padStart(2, '0');
-    document.getElementById('calendarMonth').textContent = `Tháng ${String(vietnamParts.month).padStart(2, '0')}`;
-    document.getElementById('calendarYear').textContent = vietnamParts.year;
+    const todayDate = {
+        day: vietnamParts.day,
+        month: vietnamParts.month,
+        year: vietnamParts.year
+    };
+    let selectedDate = { ...todayDate };
 
     function jdFromDate(day, month, year) {
         const a = Math.floor((14 - month) / 12);
@@ -177,16 +176,85 @@
         return DAY_OFFICERS[(dayBranch - solarMonthBranch + 12) % 12];
     }
 
-    const lunarDate = solarToLunar(vietnamParts.day, vietnamParts.month, vietnamParts.year, LUNAR_TIME_ZONE);
-    const julianDay = jdFromDate(vietnamParts.day, vietnamParts.month, vietnamParts.year);
-    const lunarDayText = String(lunarDate.day).padStart(2, '0');
-    const lunarMonthText = String(lunarDate.month).padStart(2, '0');
-    const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
-    document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
-    document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayName(julianDay)}<br>Tháng ${lunarMonthName(lunarDate.month, lunarDate.year)} · Năm ${lunarYearName(lunarDate.year)}`;
-    document.getElementById('currentDayElement').textContent = dayElement(julianDay);
-    document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
-    document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
+    function toDateValue(date) {
+        return `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+    }
+
+    function fromDateValue(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!match) return null;
+        const date = {
+            year: Number(match[1]),
+            month: Number(match[2]),
+            day: Number(match[3])
+        };
+        const check = new Date(Date.UTC(date.year, date.month - 1, date.day, 12));
+        if (check.getUTCFullYear() !== date.year
+            || check.getUTCMonth() + 1 !== date.month
+            || check.getUTCDate() !== date.day) return null;
+        return date;
+    }
+
+    function shiftDate(date, days) {
+        const shifted = new Date(Date.UTC(date.year, date.month - 1, date.day + days, 12));
+        return {
+            day: shifted.getUTCDate(),
+            month: shifted.getUTCMonth() + 1,
+            year: shifted.getUTCFullYear()
+        };
+    }
+
+    function renderCalendar(date) {
+        const dateValue = toDateValue(date);
+        const dateAtNoonUtc = new Date(Date.UTC(date.year, date.month - 1, date.day, 12));
+        const lunarDate = solarToLunar(date.day, date.month, date.year, LUNAR_TIME_ZONE);
+        const julianDay = jdFromDate(date.day, date.month, date.year);
+        const lunarDayText = String(lunarDate.day).padStart(2, '0');
+        const lunarMonthText = String(lunarDate.month).padStart(2, '0');
+        const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
+        const isToday = dateValue === toDateValue(todayDate);
+        const todayButton = document.getElementById('calendarTodayButton');
+
+        document.getElementById('calendarWeekday').textContent = new Intl.DateTimeFormat('vi-VN', {
+            timeZone: 'UTC',
+            weekday: 'long'
+        }).format(dateAtNoonUtc);
+        document.getElementById('calendarDay').textContent = String(date.day).padStart(2, '0');
+        document.getElementById('calendarMonth').textContent = `Tháng ${String(date.month).padStart(2, '0')}`;
+        document.getElementById('calendarYear').textContent = date.year;
+        document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
+        document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayName(julianDay)}<br>Tháng ${lunarMonthName(lunarDate.month, lunarDate.year)} · Năm ${lunarYearName(lunarDate.year)}`;
+        document.getElementById('currentDayElement').textContent = dayElement(julianDay);
+        document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
+        document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
+        document.getElementById('calendarDatePicker').value = dateValue;
+        todayButton.textContent = isToday ? 'Hôm nay' : 'Về hôm nay';
+        todayButton.disabled = isToday;
+    }
+
+    function selectCalendarDate(date) {
+        selectedDate = date;
+        renderCalendar(selectedDate);
+    }
+
+    document.getElementById('calendarPreviousButton').addEventListener('click', function () {
+        selectCalendarDate(shiftDate(selectedDate, -1));
+    });
+
+    document.getElementById('calendarNextButton').addEventListener('click', function () {
+        selectCalendarDate(shiftDate(selectedDate, 1));
+    });
+
+    document.getElementById('calendarTodayButton').addEventListener('click', function () {
+        selectCalendarDate({ ...todayDate });
+    });
+
+    document.getElementById('calendarDatePicker').addEventListener('change', function (event) {
+        const date = fromDateValue(event.target.value);
+        if (date) selectCalendarDate(date);
+    });
+
+    renderCalendar(selectedDate);
 
     async function loadOverview() {
         try {

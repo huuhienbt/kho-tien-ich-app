@@ -1,4 +1,4 @@
-# E-GV v5.5 – Đăng nhập Google mượt hơn
+# E-GV v5.6 – Điều hướng lịch linh hoạt
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,10 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Xem ngày hôm trước hoặc ngày hôm sau ngay trên thẻ lịch.
+- Chọn một ngày bất kỳ bằng lịch chọn ngày của máy tính hoặc điện thoại.
+- Nút `Về hôm nay` xuất hiện khi đang xem ngày khác và đưa lịch về ngày hiện tại chỉ với một lần bấm.
+- Tự cập nhật đồng bộ ngày dương, ngày âm, Can Chi, Hành, Sao và Trực theo ngày được chọn; giữ múi giờ Việt Nam.
 - Hiển thị ngay hộp “Đang xác minh tài khoản Google” sau khi người dùng chọn tài khoản, không còn cảm giác trang bị đứng.
 - Ngăn gửi trùng yêu cầu đăng nhập và tự thông báo nếu máy chủ phản hồi quá lâu.
 - Dùng `CacheService` để giảm thao tác lặp với token và tài khoản Google đã xác minh.

@@ -360,6 +360,38 @@ body {
 
 .calendar-editorial-meta strong { color: #29364b; }
 
+.calendar-editorial-controls {
+    margin-top: 2px;
+    padding-top: 15px;
+    border-top: 1px solid #e6ebf2;
+}
+
+.calendar-nav-button,
+.calendar-date-picker {
+    color: var(--primary-dark);
+    border-color: #dbe5f1;
+    background: #f8fafc;
+}
+
+.calendar-nav-button:hover,
+.calendar-date-picker:hover {
+    color: #fff;
+    border-color: var(--primary);
+    background: var(--primary);
+}
+
+.calendar-editorial-label {
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.calendar-editorial-label:not(:disabled):hover {
+    color: #fff;
+    border-color: var(--primary);
+    background: var(--primary);
+}
+
+.calendar-editorial-label:disabled { opacity: 1; }
+
 .section-heading { margin: 34px 0 15px; }
 
 .section-heading h2 {
