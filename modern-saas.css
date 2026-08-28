@@ -1139,7 +1139,7 @@ body.google-auth-busy { overflow: hidden; }
     }
 
     .calendar-editorial-details { padding-left: 14px; }
-    .calendar-editorial-meta > span { white-space: normal; }
+    .calendar-editorial-meta > span { white-space: nowrap !important; }
 
     .section-heading {
         align-items: flex-start;

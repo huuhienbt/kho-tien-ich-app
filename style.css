@@ -109,8 +109,8 @@ body.admin-logged-in .admin-only { display: inline-flex !important; }
 .calendar-editorial-lunar { margin-top: 15px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.14); }
 .calendar-editorial .hero-lunar-date { margin: 0 !important; max-width: none; color: #fff !important; font-size: .79rem; font-weight: 750; }
 .calendar-editorial .hero-lunar-canchi { margin: 5px 0 0 !important; max-width: none; color: #c7d2fe !important; font-size: .65rem; font-weight: 600; line-height: 1.5; }
-.calendar-editorial-meta { margin: 14px 0 0 !important; display: grid; gap: 4px; max-width: none !important; color: #c7d2fe !important; font-size: .65rem; text-transform: uppercase; }
-.calendar-editorial-meta>span { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.calendar-editorial-meta { margin: 14px 0 0 !important; display: flex; max-width: none !important; color: #c7d2fe !important; font-size: .65rem; text-transform: uppercase; }
+.calendar-editorial-meta>span { display: flex; align-items: baseline; gap: 4px; white-space: nowrap !important; }
 .calendar-editorial-meta strong { color: #fff; font-weight: 800; }
 .calendar-editorial-controls { grid-column: 1/-1; display: grid; grid-template-columns: 42px minmax(0,1fr) 42px; gap: 8px; align-items: center; }
 .calendar-nav-button { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; color: inherit; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; background: rgba(255,255,255,.1); cursor: pointer; transition: transform 160ms ease,background 160ms ease,border-color 160ms ease; }
