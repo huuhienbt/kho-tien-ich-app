@@ -335,7 +335,9 @@ body {
     border-left-color: #dce5f2;
 }
 
-.calendar-editorial-weekday { color: #273449; }
+.calendar-editorial-weekday.weekday-regular { color: #273449; }
+.calendar-editorial-weekday.weekday-saturday { color: #2563eb; }
+.calendar-editorial-weekday.weekday-sunday { color: #dc2626; }
 
 .calendar-editorial-label {
     color: var(--primary-dark);
@@ -359,6 +361,13 @@ body {
 }
 
 .calendar-editorial-meta strong { color: #29364b; }
+
+.calendar-editorial .calendar-element { font-weight: 800; }
+.calendar-editorial .element-moc { color: #15803d !important; }
+.calendar-editorial .element-hoa { color: #dc2626 !important; }
+.calendar-editorial .element-tho { color: #a16207 !important; }
+.calendar-editorial .element-kim { color: #64748b !important; }
+.calendar-editorial .element-thuy { color: #2563eb !important; }
 
 .calendar-editorial-controls {
     margin-top: 2px;
