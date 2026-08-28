@@ -950,6 +950,208 @@ body.google-auth-busy { overflow: hidden; }
     box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
 }
 
+/* Xem ngày theo một năm sinh */
+.age-reading-panel {
+    margin-top: 22px;
+    padding: 25px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+
+.age-reading-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 26px;
+}
+
+.age-reading-kicker {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--primary);
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.age-reading-toolbar h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    line-height: 1.25;
+}
+
+.age-reading-toolbar p {
+    margin: 7px 0 0;
+    color: var(--text-secondary);
+    font-size: .82rem;
+}
+
+.birth-year-field {
+    width: min(100%, 330px);
+    flex: 0 0 auto;
+}
+
+.birth-year-field > span {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--text-primary);
+    font-size: .72rem;
+    font-weight: 750;
+}
+
+.birth-year-field select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 42px 0 14px;
+    color: var(--text-primary);
+    border: 1px solid #cfd9e8;
+    border-radius: 12px;
+    outline: 0;
+    background: #fff;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.birth-year-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+}
+
+.age-reading-empty {
+    margin-top: 20px;
+    padding: 18px;
+    color: var(--text-secondary);
+    border: 1px dashed #cbd7e7;
+    border-radius: 14px;
+    background: #f8fafc;
+    font-size: .8rem;
+    text-align: center;
+}
+
+.age-reading-result {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.age-reading-result[hidden],
+.age-reading-empty[hidden] { display: none; }
+
+.age-reading-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.age-reading-result-header span {
+    color: var(--primary);
+    font-size: .7rem;
+    font-weight: 750;
+}
+
+.age-reading-result-header h3 {
+    margin: 4px 0 2px;
+    color: var(--text-primary);
+    font-size: 1.18rem;
+}
+
+.age-reading-result-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: .77rem;
+}
+
+.age-relation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.age-relation-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e1e8f2;
+    border-radius: 15px;
+    background: #fbfcfe;
+}
+
+.age-relation-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.age-relation-heading > span {
+    color: var(--text-primary);
+    font-size: .76rem;
+    font-weight: 800;
+}
+
+.age-relation-card p {
+    margin: 11px 0 0;
+    color: var(--text-secondary);
+    font-size: .74rem;
+    line-height: 1.6;
+}
+
+.age-relation-badge {
+    padding: 5px 8px;
+    border-radius: 999px;
+    font-size: .63rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.age-relation-badge.tone-positive { color: #047857; background: #d1fae5; }
+.age-relation-badge.tone-caution { color: #b45309; background: #fef3c7; }
+.age-relation-badge.tone-negative { color: #b91c1c; background: #fee2e2; }
+.age-relation-badge.tone-neutral { color: #475569; background: #e2e8f0; }
+
+.age-reading-summary {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.age-reading-summary > div {
+    padding: 15px 16px;
+    border-radius: 14px;
+    background: #eff6ff;
+}
+
+.age-reading-summary > div:last-child { background: #fff7ed; }
+
+.age-reading-summary span {
+    color: var(--text-primary);
+    font-size: .71rem;
+    font-weight: 800;
+}
+
+.age-reading-summary p {
+    margin: 6px 0 0;
+    color: var(--text-secondary);
+    font-size: .75rem;
+    line-height: 1.55;
+}
+
+.age-reading-disclaimer {
+    margin: 13px 0 0;
+    color: #8793a5;
+    font-size: .66rem;
+    line-height: 1.5;
+}
+
 /* Máy tính bảng */
 @media (max-width: 1120px) {
     .nav-link { padding-inline: 9px; font-size: .76rem; }
@@ -988,6 +1190,15 @@ body.google-auth-busy { overflow: hidden; }
     .hero-content { text-align: left; }
     .hero-visual { justify-items: start; }
     .calendar-editorial { width: min(100%, 440px); }
+
+    .age-reading-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 17px;
+    }
+
+    .birth-year-field { width: 100%; }
+    .age-relation-grid { grid-template-columns: 1fr; }
 
     .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat-card { min-height: 118px; }
@@ -1135,6 +1346,15 @@ body.google-auth-busy { overflow: hidden; }
 
     .hero-actions { display: grid; grid-template-columns: 1fr; }
     .hero-actions .btn { width: 100%; }
+
+    .age-reading-panel {
+        margin-top: 16px;
+        padding: 19px;
+        border-radius: 18px;
+    }
+
+    .age-reading-toolbar h2 { font-size: 1.15rem; }
+    .age-reading-summary { grid-template-columns: 1fr; }
 
     .calendar-editorial {
         padding: 18px;

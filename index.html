@@ -72,6 +72,72 @@
                 </div>
             </section>
 
+            <section class="age-reading-panel" aria-labelledby="ageReadingHeading">
+                <div class="age-reading-toolbar">
+                    <div>
+                        <span class="age-reading-kicker">Tham khảo theo năm sinh</span>
+                        <h2 id="ageReadingHeading">Xem ngày theo tuổi</h2>
+                        <p>Chọn năm sinh để xem mức độ tương tác với ngày đang hiển thị trên lịch.</p>
+                    </div>
+                    <label class="birth-year-field" for="birthYearSelect">
+                        <span>Năm sinh</span>
+                        <select id="birthYearSelect" aria-describedby="birthYearHint">
+                            <option value="">Chọn năm sinh</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="age-reading-empty" id="ageReadingEmpty">
+                    Chọn một năm sinh, ví dụ <strong>1992 – Nhâm Thân</strong>, để xem luận giải ngắn gọn.
+                </div>
+
+                <div class="age-reading-result" id="ageReadingResult" hidden>
+                    <header class="age-reading-result-header">
+                        <div>
+                            <span id="ageReadingDayLabel">Đánh giá theo ngày</span>
+                            <h3 id="ageReadingTitle">Tuổi —</h3>
+                            <p id="ageReadingSubtitle">Sinh năm —</p>
+                        </div>
+                    </header>
+
+                    <div class="age-relation-grid">
+                        <article class="age-relation-card">
+                            <div class="age-relation-heading">
+                                <span>Ngũ hành</span>
+                                <strong class="age-relation-badge" id="ageElementRelation">—</strong>
+                            </div>
+                            <p id="ageElementDescription">—</p>
+                        </article>
+                        <article class="age-relation-card">
+                            <div class="age-relation-heading">
+                                <span>Thiên can</span>
+                                <strong class="age-relation-badge" id="ageStemRelation">—</strong>
+                            </div>
+                            <p id="ageStemDescription">—</p>
+                        </article>
+                        <article class="age-relation-card">
+                            <div class="age-relation-heading">
+                                <span>Địa chi</span>
+                                <strong class="age-relation-badge" id="ageBranchRelation">—</strong>
+                            </div>
+                            <p id="ageBranchDescription">—</p>
+                        </article>
+                    </div>
+
+                    <div class="age-reading-summary">
+                        <div>
+                            <span>Ảnh hưởng</span>
+                            <p id="ageReadingImpact">—</p>
+                        </div>
+                        <div>
+                            <span>Lưu ý</span>
+                            <p id="ageReadingNote">—</p>
+                        </div>
+                    </div>
+                    <p class="age-reading-disclaimer" id="birthYearHint">Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng. Thông tin mang tính tham khảo theo năm sinh.</p>
+                </div>
+            </section>
+
             <div class="section-heading"><h2>Tổng quan nhanh</h2><span>Dữ liệu được cập nhật từ hệ thống</span></div>
             <section class="overview-grid" aria-label="Thống kê tổng quan">
                 <article class="stat-card stat-blue"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span><div><span class="stat-label">Prompt đang lưu</span><strong class="stat-value" id="statPrompts">—</strong><div class="stat-hint">Câu lệnh hỗ trợ công việc</div></div></article>
