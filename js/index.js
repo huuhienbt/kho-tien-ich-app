@@ -140,6 +140,9 @@
 
     const HEAVENLY_STEMS = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
     const EARTHLY_BRANCHES = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+    const STEM_ELEMENT_KEYS = ['moc', 'moc', 'hoa', 'hoa', 'tho', 'tho', 'kim', 'kim', 'thuy', 'thuy'];
+    const BRANCH_ELEMENT_KEYS = ['thuy', 'tho', 'moc', 'moc', 'tho', 'hoa', 'hoa', 'tho', 'kim', 'kim', 'tho', 'thuy'];
+    const ELEMENT_NAME_KEYS = { 'Mộc': 'moc', 'Hỏa': 'hoa', 'Thổ': 'tho', 'Kim': 'kim', 'Thủy': 'thuy' };
     const LUNAR_MANSIONS = ['Giác', 'Cang', 'Đê', 'Phòng', 'Tâm', 'Vĩ', 'Cơ', 'Đẩu', 'Ngưu', 'Nữ', 'Hư', 'Nguy', 'Thất', 'Bích', 'Khuê', 'Lâu', 'Vị', 'Mão', 'Tất', 'Chủy', 'Sâm', 'Tỉnh', 'Quỷ', 'Liễu', 'Tinh', 'Trương', 'Dực', 'Chẩn'];
     const DAY_OFFICERS = ['Kiến', 'Trừ', 'Mãn', 'Bình', 'Định', 'Chấp', 'Phá', 'Nguy', 'Thành', 'Thu', 'Khai', 'Bế'];
     const NAP_AM_ELEMENTS = ['Kim', 'Hỏa', 'Mộc', 'Thổ', 'Kim', 'Hỏa', 'Thủy', 'Thổ', 'Kim', 'Mộc', 'Thủy', 'Thổ', 'Hỏa', 'Mộc', 'Thủy', 'Kim', 'Hỏa', 'Mộc', 'Thổ', 'Kim', 'Hỏa', 'Thủy', 'Thổ', 'Kim', 'Mộc', 'Thủy', 'Thổ', 'Hỏa', 'Mộc', 'Thủy'];
@@ -158,6 +161,24 @@
 
     function lunarDayName(julianDay) {
         return cycleName((julianDay + 9) % 10, (julianDay + 1) % 12);
+    }
+
+    function cycleNameHtml(stemIndex, branchIndex) {
+        const stem = ((stemIndex % 10) + 10) % 10;
+        const branch = ((branchIndex % 12) + 12) % 12;
+        return `<span class="calendar-element element-${STEM_ELEMENT_KEYS[stem]}">${HEAVENLY_STEMS[stem]}</span> <span class="calendar-element element-${BRANCH_ELEMENT_KEYS[branch]}">${EARTHLY_BRANCHES[branch]}</span>`;
+    }
+
+    function lunarYearNameHtml(year) {
+        return cycleNameHtml((year + 6) % 10, (year + 8) % 12);
+    }
+
+    function lunarMonthNameHtml(month, year) {
+        return cycleNameHtml((year * 12 + month + 3) % 10, (month + 1) % 12);
+    }
+
+    function lunarDayNameHtml(julianDay) {
+        return cycleNameHtml((julianDay + 9) % 10, (julianDay + 1) % 12);
     }
 
     function dayElement(julianDay) {
@@ -214,17 +235,26 @@
         const lunarLeapText = lunarDate.isLeap ? ' (tháng nhuận)' : '';
         const isToday = dateValue === toDateValue(todayDate);
         const todayButton = document.getElementById('calendarTodayButton');
+        const weekdayElement = document.getElementById('calendarWeekday');
+        const dayOfWeek = dateAtNoonUtc.getUTCDay();
+        const weekdayClass = dayOfWeek === 0
+            ? 'weekday-sunday'
+            : dayOfWeek === 6 ? 'weekday-saturday' : 'weekday-regular';
+        const currentElement = dayElement(julianDay);
+        const currentElementNode = document.getElementById('currentDayElement');
 
-        document.getElementById('calendarWeekday').textContent = new Intl.DateTimeFormat('vi-VN', {
+        weekdayElement.textContent = new Intl.DateTimeFormat('vi-VN', {
             timeZone: 'UTC',
             weekday: 'long'
         }).format(dateAtNoonUtc);
+        weekdayElement.className = `calendar-editorial-weekday ${weekdayClass}`;
         document.getElementById('calendarDay').textContent = String(date.day).padStart(2, '0');
         document.getElementById('calendarMonth').textContent = `Tháng ${String(date.month).padStart(2, '0')}`;
         document.getElementById('calendarYear').textContent = date.year;
         document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
-        document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayName(julianDay)}<br>Tháng ${lunarMonthName(lunarDate.month, lunarDate.year)} · Năm ${lunarYearName(lunarDate.year)}`;
-        document.getElementById('currentDayElement').textContent = dayElement(julianDay);
+        document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayNameHtml(julianDay)}<br>Tháng ${lunarMonthNameHtml(lunarDate.month, lunarDate.year)} · Năm ${lunarYearNameHtml(lunarDate.year)}`;
+        currentElementNode.textContent = currentElement;
+        currentElementNode.className = `calendar-element element-${ELEMENT_NAME_KEYS[currentElement]}`;
         document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
         document.getElementById('currentDayOfficer').textContent = dayOfficer(julianDay, LUNAR_TIME_ZONE);
         document.getElementById('calendarDatePicker').value = dateValue;
