@@ -367,14 +367,14 @@ body {
 }
 
 .calendar-nav-button,
-.calendar-date-picker {
+.calendar-date-button {
     color: var(--primary-dark);
     border-color: #dbe5f1;
     background: #f8fafc;
 }
 
 .calendar-nav-button:hover,
-.calendar-date-picker:hover {
+.calendar-date-button:hover {
     color: #fff;
     border-color: var(--primary);
     background: var(--primary);

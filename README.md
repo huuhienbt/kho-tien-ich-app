@@ -1,4 +1,4 @@
-# E-GV v5.6 – Điều hướng lịch linh hoạt
+# E-GV v5.6.1 – Sửa nút chọn ngày
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,7 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Nút `Chọn ngày` gọi trực tiếp lịch hệ thống bằng `showPicker()` và tự chuyển sang phương án dự phòng trên trình duyệt chưa hỗ trợ.
 - Xem ngày hôm trước hoặc ngày hôm sau ngay trên thẻ lịch.
 - Chọn một ngày bất kỳ bằng lịch chọn ngày của máy tính hoặc điện thoại.
 - Nút `Về hôm nay` xuất hiện khi đang xem ngày khác và đưa lịch về ngày hiện tại chỉ với một lần bấm.

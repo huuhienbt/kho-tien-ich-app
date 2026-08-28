@@ -249,7 +249,28 @@
         selectCalendarDate({ ...todayDate });
     });
 
-    document.getElementById('calendarDatePicker').addEventListener('change', function (event) {
+    const calendarDatePicker = document.getElementById('calendarDatePicker');
+
+    document.getElementById('calendarDateButton').addEventListener('click', function () {
+        try {
+            calendarDatePicker.focus({ preventScroll: true });
+        } catch (_) {
+            calendarDatePicker.focus();
+        }
+
+        if (typeof calendarDatePicker.showPicker === 'function') {
+            try {
+                calendarDatePicker.showPicker();
+                return;
+            } catch (_) {
+                // Một số trình duyệt chưa cho phép showPicker; dùng click làm phương án dự phòng.
+            }
+        }
+
+        calendarDatePicker.click();
+    });
+
+    calendarDatePicker.addEventListener('change', function (event) {
         const date = fromDateValue(event.target.value);
         if (date) selectCalendarDate(date);
     });

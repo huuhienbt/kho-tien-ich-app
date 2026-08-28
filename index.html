@@ -56,11 +56,13 @@
                             <button class="calendar-nav-button" id="calendarPreviousButton" type="button" aria-label="Xem ngày hôm trước" title="Ngày hôm trước">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
                             </button>
-                            <label class="calendar-date-picker" for="calendarDatePicker">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-                                <span>Chọn ngày</span>
-                                <input id="calendarDatePicker" type="date" min="1900-01-01" max="2099-12-31" aria-label="Chọn ngày bất kỳ">
-                            </label>
+                            <div class="calendar-date-picker">
+                                <button class="calendar-date-button" id="calendarDateButton" type="button" aria-label="Chọn ngày bất kỳ" aria-haspopup="dialog">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                                    <span>Chọn ngày</span>
+                                </button>
+                                <input class="calendar-date-input" id="calendarDatePicker" type="date" min="1900-01-01" max="2099-12-31" tabindex="-1" aria-hidden="true">
+                            </div>
                             <button class="calendar-nav-button" id="calendarNextButton" type="button" aria-label="Xem ngày hôm sau" title="Ngày hôm sau">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                             </button>
