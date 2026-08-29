@@ -1,4 +1,4 @@
-# E-GV v6.5 – Luận giải đầy đủ, không mất chữ
+# E-GV v6.7 – Bổ sung dữ liệu Ngày, Tháng, Năm
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,12 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Bổ sung cột dữ liệu vào từng thẻ Ngày, Tháng và Năm: nạp âm ở dòng Ngũ hành, tên Can ở dòng Thiên can và tên Chi ở dòng Địa chi.
+- Dữ liệu tự thay đổi theo ngày được chọn; nạp âm, Can và Chi được tô màu đúng ngũ hành trước khi hiển thị quan hệ với tuổi.
+- Chuyển mỗi dòng thành ba cột rõ ràng theo thứ tự `Yếu tố – Dữ liệu – Quan hệ`.
+- Bỏ toàn bộ thẻ `Tra cứu nhanh` để tờ lịch chiếm trọn chiều ngang nội dung.
+- Tăng cỡ chữ số ngày, thứ, tháng, âm lịch, Can Chi, Hành, Sao và Trực; cân lại khoảng cách và đường phân cách để tờ lịch rõ, đều hơn.
+- Tăng kích thước ba nút điều hướng lịch và tối ưu riêng cho điện thoại, cho phép dòng Hành – Sao – Trực tự xuống khi thiếu chỗ.
 - Sửa lỗi phần Địa chi bị cắt giữa chữ do giới hạn ký tự; tăng dung lượng cho cả 7 phần và chỉ rút gọn ở cuối câu hoàn chỉnh khi thật sự cần.
 - Bỏ thông báo kỹ thuật `Gemini bỏ sót một phần nội dung` khi E-GV đã tự bổ sung thành công.
 - Bỏ đoạn `Cách hiểu điểm` ở cuối khung luận giải vì lặp lại thông tin và không hỗ trợ quyết định.

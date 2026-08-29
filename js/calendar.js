@@ -402,6 +402,15 @@
     function renderPeriodReading(prefix, reading) {
         document.getElementById(`age${prefix}Title`).textContent = `${reading.label} ${reading.profile.name}`;
         document.getElementById(`age${prefix}Score`).textContent = `${reading.score}/100`;
+        const elementValue = document.getElementById(`age${prefix}ElementValue`);
+        const stemValue = document.getElementById(`age${prefix}StemValue`);
+        const branchValue = document.getElementById(`age${prefix}BranchValue`);
+        elementValue.textContent = reading.profile.napAm;
+        elementValue.className = `age-period-value element-${reading.profile.elementKey}`;
+        stemValue.textContent = reading.profile.stem;
+        stemValue.className = `age-period-value element-${STEM_ELEMENT_KEYS[reading.profile.stemIndex]}`;
+        branchValue.textContent = reading.profile.branch;
+        branchValue.className = `age-period-value element-${BRANCH_ELEMENT_KEYS[reading.profile.branchIndex]}`;
         setCompactRelation(`age${prefix}Element`, reading.relations.element);
         setCompactRelation(`age${prefix}Stem`, reading.relations.stem);
         setCompactRelation(`age${prefix}Branch`, reading.relations.branch);

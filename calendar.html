@@ -6,11 +6,11 @@
     <meta name="description" content="Âm lịch E-GV: xem ngày dương, ngày âm, Can Chi, ngũ hành và phân tích ngày theo năm sinh.">
     <meta name="theme-color" content="#2563eb">
     <title>Âm lịch – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=6.5.0">
-    <link rel="stylesheet" href="modern-saas.css?v=6.5.0">
-    <script src="js/config.js?v=6.5.0" defer></script>
-    <script src="js/app.js?v=6.5.0" defer></script>
-    <script src="js/calendar.js?v=6.5.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=6.7.0">
+    <link rel="stylesheet" href="modern-saas.css?v=6.7.0">
+    <script src="js/config.js?v=6.7.0" defer></script>
+    <script src="js/app.js?v=6.7.0" defer></script>
+    <script src="js/calendar.js?v=6.7.0" defer></script>
 </head>
 <body class="page-calendar">
     <div id="appShell"></div>
@@ -45,16 +45,6 @@
                     </div>
                 </article>
 
-                <aside class="calendar-guide-card">
-                    <span class="calendar-guide-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/><path d="M12 16v-4M12 8h.01"/></svg></span>
-                    <h2>Tra cứu nhanh</h2>
-                    <p>Dùng hai nút mũi tên để chuyển từng ngày hoặc bấm <strong>Chọn ngày</strong> để mở lịch hệ thống.</p>
-                    <ul>
-                        <li>Tên thứ tự đổi màu theo ngày trong tuần.</li>
-                        <li>Can, Chi và Hành được tô màu theo ngũ hành.</li>
-                        <li>Đăng nhập để xem mức độ thuận lợi theo năm sinh.</li>
-                    </ul>
-                </aside>
             </section>
 
             <section class="age-reading-panel" aria-labelledby="ageReadingHeading">
@@ -83,9 +73,9 @@
                         <p class="age-score-method"><strong>Cách tính:</strong> ngày 50% · tháng 30% · năm 20%. Mốc 50 là cân bằng; đây không phải xác suất may mắn.</p>
 
                         <div class="age-period-grid">
-                            <article class="age-period-card"><header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageDayElement">—</dd></div><div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageDayStem">—</dd></div><div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageDayBranch">—</dd></div></dl></article>
-                            <article class="age-period-card"><header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageMonthElement">—</dd></div><div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageMonthStem">—</dd></div><div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageMonthBranch">—</dd></div></dl></article>
-                            <article class="age-period-card"><header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageYearElement">—</dd></div><div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageYearStem">—</dd></div><div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageYearBranch">—</dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageDayElementValue">—</span><dd class="age-relation-badge" id="ageDayElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageDayStemValue">—</span><dd class="age-relation-badge" id="ageDayStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageDayBranchValue">—</span><dd class="age-relation-badge" id="ageDayBranch">—</dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageMonthElementValue">—</span><dd class="age-relation-badge" id="ageMonthElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageMonthStemValue">—</span><dd class="age-relation-badge" id="ageMonthStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageMonthBranchValue">—</span><dd class="age-relation-badge" id="ageMonthBranch">—</dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageYearElementValue">—</span><dd class="age-relation-badge" id="ageYearElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageYearStemValue">—</span><dd class="age-relation-badge" id="ageYearStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageYearBranchValue">—</span><dd class="age-relation-badge" id="ageYearBranch">—</dd></div></dl></article>
                         </div>
 
                         <div class="age-reading-summary"><div><span>Ảnh hưởng</span><p id="ageReadingImpact">—</p></div><div><span>Lưu ý</span><p id="ageReadingNote">—</p></div></div>
