@@ -584,27 +584,18 @@
         };
     }
 
-    function weekStartDate(date) {
-        const dateAtNoonUtc = new Date(Date.UTC(date.year, date.month - 1, date.day, 12));
-        const dayOfWeek = dateAtNoonUtc.getUTCDay();
-        return shiftDate(date, -(dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    function daysInSolarMonth(year, month) {
+        return new Date(Date.UTC(year, month, 0, 12)).getUTCDate();
     }
 
-    function formatWeekRange(start, end) {
-        const dayStart = String(start.day).padStart(2, '0');
-        const dayEnd = String(end.day).padStart(2, '0');
-        const monthStart = String(start.month).padStart(2, '0');
-        const monthEnd = String(end.month).padStart(2, '0');
-        if (start.year === end.year && start.month === end.month) {
-            return `${dayStart}–${dayEnd}/${monthEnd}/${end.year}`;
-        }
-        if (start.year === end.year) {
-            return `${dayStart}/${monthStart}–${dayEnd}/${monthEnd}/${end.year}`;
-        }
-        return `${dayStart}/${monthStart}/${start.year}–${dayEnd}/${monthEnd}/${end.year}`;
+    function shiftMonthDate(date, months) {
+        const monthIndex = date.year * 12 + date.month - 1 + months;
+        const year = Math.floor(monthIndex / 12);
+        const month = modulo(monthIndex, 12) + 1;
+        return { day: Math.min(date.day, daysInSolarMonth(year, month)), month, year };
     }
 
-    function weekScoreTone(score) {
+    function monthScoreTone(score) {
         if (score < 40) return 'low';
         if (score < 50) return 'caution';
         if (score < 65) return 'medium';
@@ -612,31 +603,42 @@
         return 'high';
     }
 
-    function renderAgeWeekChart(birthYear) {
-        const weekStart = weekStartDate(selectedDate);
-        const weekDays = Array.from({ length: 7 }, function (_, index) {
-            const date = shiftDate(weekStart, index);
+    function renderAgeMonthChart(birthYear) {
+        const totalDays = daysInSolarMonth(selectedDate.year, selectedDate.month);
+        const monthDays = Array.from({ length: totalDays }, function (_, index) {
+            const date = { day: index + 1, month: selectedDate.month, year: selectedDate.year };
             return { date, reading: calculateAgeReadingForDate(date, birthYear) };
         });
-        const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-        const weekdayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật'];
+        const weekdayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const weekdayNames = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
         const selectedValue = toDateValue(selectedDate);
-        const best = weekDays.reduce((current, item) => item.reading.score > current.reading.score ? item : current);
-        const caution = weekDays.reduce((current, item) => item.reading.score < current.reading.score ? item : current);
-        const bestIndex = weekDays.indexOf(best);
-        const cautionIndex = weekDays.indexOf(caution);
+        const best = monthDays.reduce((current, item) => item.reading.score > current.reading.score ? item : current);
+        const caution = monthDays.reduce((current, item) => item.reading.score < current.reading.score ? item : current);
+        const monthText = String(selectedDate.month).padStart(2, '0');
 
-        document.getElementById('ageWeekRange').textContent = `Tuần ${formatWeekRange(weekStart, weekDays[6].date)}`;
-        document.getElementById('ageWeekSummary').textContent = `Thuận nhất: ${weekdayLabels[bestIndex]} ${String(best.date.day).padStart(2, '0')}/${String(best.date.month).padStart(2, '0')} · ${best.reading.score}/100  |  Cần lưu ý: ${weekdayLabels[cautionIndex]} ${String(caution.date.day).padStart(2, '0')}/${String(caution.date.month).padStart(2, '0')} · ${caution.reading.score}/100`;
-        document.getElementById('ageWeekBars').innerHTML = weekDays.map(function (item, index) {
+        document.getElementById('ageMonthRange').textContent = `Tháng ${monthText}/${selectedDate.year} · ${totalDays} ngày`;
+        document.getElementById('ageMonthSummary').textContent = `Thuận nhất: ${String(best.date.day).padStart(2, '0')}/${monthText} · ${best.reading.score}/100  |  Cần lưu ý: ${String(caution.date.day).padStart(2, '0')}/${monthText} · ${caution.reading.score}/100`;
+        const bars = document.getElementById('ageMonthBars');
+        bars.style.gridTemplateColumns = `repeat(${totalDays}, minmax(24px, 1fr))`;
+        bars.style.minWidth = `${Math.max(totalDays * 30, 820)}px`;
+        bars.innerHTML = monthDays.map(function (item) {
             const dateValue = toDateValue(item.date);
             const score = item.reading.score;
-            const tone = weekScoreTone(score);
+            const tone = monthScoreTone(score);
             const selected = dateValue === selectedValue;
-            const shortDate = `${String(item.date.day).padStart(2, '0')}/${String(item.date.month).padStart(2, '0')}`;
-            const weekdayClass = index === 5 ? ' weekday-saturday' : index === 6 ? ' weekday-sunday' : '';
-            return `<button class="age-week-bar${weekdayClass}${selected ? ' is-selected' : ''}" type="button" data-week-date="${dateValue}" aria-label="${weekdayNames[index]} ${shortDate}: ${score} trên 100, ${item.reading.level.label}"${selected ? ' aria-current="date"' : ''}><span class="age-week-score">${score}</span><span class="age-week-track"><i class="tone-${tone}" style="height:${Math.max(score, 6)}%"></i></span><strong>${weekdayLabels[index]}</strong><small>${shortDate}</small></button>`;
+            const dateAtNoonUtc = new Date(Date.UTC(item.date.year, item.date.month - 1, item.date.day, 12));
+            const dayOfWeek = dateAtNoonUtc.getUTCDay();
+            const weekdayClass = dayOfWeek === 6 ? ' weekday-saturday' : dayOfWeek === 0 ? ' weekday-sunday' : '';
+            const dayText = String(item.date.day).padStart(2, '0');
+            return `<button class="age-month-bar${weekdayClass}${selected ? ' is-selected' : ''}" type="button" data-month-date="${dateValue}" aria-label="${weekdayNames[dayOfWeek]} ${dayText}/${monthText}: ${score} trên 100, ${item.reading.level.label}"${selected ? ' aria-current="date"' : ''}><span class="age-month-score">${score}</span><span class="age-month-track"><i class="tone-${tone}" style="height:${Math.max(score, 6)}%"></i></span><strong>${dayText}</strong><small>${weekdayLabels[dayOfWeek]}</small></button>`;
         }).join('');
+
+        const scrollBox = document.getElementById('ageMonthChartScroll');
+        const updateScroll = function () {
+            scrollBox.scrollLeft = Math.max(0, (selectedDate.day - 4) * 30);
+        };
+        if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(updateScroll);
+        else updateScroll();
     }
 
     function renderAgeReading() {
@@ -682,7 +684,7 @@
         document.getElementById('ageReadingScore').textContent = `${score}/100`;
         document.getElementById('ageReadingLevel').textContent = level.label;
         document.getElementById('ageReadingScoreBox').className = `age-score ${level.className}`;
-        renderAgeWeekChart(year);
+        renderAgeMonthChart(year);
         renderPeriodReading('Day', readings.day);
         renderPeriodReading('Month', readings.month);
         renderPeriodReading('Year', readings.year);
@@ -1122,19 +1124,19 @@
     document.getElementById('ageReadingLoginButton').addEventListener('click', function () {
         App.requireUser(updateAgeReadingAuthUi);
     });
-    document.getElementById('ageWeekPrevious').addEventListener('click', function () {
-        selectCalendarDate(shiftDate(selectedDate, -7));
+    document.getElementById('ageMonthPrevious').addEventListener('click', function () {
+        selectCalendarDate(shiftMonthDate(selectedDate, -1));
     });
-    document.getElementById('ageWeekCurrent').addEventListener('click', function () {
+    document.getElementById('ageMonthCurrent').addEventListener('click', function () {
         selectCalendarDate({ ...todayDate });
     });
-    document.getElementById('ageWeekNext').addEventListener('click', function () {
-        selectCalendarDate(shiftDate(selectedDate, 7));
+    document.getElementById('ageMonthNext').addEventListener('click', function () {
+        selectCalendarDate(shiftMonthDate(selectedDate, 1));
     });
-    document.getElementById('ageWeekBars').addEventListener('click', function (event) {
-        const button = event.target.closest('[data-week-date]');
+    document.getElementById('ageMonthBars').addEventListener('click', function (event) {
+        const button = event.target.closest('[data-month-date]');
         if (!button) return;
-        const date = fromDateValue(button.dataset.weekDate);
+        const date = fromDateValue(button.dataset.monthDate);
         if (date) selectCalendarDate(date);
     });
     document.querySelectorAll('[data-age-relation]').forEach(function (button) {

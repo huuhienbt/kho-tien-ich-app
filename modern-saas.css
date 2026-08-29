@@ -1344,7 +1344,7 @@ body.google-auth-busy { overflow: hidden; }
 
 .age-score-method strong { color: #334155; }
 
-.age-weekly-chart {
+.age-monthly-chart {
     margin: 0 0 13px;
     padding: 15px 16px 13px;
     border: 1px solid #dbe7f5;
@@ -1352,14 +1352,14 @@ body.google-auth-busy { overflow: hidden; }
     background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
 }
 
-.age-weekly-chart > header {
+.age-monthly-chart > header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 14px;
 }
 
-.age-weekly-chart > header span {
+.age-monthly-chart > header span {
     color: var(--primary);
     font-size: .62rem;
     font-weight: 800;
@@ -1367,19 +1367,19 @@ body.google-auth-busy { overflow: hidden; }
     text-transform: uppercase;
 }
 
-.age-weekly-chart > header h4 {
+.age-monthly-chart > header h4 {
     margin: 3px 0 0;
     color: var(--text-primary);
     font-size: .92rem;
 }
 
-.age-week-navigation {
+.age-month-navigation {
     display: inline-grid;
     grid-template-columns: 34px auto 34px;
     gap: 5px;
 }
 
-.age-week-navigation button {
+.age-month-navigation button {
     min-height: 32px;
     padding: 5px 9px;
     border: 1px solid #dbe4f0;
@@ -1392,10 +1392,10 @@ body.google-auth-busy { overflow: hidden; }
     cursor: pointer;
 }
 
-.age-week-navigation button:hover { border-color: #93c5fd; background: #eff6ff; }
-.age-week-navigation button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.age-month-navigation button:hover { border-color: #93c5fd; background: #eff6ff; }
+.age-month-navigation button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-.age-week-meta {
+.age-month-meta {
     margin-top: 10px;
     display: flex;
     align-items: center;
@@ -1406,24 +1406,35 @@ body.google-auth-busy { overflow: hidden; }
     line-height: 1.45;
 }
 
-.age-week-meta strong { color: #334155; white-space: nowrap; }
-.age-week-meta span { text-align: right; }
+.age-month-meta strong { color: #334155; white-space: nowrap; }
+.age-month-meta span { text-align: right; }
 
-.age-week-bars {
-    min-height: 220px;
+.age-month-chart-scroll {
     margin-top: 12px;
-    padding: 13px 10px 8px;
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    align-items: end;
-    gap: 9px;
+    overflow-x: auto;
     border: 1px solid #e2e8f0;
     border-radius: 13px;
+    background: #fff;
+    scrollbar-width: thin;
+    scrollbar-color: #bfdbfe #f1f5f9;
+}
+
+.age-month-chart-scroll:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.age-month-bars {
+    min-height: 220px;
+    padding: 13px 9px 9px;
+    display: grid;
+    align-items: end;
+    gap: 4px;
     background-color: #fff;
     background-image: repeating-linear-gradient(to top, transparent 0, transparent 49px, #edf2f7 50px);
 }
 
-.age-week-bar {
+.age-month-bar {
     min-width: 0;
     padding: 0;
     display: grid;
@@ -1437,15 +1448,15 @@ body.google-auth-busy { overflow: hidden; }
     cursor: pointer;
 }
 
-.age-week-score {
+.age-month-score {
     color: #334155;
-    font-size: .66rem;
+    font-size: .58rem;
     font-weight: 850;
     text-align: center;
 }
 
-.age-week-track {
-    width: min(100%, 42px);
+.age-month-track {
+    width: min(100%, 22px);
     height: 150px;
     margin-inline: auto;
     padding: 3px;
@@ -1457,7 +1468,7 @@ body.google-auth-busy { overflow: hidden; }
     overflow: hidden;
 }
 
-.age-week-track i {
+.age-month-track i {
     width: 100%;
     min-height: 6px;
     display: block;
@@ -1465,46 +1476,49 @@ body.google-auth-busy { overflow: hidden; }
     transition: height .24s ease, filter .16s ease;
 }
 
-.age-week-track i.tone-low { background: linear-gradient(180deg, #ef4444, #dc2626); }
-.age-week-track i.tone-caution { background: linear-gradient(180deg, #fb923c, #ea580c); }
-.age-week-track i.tone-medium { background: linear-gradient(180deg, #facc15, #ca8a04); }
-.age-week-track i.tone-good { background: linear-gradient(180deg, #38bdf8, #0284c7); }
-.age-week-track i.tone-high { background: linear-gradient(180deg, #34d399, #059669); }
+.age-month-track i.tone-low { background: linear-gradient(180deg, #ef4444, #dc2626); }
+.age-month-track i.tone-caution { background: linear-gradient(180deg, #fb923c, #ea580c); }
+.age-month-track i.tone-medium { background: linear-gradient(180deg, #facc15, #ca8a04); }
+.age-month-track i.tone-good { background: linear-gradient(180deg, #38bdf8, #0284c7); }
+.age-month-track i.tone-high { background: linear-gradient(180deg, #34d399, #059669); }
 
-.age-week-bar > strong {
+.age-month-bar > strong {
     margin-top: 2px;
-    font-size: .68rem;
+    font-size: .6rem;
     text-align: center;
 }
 
-.age-week-bar > small {
+.age-month-bar > small {
     color: var(--text-secondary);
-    font-size: .59rem;
+    font-size: .52rem;
     text-align: center;
     white-space: nowrap;
 }
 
-.age-week-bar:hover .age-week-track i { filter: saturate(1.2) brightness(.96); }
+.age-month-bar:hover .age-month-track i { filter: saturate(1.2) brightness(.96); }
 
-.age-week-bar:focus-visible {
+.age-month-bar:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 3px;
     border-radius: 8px;
 }
 
-.age-week-bar.is-selected .age-week-track {
+.age-month-bar.is-selected .age-month-track {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
 }
 
-.age-week-bar.is-selected > strong,
-.age-week-bar.is-selected > small { color: var(--primary); }
+.age-month-bar.is-selected > strong,
+.age-month-bar.is-selected > small { color: var(--primary); }
 
-.age-week-bar.weekday-saturday > strong { color: #2563eb; }
-.age-week-bar.weekday-sunday > strong { color: #dc2626; }
-.age-week-bar.is-selected.weekday-sunday > strong { color: #dc2626; }
+.age-month-bar.weekday-saturday > strong,
+.age-month-bar.weekday-saturday > small { color: #2563eb; }
+.age-month-bar.weekday-sunday > strong,
+.age-month-bar.weekday-sunday > small { color: #dc2626; }
+.age-month-bar.is-selected.weekday-sunday > strong,
+.age-month-bar.is-selected.weekday-sunday > small { color: #dc2626; }
 
-.age-week-legend {
+.age-month-legend {
     margin-top: 10px;
     display: flex;
     align-items: center;
@@ -1515,13 +1529,13 @@ body.google-auth-busy { overflow: hidden; }
     font-weight: 700;
 }
 
-.age-week-legend span {
+.age-month-legend span {
     display: inline-flex;
     align-items: center;
     gap: 5px;
 }
 
-.age-week-legend span::before {
+.age-month-legend span::before {
     content: '';
     width: 8px;
     height: 8px;
@@ -1529,13 +1543,13 @@ body.google-auth-busy { overflow: hidden; }
     background: currentColor;
 }
 
-.age-week-legend .tone-low { color: #dc2626; }
-.age-week-legend .tone-caution { color: #ea580c; }
-.age-week-legend .tone-medium { color: #a16207; }
-.age-week-legend .tone-good { color: #0284c7; }
-.age-week-legend .tone-high { color: #059669; }
+.age-month-legend .tone-low { color: #dc2626; }
+.age-month-legend .tone-caution { color: #ea580c; }
+.age-month-legend .tone-medium { color: #a16207; }
+.age-month-legend .tone-good { color: #0284c7; }
+.age-month-legend .tone-high { color: #059669; }
 
-.age-week-note {
+.age-month-note {
     margin: 8px 0 0;
     color: #718096;
     font-size: .61rem;
@@ -1543,15 +1557,14 @@ body.google-auth-busy { overflow: hidden; }
 }
 
 @media (max-width: 760px) {
-    .age-weekly-chart { padding-inline: 12px; }
-    .age-weekly-chart > header,
-    .age-week-meta { align-items: stretch; flex-direction: column; }
-    .age-week-navigation { align-self: stretch; grid-template-columns: 34px 1fr 34px; }
-    .age-week-meta span { text-align: left; }
-    .age-week-bars { gap: 4px; padding-inline: 5px; }
-    .age-week-bar { grid-template-rows: 18px 132px auto auto; }
-    .age-week-track { width: min(100%, 34px); height: 132px; }
-    .age-week-bar > small { font-size: .53rem; }
+    .age-monthly-chart { padding-inline: 12px; }
+    .age-monthly-chart > header,
+    .age-month-meta { align-items: stretch; flex-direction: column; }
+    .age-month-navigation { align-self: stretch; grid-template-columns: 34px 1fr 34px; }
+    .age-month-meta span { text-align: left; }
+    .age-month-bars { min-height: 199px; padding-inline: 6px; }
+    .age-month-bar { grid-template-rows: 18px 132px auto auto; }
+    .age-month-track { width: min(100%, 20px); height: 132px; }
 }
 
 .age-period-grid {

@@ -1,4 +1,4 @@
-# E-GV v7.1 – Biểu đồ mức độ thuận lợi theo tuần
+# E-GV v7.2 – Biểu đồ mức độ thuận lợi theo tháng
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,11 +16,12 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
-- Thêm biểu đồ cột bảy ngày từ Thứ Hai đến Chủ nhật, tính tự động theo năm sinh đang chọn và cùng công thức với phần xem chi tiết.
-- Mỗi cột hiển thị điểm, thứ và ngày; màu cột phân biệt năm mức từ `Cần thận trọng` đến `Thuận`.
-- Tên Thứ Hai–Thứ Sáu dùng màu chữ thông thường, Thứ Bảy màu xanh dương và Chủ nhật màu đỏ như tờ lịch chính.
-- Bấm hoặc chạm vào cột để chuyển tờ lịch và toàn bộ luận giải sang ngày tương ứng; có nút xem tuần trước, tuần này và tuần sau.
-- Tự chỉ ra ngày thuận nhất và ngày cần lưu ý nhất trong tuần; biểu đồ không gọi Gemini nên hiển thị ngay.
+- Thay biểu đồ tuần bằng biểu đồ cột toàn bộ 28–31 ngày của tháng đang xem, tính tự động theo năm sinh và cùng công thức với phần chi tiết.
+- Mỗi cột hiển thị điểm, ngày và thứ; màu cột phân biệt năm mức từ `Cần thận trọng` đến `Thuận`.
+- Ngày thường dùng màu chữ thông thường, Thứ Bảy màu xanh dương và Chủ nhật màu đỏ như tờ lịch chính.
+- Bấm hoặc chạm vào cột để chuyển tờ lịch và toàn bộ luận giải sang ngày tương ứng; có nút xem tháng trước, tháng này và tháng sau.
+- Tự chỉ ra ngày thuận nhất và ngày cần lưu ý nhất trong tháng; trên điện thoại biểu đồ cuộn ngang và tự đưa ngày đang chọn vào vùng dễ xem.
+- Biểu đồ không gọi Gemini nên hiển thị ngay.
 - Chuyển chín huy hiệu quan hệ của Ngày, Tháng và Năm thành nút có thể bấm hoặc chạm để xem giải thích cụ thể.
 - Mỗi giải thích gồm ba phần: `Đối chiếu` nêu đúng nạp âm/Can/Chi của hai bên, `Cơ chế` chỉ rõ sinh – khắc – hợp – xung – hình – hại – phá, và `Ảnh hưởng` diễn giải tác động thực tế thận trọng.
 - Bổ sung giải thích riêng khi Kiếm Phong Kim gặp hành Hỏa: vẫn là Hỏa khắc Kim ở tầng ngũ hành nhưng có thể mang tính tôi luyện, không được kết luận hoàn toàn bất lợi.
