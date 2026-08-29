@@ -162,12 +162,12 @@
     };
     const SELF_PUNISHMENT_BRANCHES = new Set([4, 6, 9, 11]);
     const BIRTH_YEAR_STORAGE_KEY = 'egv-calendar-birth-year';
-    const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
-    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v5';
+    const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v3';
+    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v6';
     const AGE_READING_WEIGHTS = {
-        day: { element: 0.20, stem: 0.12, branch: 0.18, total: 0.50 },
-        month: { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 },
-        year: { element: 0.07, stem: 0.05, branch: 0.08, total: 0.20 }
+        day: { element: 0.26, stem: 0.156, branch: 0.234, total: 0.65 },
+        month: { element: 1 / 12, stem: 7 / 120, branch: 13 / 120, total: 0.25 },
+        year: { element: 0.035, stem: 0.025, branch: 0.04, total: 0.10 }
     };
     const RELATION_SCORES = {
         harmony: 88,
@@ -758,7 +758,7 @@
 
     function buildLocalAgeAnalysis(reading) {
         const periods = [reading.readings.day, reading.readings.month, reading.readings.year];
-        const weights = { day: 50, month: 30, year: 20 };
+        const weights = { day: 65, month: 25, year: 10 };
         const relationEffects = {
             'Tương hợp': 'thuận cho phối hợp và thống nhất cách làm',
             'Lục hợp': 'tạo thêm sự hỗ trợ khi phối hợp hoặc trao đổi',
@@ -816,7 +816,7 @@
             nguHanh: factorText('element'),
             thienCan: factorText('stem'),
             diaChi: factorText('branch'),
-            context: `Ngày ${day.profile.name} đạt ${day.score}/100 và giữ trọng số 50%, nên là yếu tố tác động mạnh nhất. Tháng ${month.profile.name} đạt ${month.score}/100 với trọng số 30%, còn năm ${year.profile.name} đạt ${year.score}/100 với trọng số 20%. Ba phần kết hợp tạo thành ${reading.score}/100; vì vậy mức ${reading.level.label.toLowerCase()} phản ánh xu hướng chung chứ không phải xác suất may mắn.`,
+            context: `Ngày ${day.profile.name} đạt ${day.score}/100 và giữ trọng số 65%, nên là yếu tố tác động chính khi so sánh từng ngày. Tháng ${month.profile.name} đạt ${month.score}/100 với trọng số 25%, còn năm ${year.profile.name} đạt ${year.score}/100 với trọng số 10%. Ba phần kết hợp tạo thành ${reading.score}/100; vì vậy mức ${reading.level.label.toLowerCase()} phản ánh xu hướng chung chứ không phải xác suất may mắn.`,
             caution: cautious.length
                 ? `Điểm dễ ảnh hưởng đến tiến độ gồm ${cautious.slice(0, 4).join('; ')}. Tác động có thể gặp là phải trao đổi lại, xử lý thêm chi tiết hoặc tốn nhiều công sức hơn dự kiến; nên kiểm tra trước những phần khó sửa sau khi đã quyết định.`
                 : 'Dữ kiện không có quan hệ xung khắc nổi bật. Dù vậy, việc quan trọng vẫn cần kiểm tra giấy tờ, nguồn lực và trách nhiệm của các bên vì điểm lịch không thay thế điều kiện thực tế.',
@@ -871,10 +871,11 @@
     }
 
     function applyAuthoritativeAgeCalculation(calculation) {
-        if (!currentAgeReading || !calculation || typeof calculation !== 'object') return;
+        if (!currentAgeReading || !calculation || typeof calculation !== 'object') return false;
+        if (calculation.version !== AGE_SCORE_MODEL_VERSION) return false;
         const score = Number(calculation.score);
         const periods = calculation.periods || {};
-        if (!Number.isInteger(score) || score < 0 || score > 100) return;
+        if (!Number.isInteger(score) || score < 0 || score > 100) return false;
 
         const level = scoreLevel(score);
         if (typeof calculation.level === 'string' && calculation.level.trim()) level.label = calculation.level.trim();
@@ -894,6 +895,7 @@
         });
         document.getElementById('ageReadingImpact').textContent = currentAgeReading.summary.impact;
         document.getElementById('ageReadingNote').textContent = currentAgeReading.summary.note;
+        return true;
     }
 
     async function requestAgeGeminiAnalysis() {
@@ -927,9 +929,9 @@
                 timeoutMessage: 'Gemini phản hồi quá lâu. Vui lòng thử lại.'
             });
             if (requestedKey !== currentAgeReadingKey) return;
-            applyAuthoritativeAgeCalculation(response.calculation);
+            const calculationMatches = applyAuthoritativeAgeCalculation(response.calculation);
             const localAnalysis = buildLocalAgeAnalysis(currentAgeReading);
-            const versionMatches = response.analysisVersion === AGE_ANALYSIS_VERSION;
+            const versionMatches = response.analysisVersion === AGE_ANALYSIS_VERSION && calculationMatches;
             const analysis = normalizeAgeGeminiAnalysis(response.analysis || {}, localAnalysis, !versionMatches);
             document.getElementById('ageGeminiOverview').textContent = analysis.overview;
             document.getElementById('ageGeminiNguHanh').textContent = analysis.nguHanh;
