@@ -181,6 +181,7 @@
     };
     let currentAgeReading = null;
     let currentAgeReadingKey = '';
+    let activeAgeRelationKey = '';
     let ageGeminiBusy = false;
 
     function modulo(value, divisor) {
@@ -395,8 +396,125 @@
     function setCompactRelation(id, relation) {
         const badge = document.getElementById(id);
         badge.textContent = relation.label;
-        badge.className = `age-relation-badge tone-${relation.tone}`;
-        badge.title = relation.description;
+        badge.className = `age-relation-badge age-relation-trigger tone-${relation.tone}`;
+        badge.title = `${relation.description} Bấm để xem giải thích cụ thể.`;
+    }
+
+    function elementMechanism(contextKey, ageKey) {
+        const contextElement = ELEMENT_LABELS[contextKey];
+        const ageElement = ELEMENT_LABELS[ageKey];
+        if (contextKey === ageKey) return `${contextElement} và ${ageElement} cùng hành`;
+        if (ELEMENT_GENERATES[contextKey] === ageKey) return `${contextElement} sinh ${ageElement}`;
+        if (ELEMENT_GENERATES[ageKey] === contextKey) return `${ageElement} sinh ${contextElement}`;
+        if (ELEMENT_CONTROLS[contextKey] === ageKey) return `${contextElement} khắc ${ageElement}`;
+        return `${ageElement} khắc ${contextElement}`;
+    }
+
+    function relationImpactText(relation) {
+        const impacts = {
+            'Tương hợp': 'Tạo điều kiện thuận lợi cho phối hợp, trao đổi và thống nhất cách làm.',
+            'Lục hợp': 'Là điểm hỗ trợ về Địa chi, thường thuận hơn cho phối hợp và nhận sự hậu thuẫn.',
+            'Tương sinh': 'Bản mệnh nhận được sự hỗ trợ về ngũ hành; công việc có thể nhẹ nhàng hơn nếu điều kiện thực tế phù hợp.',
+            'Sinh nhập': 'Năng lượng của thời điểm sinh cho bản mệnh, tạo thêm sự hỗ trợ và thuận lợi.',
+            'Tỷ hòa': 'Hai bên cùng hành nên tương đối cân bằng, không tự động trở thành rất tốt hoặc rất xấu.',
+            'Tương hòa': 'Hai Thiên can đồng nhau, giúp duy trì trạng thái ổn định nhưng không bảo đảm kết quả.',
+            'Đồng chi': 'Hai Địa chi đồng nhau, làm tính chất của tuổi biểu hiện rõ hơn nhưng không tự nghiêng về tốt hay xấu.',
+            'Sinh xuất': 'Bản mệnh phải sinh năng lượng ra ngoài nên có thể hao thêm thời gian, công sức hoặc nguồn lực.',
+            'Khắc xuất': 'Bản mệnh có thể chủ động kiểm soát tình thế nhưng thường phải bỏ thêm công sức để xử lý.',
+            'Tự hình': 'Dễ tự tạo áp lực, lặp lại cách xử lý chưa hiệu quả hoặc phải sửa việc nhiều lần.',
+            'Tương hình': 'Có thể phát sinh va chạm, áp lực hoặc thủ tục cần điều chỉnh; nên trao đổi rõ ràng.',
+            'Tương phá': 'Kế hoạch có thể bị thay đổi hoặc xuất hiện chi tiết ngoài dự kiến; nên có phương án dự phòng.',
+            'Tương hại': 'Dễ xảy ra hiểu lầm, phối hợp không trọn ý hoặc phát sinh việc ngoài dự kiến.',
+            'Tương xung': 'Dễ có thay đổi, bất đồng hoặc tình huống buộc phải điều chỉnh kế hoạch.',
+            'Tương khắc': 'Yếu tố của thời điểm tạo áp lực lên bản mệnh; nên chuẩn bị kỹ nhưng không dùng riêng quan hệ này để kết luận cả ngày xấu.',
+            'Khắc nhập': 'Bản mệnh chịu lực cản từ yếu tố bên ngoài; tiến độ có thể chậm hoặc cần xử lý thận trọng hơn.'
+        };
+        return impacts[relation.label] || relation.description;
+    }
+
+    function branchMechanism(context, age, relation) {
+        const pair = `${age.branch}–${context.branch}`;
+        const mechanisms = {
+            'Lục hợp': `${pair} thuộc cặp Lục hợp`,
+            'Tương xung': `${pair} thuộc cặp Tương xung`,
+            'Tương hại': `${pair} thuộc cặp Lục hại`,
+            'Tương hình': `${pair} thuộc quan hệ Tương hình`,
+            'Tương phá': `${pair} thuộc cặp Tương phá`,
+            'Tự hình': `${age.branch} gặp chính ${context.branch}, tạo thế Tự hình`,
+            'Đồng chi': `${age.branch} gặp ${context.branch}, hai chi đồng nhau`
+        };
+        return mechanisms[relation.label]
+            || elementMechanism(BRANCH_ELEMENT_KEYS[context.branchIndex], BRANCH_ELEMENT_KEYS[age.branchIndex]);
+    }
+
+    function buildAgeRelationExplanation(period, factor, age) {
+        const relation = period.relations[factor];
+        const periodName = period.label.toLowerCase();
+        const factorLabels = { element: 'Ngũ hành', stem: 'Thiên can', branch: 'Địa chi' };
+        let comparison;
+        let mechanism;
+        let impact = relationImpactText(relation);
+
+        if (factor === 'element') {
+            comparison = `${period.profile.napAm} (${period.profile.element}) của ${periodName} ↔ ${age.napAm} (${age.element}) của tuổi ${age.name}.`;
+            mechanism = `${elementMechanism(period.profile.elementKey, age.elementKey)}, nên được xếp là ${relation.label}.`;
+            if (relation.label === 'Tương khắc' && period.profile.elementKey === 'hoa' && age.napAm === 'Kiếm Phong Kim') {
+                impact += ' Theo cách luận nạp âm phổ biến, Kiếm Phong Kim có thể dùng Hỏa để tôi luyện, vì vậy không nên hiểu đây là hoàn toàn bất lợi.';
+            }
+        } else if (factor === 'stem') {
+            const contextElement = ELEMENT_LABELS[STEM_ELEMENT_KEYS[period.profile.stemIndex]];
+            const ageElement = ELEMENT_LABELS[STEM_ELEMENT_KEYS[age.stemIndex]];
+            comparison = `Can ${period.profile.stem} (${contextElement}) của ${periodName} ↔ can ${age.stem} (${ageElement}) của tuổi ${age.name}.`;
+            if (relation.label === 'Tương hợp') {
+                mechanism = `${age.stem} hợp ${period.profile.stem} theo Ngũ hợp Thiên can, nên được xếp là Tương hợp.`;
+            } else if (relation.label === 'Tương hòa') {
+                mechanism = `Can ${age.stem} gặp cùng can ${period.profile.stem}, nên được xếp là Tương hòa.`;
+            } else {
+                mechanism = `${elementMechanism(STEM_ELEMENT_KEYS[period.profile.stemIndex], STEM_ELEMENT_KEYS[age.stemIndex])}, nên được xếp là ${relation.label}.`;
+            }
+        } else {
+            const contextElement = ELEMENT_LABELS[BRANCH_ELEMENT_KEYS[period.profile.branchIndex]];
+            const ageElement = ELEMENT_LABELS[BRANCH_ELEMENT_KEYS[age.branchIndex]];
+            comparison = `Chi ${period.profile.branch} (${contextElement}) của ${periodName} ↔ chi ${age.branch} (${ageElement}) của tuổi ${age.name}.`;
+            mechanism = `${branchMechanism(period.profile, age, relation)}, nên được xếp là ${relation.label}.`;
+        }
+
+        return {
+            title: `${factorLabels[factor]} · ${period.label} ${period.profile.name}`,
+            comparison,
+            mechanism,
+            impact,
+            tone: relation.tone
+        };
+    }
+
+    function hideAgeRelationExplanation() {
+        activeAgeRelationKey = '';
+        const panel = document.getElementById('ageRelationExplainer');
+        if (panel) panel.hidden = true;
+        document.querySelectorAll('[data-age-relation]').forEach(function (button) {
+            button.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function showAgeRelationExplanation(periodKey, factor, trigger) {
+        if (!currentAgeReading || !currentAgeReading.readings[periodKey]) return;
+        const relationKey = `${periodKey}:${factor}`;
+        if (activeAgeRelationKey === relationKey && !document.getElementById('ageRelationExplainer').hidden) {
+            hideAgeRelationExplanation();
+            return;
+        }
+        const detail = buildAgeRelationExplanation(currentAgeReading.readings[periodKey], factor, currentAgeReading.age);
+        hideAgeRelationExplanation();
+        activeAgeRelationKey = relationKey;
+        document.getElementById('ageRelationExplainerTitle').textContent = detail.title;
+        document.getElementById('ageRelationComparison').textContent = detail.comparison;
+        document.getElementById('ageRelationMechanism').textContent = detail.mechanism;
+        document.getElementById('ageRelationImpact').textContent = detail.impact;
+        const panel = document.getElementById('ageRelationExplainer');
+        panel.className = `age-relation-explainer tone-${detail.tone}`;
+        panel.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
     }
 
     function napAmPolarityClass(profile) {
@@ -452,6 +570,7 @@
         document.getElementById('ageReadingSelectedDate').textContent = `${String(selectedDate.day).padStart(2, '0')}/${String(selectedDate.month).padStart(2, '0')}/${selectedDate.year}`;
         if (!App.isAuthenticated()) {
             currentAgeReading = null;
+            hideAgeRelationExplanation();
             document.getElementById('ageReadingEmpty').hidden = true;
             document.getElementById('ageReadingResult').hidden = true;
             clearGeminiReading();
@@ -464,6 +583,7 @@
         if (!Number.isInteger(year) || year < 1900 || year > vietnamParts.year) {
             currentAgeReading = null;
             currentAgeReadingKey = '';
+            hideAgeRelationExplanation();
             empty.hidden = false;
             result.hidden = true;
             clearGeminiReading();
@@ -484,6 +604,7 @@
         if (readingKey !== currentAgeReadingKey) {
             currentAgeReadingKey = readingKey;
             clearGeminiReading();
+            hideAgeRelationExplanation();
         }
 
         currentAgeReading = { key: readingKey, selectedDate: { ...selectedDate }, lunarDate, age, readings, score, level, summary };
@@ -933,6 +1054,12 @@
     document.getElementById('ageReadingLoginButton').addEventListener('click', function () {
         App.requireUser(updateAgeReadingAuthUi);
     });
+    document.querySelectorAll('[data-age-relation]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            showAgeRelationExplanation(button.dataset.period, button.dataset.factor, button);
+        });
+    });
+    document.getElementById('ageRelationExplainerClose').addEventListener('click', hideAgeRelationExplanation);
     document.getElementById('ageGeminiButton').addEventListener('click', requestAgeGeminiAnalysis);
     window.addEventListener('app:auth-change', updateAgeReadingAuthUi);
     updateAgeReadingAuthUi();
