@@ -1,4 +1,4 @@
-# E-GV v6.2 – Đồng bộ kết quả lịch và Gemini
+# E-GV v6.3 – Luận giải Gemini âm lịch 7 phần
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Mở rộng phần Gemini âm lịch thành 7 mục: Tổng quan, Ngũ hành, Thiên can, Địa chi, Bối cảnh ngày–tháng–năm, Điểm cần lưu ý và Gợi ý thực hiện.
+- Yêu cầu Gemini phân tích độc lập từng yếu tố theo đúng dữ kiện E-GV, không tự đổi điểm, thêm quan hệ Can Chi hoặc suy diễn Tam hợp, Tứ hành xung và quý nhân khi dữ liệu không có.
+- Bắt buộc giải thích vì sao điểm tổng đạt mức hiện tại theo trọng số ngày 50%, tháng 30% và năm 20%; mọi trường thiếu hoặc quá ngắn đều được thay bằng luận giải dự phòng đầy đủ.
 - Đồng bộ một phiên bản công thức cho phần điểm phía trên và phần Gemini; máy chủ trả lại điểm tổng cùng điểm ngày, tháng, năm để giao diện đối chiếu ngay sau khi phân tích.
 - Thêm mã phiên bản vào CSS/JavaScript của trang lịch để trình duyệt không tiếp tục dùng `calendar.js` cũ sau khi triển khai.
 - Tự thay nội dung Gemini quá ngắn hoặc chỉ có dấu `–` bằng phần luận giải dự phòng đầy đủ.
@@ -24,7 +27,7 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 - Chuyển toàn bộ tờ lịch, nút ngày trước/ngày sau, chọn ngày, xem tuổi và Gemini khỏi Trang chủ sang trang Âm lịch.
 - Trang chủ chỉ giữ thẻ mở nhanh `Âm lịch & xem ngày theo tuổi` và thêm thẻ Âm lịch trong Không gian làm việc.
 - Tách `js/calendar.js` để toàn bộ phép tính lịch chỉ chạy trên trang Âm lịch; `js/index.js` chỉ xử lý Trang chủ.
-- Mở rộng luận giải Gemini thành 5 phần: Tổng quan, Điểm hỗ trợ, Ảnh hưởng ngày–tháng–năm, Điểm cần lưu ý và Gợi ý thực hiện.
+- Trình bày 7 phần luận giải bằng các thẻ màu riêng, tự chuyển từ ba cột trên máy tính sang hai cột trên máy tính bảng và một cột trên điện thoại.
 - Sửa lỗi chuỗi JSON như `{"overview":...}` lọt ra giao diện khi phản hồi Gemini bị cắt hoặc thiếu dấu đóng.
 - Bộ đọc dự phòng nhận JSON hoàn chỉnh, JSON trong khối mã, tên trường tiếng Việt, JSON bị cắt và phản hồi thiếu trường.
 - Mục `Xem ngày theo tuổi` chỉ mở sau khi thành viên hoặc quản trị viên đăng nhập.

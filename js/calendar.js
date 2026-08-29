@@ -550,8 +550,10 @@
             } catch (_) {
                 analysis = {
                     overview: extractLooseAnalysisField(cleaned, ['overview', 'tongQuan', 'tổngQuan']),
-                    favorable: extractLooseAnalysisField(cleaned, ['favorable', 'support', 'diemThuan', 'điểmThuận']),
-                    influence: extractLooseAnalysisField(cleaned, ['influence', 'impact', 'anhHuong', 'ảnhHưởng']),
+                    nguHanh: extractLooseAnalysisField(cleaned, ['nguHanh', 'nguhanh', 'ngu_hanh', 'element']),
+                    thienCan: extractLooseAnalysisField(cleaned, ['thienCan', 'thiencan', 'thien_can', 'stem']),
+                    diaChi: extractLooseAnalysisField(cleaned, ['diaChi', 'diachi', 'dia_chi', 'branch']),
+                    context: extractLooseAnalysisField(cleaned, ['context', 'influence', 'impact', 'boiCanh', 'bốiCảnh', 'anhHuong', 'ảnhHưởng']),
                     caution: extractLooseAnalysisField(cleaned, ['caution', 'note', 'luuY', 'lưuÝ']),
                     recommendation: extractLooseAnalysisField(cleaned, ['recommendation', 'advice', 'goiY', 'gợiÝ'])
                 };
@@ -564,9 +566,11 @@
             return text;
         };
         return {
-            overview: safeText(analysis.overview, 'Gemini chưa trả về phần tổng quan đầy đủ.', 40),
-            favorable: safeText(analysis.favorable, 'Chưa có quan hệ hỗ trợ nổi trội; điều này không đồng nghĩa ngày chắc chắn xấu.', 24),
-            influence: safeText(analysis.influence, 'Cần xem đồng thời ảnh hưởng chính của ngày, bối cảnh tháng và ảnh hưởng nền của năm.', 35),
+            overview: safeText(analysis.overview, 'Kết quả được tổng hợp theo dữ kiện E-GV đã tính, trong đó điểm số là chỉ số tham khảo chứ không phải phần trăm may mắn hoặc xác suất kết quả.', 40),
+            nguHanh: safeText(analysis.nguHanh || analysis.nguhanh || analysis.ngu_hanh || analysis.element, 'Ngũ hành cần được đối chiếu đồng thời với ngày, tháng và năm; một quan hệ riêng lẻ không đủ để kết luận chắc chắn tốt hoặc xấu.', 40),
+            thienCan: safeText(analysis.thienCan || analysis.thiencan || analysis.thien_can || analysis.stem, 'Thiên can được xem theo đúng quan hệ E-GV đã tính cho ngày, tháng và năm; tác động thực tế còn phụ thuộc vào tính chất công việc.', 40),
+            diaChi: safeText(analysis.diaChi || analysis.diachi || analysis.dia_chi || analysis.branch, 'Địa chi được diễn giải theo đúng quan hệ E-GV đã xác định, không tự suy thêm Tam hợp, Tứ hành xung hoặc quý nhân khi dữ liệu không nêu.', 40),
+            context: safeText(analysis.context || analysis.influence || analysis.impact || analysis.boiCanh || analysis['bốiCảnh'] || analysis.anhHuong || analysis['ảnhHưởng'], 'Ngày giữ ảnh hưởng chính 50%, tháng tạo bối cảnh 30% và năm là ảnh hưởng nền 20%; ba tầng cần được đọc cùng nhau.', 40),
             caution: safeText(analysis.caution, 'Không nên xem một quan hệ riêng lẻ là kết luận chắc chắn tốt hoặc xấu.', 30),
             recommendation: safeText(analysis.recommendation, 'Hãy kết hợp kết quả tham khảo với tính chất công việc và điều kiện thực tế trước khi quyết định.', 35)
         };
@@ -632,8 +636,10 @@
             applyAuthoritativeAgeCalculation(response.calculation);
             const analysis = normalizeAgeGeminiAnalysis(response.analysis || {});
             document.getElementById('ageGeminiOverview').textContent = analysis.overview;
-            document.getElementById('ageGeminiFavorable').textContent = analysis.favorable;
-            document.getElementById('ageGeminiInfluence').textContent = analysis.influence;
+            document.getElementById('ageGeminiNguHanh').textContent = analysis.nguHanh;
+            document.getElementById('ageGeminiThienCan').textContent = analysis.thienCan;
+            document.getElementById('ageGeminiDiaChi').textContent = analysis.diaChi;
+            document.getElementById('ageGeminiContext').textContent = analysis.context;
             document.getElementById('ageGeminiCaution').textContent = analysis.caution;
             document.getElementById('ageGeminiRecommendation').textContent = analysis.recommendation;
             resultBox.hidden = false;

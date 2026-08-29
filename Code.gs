@@ -524,29 +524,36 @@ function handleAgeReading(data, clientId) {
     JSON.stringify(facts),
     Utilities.Charset.UTF_8
   );
-  const cacheKey = 'age-reading-v4:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  const cacheKey = 'age-reading-v5:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
   try {
     const cached = cache.get(cacheKey);
     if (cached) return createResponse({ status: 'success', analysis: JSON.parse(cached), calculation: calculation, cached: true });
   } catch (_) {}
 
-  const promptText = `Bạn là người biên tập nội dung lịch Can Chi bằng tiếng Việt rõ ràng, thận trọng và dễ hiểu.
+  const promptText = `Bạn là người biên tập nội dung lịch Can Chi bằng tiếng Việt rõ ràng, sâu sắc, khách quan và thận trọng.
 
 DỮ KIỆN ĐÃ ĐƯỢC HỆ THỐNG E-GV TÍNH SẴN:
 ${JSON.stringify(facts, null, 2)}
 
 YÊU CẦU BẮT BUỘC:
-1. Không tự tính lại, không thay đổi điểm tương hợp, tên Can Chi hoặc bất kỳ quan hệ nào trong dữ kiện.
-2. Tổng hợp đủ ba tầng: ngày là ảnh hưởng chính 50%, tháng là bối cảnh 30% và năm là ảnh hưởng nền 20%.
-3. Giải thích cụ thể từng điểm hỗ trợ và điểm cần lưu ý bằng đúng tên quan hệ trong dữ kiện; không chỉ lặp lại con số.
-4. Phân biệt rõ Sinh xuất/Khắc xuất là trạng thái có thể tốn thêm công sức, không mặc định là xấu; Đồng chi là cân bằng, không tự suy thành cát hoặc hung.
-5. Không phóng đại thành dự đoán chắc chắn, tai họa, quý nhân hoặc may mắn tuyệt đối. Dùng cụm từ "có thể", "dễ", "nên lưu ý".
-6. Nêu một gợi ý thực tế: việc thường ngày có thể tiến hành thế nào; việc quan trọng cần chuẩn bị hoặc kiểm tra gì.
-7. Khẳng định điểm trên thang 100 là chỉ số tham khảo, không phải phần trăm may mắn hay xác suất kết quả.
-8. Không dùng Markdown, không đặt tiêu đề và không dùng danh sách trong giá trị các trường.
-9. Không để trường nào rỗng; không dùng dấu "-", "–", "—" hoặc câu quá ngắn để thay cho nội dung.
-10. Chỉ trả về một đối tượng JSON hợp lệ theo đúng cấu trúc:
-{"overview":"3-4 câu tổng hợp, tối đa 900 ký tự","favorable":"2-3 câu về các điểm hỗ trợ, tối đa 500 ký tự","influence":"2-3 câu kết nối ảnh hưởng ngày-tháng-năm, tối đa 600 ký tự","caution":"2-3 câu về điểm cần lưu ý, tối đa 500 ký tự","recommendation":"2-3 câu gợi ý thực hiện, tối đa 500 ký tự"}`;
+1. Trích xuất và sử dụng tuyệt đối các dữ kiện E-GV đã cung cấp. Không tự tính lại, không thay đổi điểm tổng, điểm ngày, điểm tháng, điểm năm, tên Can Chi, nạp âm hoặc tên quan hệ.
+2. Điểm tổng và ba điểm thành phần là kết quả có thẩm quyền của E-GV. Phải diễn giải để nội dung nhất quán với đúng mức đánh giá đã cho, không được tự nâng hoặc hạ mức độ.
+3. Phân tích đủ ba tầng theo đúng trọng số: ngày là ảnh hưởng chính 50%, tháng là bối cảnh 30%, năm là ảnh hưởng nền 20%. Không được chỉ nói về ngày rồi bỏ qua tháng hoặc năm.
+4. Phân tích độc lập ba yếu tố Ngũ hành, Thiên can và Địa chi. Trong mỗi yếu tố, phải nhắc đủ quan hệ của tuổi với ngày, tháng và năm bằng đúng tên trong dữ kiện.
+5. Với Ngũ hành, nêu tên hành của tuổi cùng hành của ngày, tháng và năm. Chỉ nêu cơ chế như Hỏa khắc Kim hoặc Thủy sinh Mộc khi cơ chế đó được suy ra trực tiếp từ chính các hành và quan hệ đã có; tuyệt đối không thêm một quan hệ mới.
+6. Với Thiên can và Địa chi, nêu rõ cặp Can hoặc Chi đang được so sánh cùng tên quan hệ E-GV đã tính. Không tự suy diễn Tam hợp, Tứ hành xung, quý nhân, cát tinh hoặc hung tinh nếu dữ kiện không nêu.
+7. Quy ước diễn giải: Sinh xuất và Khắc xuất cho thấy bản thân có thể phải bỏ thêm công sức, dễ mệt hoặc tốn nguồn lực nhưng vẫn có thể đạt kết quả. Đồng chi, Tỷ hòa và Tương hòa là trạng thái bình hòa, không tự coi là tốt hoặc xấu. Tương sinh, Sinh nhập, Tương hợp và Lục hợp là yếu tố hỗ trợ. Tương khắc, Khắc nhập, Tương xung, Tương hại, Tương hình, Tương phá và Tự hình là yếu tố cần lưu ý, nhưng phải dùng ngôn ngữ thận trọng.
+8. Phân tích đa chiều. Nếu có điểm bất lợi, hãy nêu yếu tố hỗ trợ hoặc cân bằng thực sự có trong dữ kiện. Nếu nhiều yếu tố cùng thuận hoặc cùng nghịch, giải thích sự cộng hưởng và lý do điểm tổng đạt mức hiện tại.
+9. Không dùng từ tuyệt đối như chắc chắn thất bại, tai họa, đại cát hoặc bảo đảm may mắn. Ưu tiên các cụm từ có thể, dễ, nên lưu ý, cần chuẩn bị.
+10. Phần gợi ý phải phân biệt công việc thường ngày với việc quan trọng như mua bán, xây sửa hoặc ký kết. Không khẳng định một ngày là an toàn tuyệt đối. Chỉ gợi ý tham khảo ngày khác khi các yếu tố cần lưu ý chiếm ưu thế; không tự bịa ngày, Hành hoặc Chi phù hợp trong tương lai.
+11. Khẳng định điểm trên thang 100 là chỉ số tương hợp tham khảo theo quy tắc E-GV, không phải phần trăm may mắn hoặc xác suất kết quả thực tế.
+
+QUY TẮC ĐẦU RA JSON:
+1. Chỉ trả về duy nhất một đối tượng JSON hợp lệ, không bọc trong Markdown và không có văn bản nào ngoài JSON.
+2. Không dùng danh sách hoặc gạch đầu dòng trong giá trị. Không để trường nào rỗng, không dùng dấu gạch ngang hoặc câu quá ngắn để thay cho nội dung.
+3. Mỗi trường phải là một đoạn văn hoàn chỉnh, rõ ý và không lặp nguyên văn trường khác.
+4. Chỉ dùng đúng bảy trường sau:
+{"overview":"3 đến 4 câu tổng hợp điểm, mức đánh giá và xu hướng chung, tối đa 900 ký tự","nguHanh":"2 đến 4 câu phân tích Ngũ hành với ngày, tháng và năm, tối đa 700 ký tự","thienCan":"2 đến 4 câu phân tích Thiên can với ngày, tháng và năm, tối đa 700 ký tự","diaChi":"2 đến 4 câu phân tích Địa chi với ngày, tháng và năm, tối đa 700 ký tự","context":"2 đến 4 câu kết nối điểm ngày 50%, tháng 30% và năm 20%, tối đa 700 ký tự","caution":"2 đến 3 câu nêu điểm cần lưu ý bằng ngôn ngữ thận trọng, tối đa 500 ký tự","recommendation":"3 đến 4 câu gợi ý thực tế cho việc thường ngày và việc quan trọng, tối đa 500 ký tự"}`;
 
   const analysis = callGeminiAgeReading(promptText, facts);
   try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
@@ -681,49 +688,69 @@ function fallbackAgeAnalysis(facts) {
   const monthName = String(facts && facts.thang && facts.thang.canChi || 'tháng đang xem');
   const yearName = String(facts && facts.nam && facts.nam.canChi || 'năm đang xem');
   const periods = [
-    { label: 'Ngày', value: facts && facts.ngay || {} },
-    { label: 'Tháng', value: facts && facts.thang || {} },
-    { label: 'Năm', value: facts && facts.nam || {} }
+    { label: 'Ngày', weight: 50, value: facts && facts.ngay || {} },
+    { label: 'Tháng', weight: 30, value: facts && facts.thang || {} },
+    { label: 'Năm', weight: 20, value: facts && facts.nam || {} }
   ];
-  const relationLabels = { nguHanh: 'Ngũ hành', thienCan: 'Thiên can', diaChi: 'Địa chi' };
-  const supportive = [];
   const cautious = [];
+
+  function canChiPart(canChi, index, fallback) {
+    const parts = String(canChi || '').trim().split(/\s+/);
+    return parts[index] || fallback;
+  }
+
+  function relationName(period, factor) {
+    return String(period && period.quanHe && period.quanHe[factor] && period.quanHe[factor].ten || 'chưa xác định');
+  }
+
+  function factorSummary(factor, kind) {
+    const ageCanChi = facts && facts.tuoi && facts.tuoi.canChi || '';
+    return periods.map(function (period) {
+      const periodCanChi = period.value.canChi || '';
+      if (factor === 'nguHanh') {
+        return period.label + ' ' + periodCanChi + ' thuộc hành ' + String(period.value.nguHanh || 'chưa xác định')
+          + ', quan hệ với hành ' + String(facts && facts.tuoi && facts.tuoi.nguHanh || 'chưa xác định')
+          + ' của tuổi là ' + relationName(period.value, factor) + '.';
+      }
+      const index = factor === 'thienCan' ? 0 : 1;
+      return kind + ' ' + canChiPart(ageCanChi, index, 'chưa xác định') + ' của tuổi gặp '
+        + kind.toLowerCase() + ' ' + canChiPart(periodCanChi, index, 'chưa xác định') + ' của ' + period.label.toLowerCase()
+        + ', quan hệ ' + relationName(period.value, factor) + '.';
+    }).join(' ');
+  }
 
   periods.forEach(function (period) {
     const relations = period.value.quanHe || {};
-    Object.keys(relationLabels).forEach(function (key) {
+    ['nguHanh', 'thienCan', 'diaChi'].forEach(function (key) {
       const relation = relations[key] || {};
-      const item = period.label + ' – ' + relationLabels[key] + ' ' + String(relation.ten || 'chưa xác định');
-      if (Number(relation.diem || 0) >= 60) supportive.push(item);
+      const labels = { nguHanh: 'Ngũ hành', thienCan: 'Thiên can', diaChi: 'Địa chi' };
+      const item = labels[key] + ' của ' + period.label.toLowerCase() + ' có quan hệ ' + String(relation.ten || 'chưa xác định');
       if (Number(relation.diem || 0) <= 52) cautious.push(item);
     });
   });
 
-  const influence = periods.map(function (period) {
-    const relations = period.value.quanHe || {};
-    return period.label + ' ' + String(period.value.canChi || '—') + ' đạt ' + Number(period.value.diem || 0)
-      + '/100: Ngũ hành ' + String(relations.nguHanh && relations.nguHanh.ten || '—')
-      + ', Thiên can ' + String(relations.thienCan && relations.thienCan.ten || '—')
-      + ', Địa chi ' + String(relations.diaChi && relations.diaChi.ten || '—') + '.';
+  const context = periods.map(function (period) {
+    return period.label + ' ' + String(period.value.canChi || 'đang xem') + ' đạt ' + Number(period.value.diem || 0)
+      + '/100 và giữ trọng số ' + period.weight + '%.';
   }).join(' ');
-
-  const favorable = supportive.length
-    ? 'Các điểm hỗ trợ đáng chú ý gồm ' + supportive.slice(0, 5).join('; ') + '. Những yếu tố này giúp cân bằng phần chưa tương hợp.'
-    : 'Chưa có quan hệ hỗ trợ nổi trội, nhưng điều này không đồng nghĩa ngày chắc chắn xấu; kết quả thực tế còn phụ thuộc vào sự chuẩn bị và tính chất công việc.';
   const caution = cautious.length
-    ? 'Các điểm cần lưu ý gồm ' + cautious.slice(0, 5).join('; ') + '. Sinh xuất hoặc Khắc xuất chủ yếu cho thấy có thể phải bỏ thêm công sức, không phải dấu hiệu thất bại chắc chắn.'
+    ? 'Các điểm cần lưu ý gồm ' + cautious.slice(0, 6).join('; ') + '. Sinh xuất hoặc Khắc xuất chủ yếu cho thấy có thể phải bỏ thêm công sức, còn các quan hệ xung khắc cần được xem như lời nhắc chuẩn bị kỹ chứ không phải dự báo thất bại.'
     : 'Không có điểm xung khắc nổi bật trong dữ kiện. Dù vậy vẫn nên kiểm tra thông tin và tránh xem kết quả tham khảo là bảo đảm chắc chắn.';
 
   let recommendation = 'Công việc thường ngày có thể tiến hành bình thường. Với việc quan trọng, nên kiểm tra thêm thời điểm, nguồn lực và phương án dự phòng trước khi quyết định.';
   if (score >= 78) {
-    recommendation = 'Có thể ưu tiên công việc quan trọng nếu các điều kiện thực tế đã sẵn sàng. Vẫn nên kiểm tra giấy tờ, thời gian và người phối hợp.';
+    recommendation = 'Công việc thường ngày có thể tiến hành theo kế hoạch. Việc quan trọng có thể được cân nhắc nếu điều kiện thực tế đã sẵn sàng, nhưng vẫn nên kiểm tra giấy tờ, thời gian, nguồn lực và người phối hợp.';
   } else if (score < 40) {
     recommendation = 'Nếu là việc hệ trọng và có thể linh hoạt, nên tham khảo thêm ngày khác. Nếu vẫn tiến hành, hãy chia nhỏ công việc, kiểm tra kỹ và chuẩn bị phương án dự phòng.';
+  } else if (score < 50) {
+    recommendation = 'Công việc thường ngày vẫn có thể tiến hành khi đã chuẩn bị rõ ràng. Với mua bán, xây sửa, ký kết hoặc việc khó thay đổi, nên cân nhắc thêm ngày khác; nếu vẫn thực hiện cần rà soát giấy tờ, nguồn lực và phương án dự phòng.';
   }
   return {
-    overview: 'Tuổi ' + ageName + ' có điểm tương hợp ' + score + '/100 – mức ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Mốc 50 được xem là cân bằng. Đây là chỉ số tham khảo theo năm sinh, không phải phần trăm may mắn hoặc dự báo chắc chắn.',
-    favorable: favorable,
-    influence: influence,
+    overview: 'Tuổi ' + ageName + ' có điểm tương hợp ' + score + '/100, thuộc mức ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Mốc 50 được xem là cân bằng. Đây là chỉ số tham khảo theo năm sinh, không phải phần trăm may mắn hoặc dự báo chắc chắn.',
+    nguHanh: 'Tuổi ' + ageName + ' thuộc hành ' + String(facts && facts.tuoi && facts.tuoi.nguHanh || 'chưa xác định') + '. ' + factorSummary('nguHanh', 'Ngũ hành') + ' Các quan hệ này cần được đọc cùng nhau, không dùng một quan hệ riêng lẻ để kết luận toàn bộ ngày.',
+    thienCan: factorSummary('thienCan', 'Can') + ' Sinh xuất hoặc Khắc xuất cho thấy có thể tốn thêm công sức; quan hệ hỗ trợ hoặc bình hòa chỉ tạo điều kiện thuận hơn chứ không bảo đảm kết quả.',
+    diaChi: factorSummary('diaChi', 'Chi') + ' Phần này chỉ sử dụng đúng tên quan hệ E-GV đã tính và không tự suy thêm Tam hợp, Tứ hành xung hoặc quý nhân.',
+    context: context + ' Tổng điểm ' + score + '/100 được tổng hợp theo trọng số ngày 50%, tháng 30% và năm 20%, nên điểm ngày có ảnh hưởng lớn nhất nhưng không tách rời bối cảnh tháng và năm.',
     caution: caution,
     recommendation: recommendation
   };
@@ -792,8 +819,10 @@ function parseGeminiAgeResponse(text, facts) {
   };
   const fields = {
     overview: { minimum: 80, names: ['overview', 'summary', 'tongQuan', 'tổngQuan', 'tong_quan', 'nhanXet', 'nhậnXét'] },
-    favorable: { minimum: 35, names: ['favorable', 'support', 'positive', 'diemThuan', 'điểmThuận', 'diem_ho_tro'] },
-    influence: { minimum: 70, names: ['influence', 'impact', 'anhHuong', 'ảnhHưởng', 'anh_huong'] },
+    nguHanh: { minimum: 70, names: ['nguHanh', 'nguhanh', 'ngu_hanh', 'element'] },
+    thienCan: { minimum: 70, names: ['thienCan', 'thiencan', 'thien_can', 'stem'] },
+    diaChi: { minimum: 70, names: ['diaChi', 'diachi', 'dia_chi', 'branch'] },
+    context: { minimum: 70, names: ['context', 'influence', 'impact', 'boiCanh', 'bốiCảnh', 'boi_canh', 'anhHuong', 'ảnhHưởng', 'anh_huong'] },
     caution: { minimum: 50, names: ['caution', 'note', 'luuY', 'lưuÝ', 'luu_y'] },
     recommendation: { minimum: 50, names: ['recommendation', 'advice', 'goiY', 'gợiÝ', 'goi_y'] }
   };
@@ -807,8 +836,10 @@ function parseGeminiAgeResponse(text, facts) {
 
   return {
     overview: cleanText(normalized.overview, 900),
-    favorable: cleanText(normalized.favorable, 500),
-    influence: cleanText(normalized.influence, 600),
+    nguHanh: cleanText(normalized.nguHanh, 700),
+    thienCan: cleanText(normalized.thienCan, 700),
+    diaChi: cleanText(normalized.diaChi, 700),
+    context: cleanText(normalized.context, 700),
     caution: cleanText(normalized.caution, 500),
     recommendation: cleanText(normalized.recommendation, 500)
   };
@@ -822,18 +853,20 @@ function callGeminiAgeReading(promptText, facts) {
     contents: [{ parts: [{ text: promptText }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1800,
+      maxOutputTokens: 2600,
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',
         properties: {
           overview: { type: 'STRING' },
-          favorable: { type: 'STRING' },
-          influence: { type: 'STRING' },
+          nguHanh: { type: 'STRING' },
+          thienCan: { type: 'STRING' },
+          diaChi: { type: 'STRING' },
+          context: { type: 'STRING' },
           caution: { type: 'STRING' },
           recommendation: { type: 'STRING' }
         },
-        required: ['overview', 'favorable', 'influence', 'caution', 'recommendation']
+        required: ['overview', 'nguHanh', 'thienCan', 'diaChi', 'context', 'caution', 'recommendation']
       }
     }
   };
