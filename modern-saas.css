@@ -1419,6 +1419,61 @@ body.google-auth-busy { overflow: hidden; }
 
 .age-nap-am-value { font-weight: 800; }
 
+.age-period-value.polarity-duong,
+.age-period-value.polarity-am,
+.age-nap-am-value.polarity-duong,
+.age-nap-am-value.polarity-am {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.age-period-value.polarity-duong::before,
+.age-nap-am-value.polarity-duong::before {
+    content: '●';
+    flex: 0 0 auto;
+    font-size: .72em;
+    line-height: 1;
+}
+
+.age-period-value.polarity-am::before,
+.age-nap-am-value.polarity-am::before {
+    content: '○';
+    flex: 0 0 auto;
+    font-size: .9em;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.age-polarity-legend {
+    margin: 10px 0 12px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: var(--text-secondary);
+    font-size: .69rem;
+    font-weight: 700;
+}
+
+.age-polarity-legend > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.age-polarity-symbol {
+    line-height: 1;
+}
+
+.age-polarity-symbol.is-duong { color: #334155; }
+.age-polarity-symbol.is-am { color: #94a3b8; font-size: 1.14em; }
+
 .age-period-value.element-moc.polarity-duong,
 .age-nap-am-value.element-moc.polarity-duong { color: #15803d; }
 .age-period-value.element-moc.polarity-am,
