@@ -1,4 +1,4 @@
-# E-GV v6.3 – Luận giải Gemini âm lịch 7 phần
+# E-GV v6.4 – Luận giải Gemini âm lịch có tác dụng thực tế
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Sửa lỗi toàn bộ 7 ô chỉ hiện câu dự phòng chung chung khi giao diện mới kết nối với Web App Apps Script cũ.
+- Thêm kiểm tra phiên bản luận giải giữa giao diện và máy chủ; nếu chưa đồng bộ, website báo rõ và tự tạo nội dung cụ thể từ đúng Can Chi, quan hệ và điểm số đang xem.
+- Buộc Gemini giải thích tác động thực tế của từng quan hệ, chỉ rõ yếu tố kéo điểm lên hoặc xuống và đưa ba nhóm lời khuyên: `Có thể làm`, `Cần thận trọng`, `Nếu vẫn tiến hành`.
 - Mở rộng phần Gemini âm lịch thành 7 mục: Tổng quan, Ngũ hành, Thiên can, Địa chi, Bối cảnh ngày–tháng–năm, Điểm cần lưu ý và Gợi ý thực hiện.
 - Yêu cầu Gemini phân tích độc lập từng yếu tố theo đúng dữ kiện E-GV, không tự đổi điểm, thêm quan hệ Can Chi hoặc suy diễn Tam hợp, Tứ hành xung và quý nhân khi dữ liệu không có.
 - Bắt buộc giải thích vì sao điểm tổng đạt mức hiện tại theo trọng số ngày 50%, tháng 30% và năm 20%; mọi trường thiếu hoặc quá ngắn đều được thay bằng luận giải dự phòng đầy đủ.

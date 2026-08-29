@@ -10,6 +10,7 @@ const REPAIR_HEADERS = ['id', 'date', 'task', 'location', 'cost', 'warranty', 's
 const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'created_at', 'last_login'];
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
 const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
+const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v4';
 
 function doGet(e) {
   try {
@@ -524,10 +525,10 @@ function handleAgeReading(data, clientId) {
     JSON.stringify(facts),
     Utilities.Charset.UTF_8
   );
-  const cacheKey = 'age-reading-v5:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  const cacheKey = 'age-reading-v6:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
   try {
     const cached = cache.get(cacheKey);
-    if (cached) return createResponse({ status: 'success', analysis: JSON.parse(cached), calculation: calculation, cached: true });
+    if (cached) return createResponse({ status: 'success', analysisVersion: AGE_ANALYSIS_VERSION, analysis: JSON.parse(cached), calculation: calculation, cached: true });
   } catch (_) {}
 
   const promptText = `Bạn là người biên tập nội dung lịch Can Chi bằng tiếng Việt rõ ràng, sâu sắc, khách quan và thận trọng.
@@ -547,17 +548,22 @@ YÊU CẦU BẮT BUỘC:
 9. Không dùng từ tuyệt đối như chắc chắn thất bại, tai họa, đại cát hoặc bảo đảm may mắn. Ưu tiên các cụm từ có thể, dễ, nên lưu ý, cần chuẩn bị.
 10. Phần gợi ý phải phân biệt công việc thường ngày với việc quan trọng như mua bán, xây sửa hoặc ký kết. Không khẳng định một ngày là an toàn tuyệt đối. Chỉ gợi ý tham khảo ngày khác khi các yếu tố cần lưu ý chiếm ưu thế; không tự bịa ngày, Hành hoặc Chi phù hợp trong tương lai.
 11. Khẳng định điểm trên thang 100 là chỉ số tương hợp tham khảo theo quy tắc E-GV, không phải phần trăm may mắn hoặc xác suất kết quả thực tế.
+12. Mỗi phần phải trả lời được hai câu hỏi: quan hệ này tác động thực tế như thế nào và người xem nên làm gì để tận dụng hoặc giảm ảnh hưởng. Không được chỉ nhắc lại tên quan hệ rồi kết thúc.
+13. Tổng quan phải mở đầu bằng kết luận trực tiếp ngày này thuộc mức nào và công việc thường ngày có thể tiến hành hay không. Phải chỉ ra yếu tố ngày, tháng hoặc năm nào đang kéo điểm lên hoặc xuống.
+14. Điểm cần lưu ý phải nêu nguy cơ cụ thể phù hợp với dữ kiện, chẳng hạn hao công, chậm tiến độ, hiểu lầm, bất đồng, thay đổi kế hoạch hoặc phải sửa lại; không gom mọi trường hợp thành câu chung chung.
+15. Gợi ý thực hiện phải dùng ba ý rõ trong cùng một đoạn văn: "Có thể làm:", "Cần thận trọng:" và "Nếu vẫn tiến hành:". Phải đề cập cụ thể việc thường ngày, ký kết hoặc mua bán và xây sửa khi phù hợp với mức điểm.
+16. Không dùng các câu mẫu rỗng nghĩa như "tác động phụ thuộc vào tính chất công việc", "cần đọc các yếu tố cùng nhau" hoặc "kết hợp với điều kiện thực tế" nếu không nói tiếp một hành động cụ thể.
 
 QUY TẮC ĐẦU RA JSON:
 1. Chỉ trả về duy nhất một đối tượng JSON hợp lệ, không bọc trong Markdown và không có văn bản nào ngoài JSON.
 2. Không dùng danh sách hoặc gạch đầu dòng trong giá trị. Không để trường nào rỗng, không dùng dấu gạch ngang hoặc câu quá ngắn để thay cho nội dung.
 3. Mỗi trường phải là một đoạn văn hoàn chỉnh, rõ ý và không lặp nguyên văn trường khác.
 4. Chỉ dùng đúng bảy trường sau:
-{"overview":"3 đến 4 câu tổng hợp điểm, mức đánh giá và xu hướng chung, tối đa 900 ký tự","nguHanh":"2 đến 4 câu phân tích Ngũ hành với ngày, tháng và năm, tối đa 700 ký tự","thienCan":"2 đến 4 câu phân tích Thiên can với ngày, tháng và năm, tối đa 700 ký tự","diaChi":"2 đến 4 câu phân tích Địa chi với ngày, tháng và năm, tối đa 700 ký tự","context":"2 đến 4 câu kết nối điểm ngày 50%, tháng 30% và năm 20%, tối đa 700 ký tự","caution":"2 đến 3 câu nêu điểm cần lưu ý bằng ngôn ngữ thận trọng, tối đa 500 ký tự","recommendation":"3 đến 4 câu gợi ý thực tế cho việc thường ngày và việc quan trọng, tối đa 500 ký tự"}`;
+{"overview":"3 đến 4 câu kết luận trực tiếp, giải thích mức điểm và việc thường ngày có thể tiến hành hay không, tối đa 900 ký tự","nguHanh":"2 đến 4 câu nêu đủ quan hệ Ngũ hành ngày, tháng, năm cùng tác động thực tế và cách ứng xử, tối đa 700 ký tự","thienCan":"2 đến 4 câu nêu đủ quan hệ Thiên can ngày, tháng, năm cùng ảnh hưởng đến chủ động, phối hợp hoặc hao công, tối đa 700 ký tự","diaChi":"2 đến 4 câu nêu đủ quan hệ Địa chi ngày, tháng, năm cùng nguy cơ hoặc điểm hỗ trợ cụ thể, tối đa 700 ký tự","context":"2 đến 4 câu chỉ rõ phần nào kéo điểm lên hoặc xuống theo trọng số ngày 50%, tháng 30% và năm 20%, tối đa 700 ký tự","caution":"2 đến 3 câu nêu các ảnh hưởng có thể gặp và phần cần kiểm tra trước khi quyết định, tối đa 500 ký tự","recommendation":"Một đoạn có đủ ba cụm Có thể làm, Cần thận trọng và Nếu vẫn tiến hành, đưa lời khuyên cụ thể cho việc thường ngày, ký kết hoặc mua bán và xây sửa, tối đa 600 ký tự"}`;
 
   const analysis = callGeminiAgeReading(promptText, facts);
   try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
-  return createResponse({ status: 'success', analysis: analysis, calculation: calculation, cached: false });
+  return createResponse({ status: 'success', analysisVersion: AGE_ANALYSIS_VERSION, analysis: analysis, calculation: calculation, cached: false });
 }
 
 function ageReadingCalculation(facts) {
@@ -737,13 +743,13 @@ function fallbackAgeAnalysis(facts) {
     ? 'Các điểm cần lưu ý gồm ' + cautious.slice(0, 6).join('; ') + '. Sinh xuất hoặc Khắc xuất chủ yếu cho thấy có thể phải bỏ thêm công sức, còn các quan hệ xung khắc cần được xem như lời nhắc chuẩn bị kỹ chứ không phải dự báo thất bại.'
     : 'Không có điểm xung khắc nổi bật trong dữ kiện. Dù vậy vẫn nên kiểm tra thông tin và tránh xem kết quả tham khảo là bảo đảm chắc chắn.';
 
-  let recommendation = 'Công việc thường ngày có thể tiến hành bình thường. Với việc quan trọng, nên kiểm tra thêm thời điểm, nguồn lực và phương án dự phòng trước khi quyết định.';
+  let recommendation = 'Có thể làm: công việc thường ngày và những việc đã có kế hoạch rõ. Cần thận trọng: kiểm tra giấy tờ, chi phí và người phối hợp trước khi ký kết, mua bán hoặc xây sửa. Nếu vẫn tiến hành: chia công việc thành từng bước và giữ phương án dự phòng.';
   if (score >= 78) {
-    recommendation = 'Công việc thường ngày có thể tiến hành theo kế hoạch. Việc quan trọng có thể được cân nhắc nếu điều kiện thực tế đã sẵn sàng, nhưng vẫn nên kiểm tra giấy tờ, thời gian, nguồn lực và người phối hợp.';
+    recommendation = 'Có thể làm: ưu tiên công việc quan trọng khi hồ sơ và nguồn lực đã sẵn sàng. Cần thận trọng: vẫn kiểm tra điều khoản, chi phí, tiến độ và trách nhiệm các bên. Nếu vẫn tiến hành khi còn điểm chưa thuận: chốt rõ từng bước và người chịu trách nhiệm.';
   } else if (score < 40) {
-    recommendation = 'Nếu là việc hệ trọng và có thể linh hoạt, nên tham khảo thêm ngày khác. Nếu vẫn tiến hành, hãy chia nhỏ công việc, kiểm tra kỹ và chuẩn bị phương án dự phòng.';
+    recommendation = 'Có thể làm: việc thường ngày, hoàn thiện việc cũ và chuẩn bị hồ sơ. Cần thận trọng: nên cân nhắc dời đặt cọc, ký hợp đồng lớn hoặc khởi công nếu thời gian cho phép. Nếu vẫn tiến hành: xác nhận lại thông tin, chia nhỏ từng bước và chuẩn bị phương án dự phòng.';
   } else if (score < 50) {
-    recommendation = 'Công việc thường ngày vẫn có thể tiến hành khi đã chuẩn bị rõ ràng. Với mua bán, xây sửa, ký kết hoặc việc khó thay đổi, nên cân nhắc thêm ngày khác; nếu vẫn thực hiện cần rà soát giấy tờ, nguồn lực và phương án dự phòng.';
+    recommendation = 'Có thể làm: công việc thường ngày và việc đã chuẩn bị chắc chắn. Cần thận trọng: chưa nên chốt vội ký kết, mua bán, đặt cọc hoặc xây sửa; hãy rà soát giấy tờ, chi phí và thời hạn. Nếu vẫn tiến hành: làm từng bước, xác nhận lại với các bên và giữ phương án dự phòng.';
   }
   return {
     overview: 'Tuổi ' + ageName + ' có điểm tương hợp ' + score + '/100, thuộc mức ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Mốc 50 được xem là cân bằng. Đây là chỉ số tham khảo theo năm sinh, không phải phần trăm may mắn hoặc dự báo chắc chắn.',
@@ -827,11 +833,13 @@ function parseGeminiAgeResponse(text, facts) {
     recommendation: { minimum: 50, names: ['recommendation', 'advice', 'goiY', 'gợiÝ', 'goi_y'] }
   };
   const normalized = {};
+  const fallbackFields = [];
   Object.keys(fields).forEach(function (key) {
     const field = fields[key];
-    normalized[key] = firstText(parsed, field.names, field.minimum)
-      || usableText(extractLooseGeminiField(cleaned, field.names), field.minimum)
-      || fallback[key];
+    const generated = firstText(parsed, field.names, field.minimum)
+      || usableText(extractLooseGeminiField(cleaned, field.names), field.minimum);
+    if (!generated) fallbackFields.push(key);
+    normalized[key] = generated || fallback[key];
   });
 
   return {
@@ -841,7 +849,11 @@ function parseGeminiAgeResponse(text, facts) {
     diaChi: cleanText(normalized.diaChi, 700),
     context: cleanText(normalized.context, 700),
     caution: cleanText(normalized.caution, 500),
-    recommendation: cleanText(normalized.recommendation, 500)
+    recommendation: cleanText(normalized.recommendation, 600),
+    _meta: {
+      source: fallbackFields.length ? 'hybrid' : 'gemini',
+      fallbackFields: fallbackFields
+    }
   };
 }
 
@@ -853,7 +865,7 @@ function callGeminiAgeReading(promptText, facts) {
     contents: [{ parts: [{ text: promptText }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 2600,
+      maxOutputTokens: 3000,
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',

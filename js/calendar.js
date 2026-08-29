@@ -163,6 +163,7 @@
     const SELF_PUNISHMENT_BRANCHES = new Set([4, 6, 9, 11]);
     const BIRTH_YEAR_STORAGE_KEY = 'egv-calendar-birth-year';
     const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
+    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v4';
     const AGE_READING_WEIGHTS = {
         day: { element: 0.20, stem: 0.12, branch: 0.18, total: 0.50 },
         month: { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 },
@@ -535,7 +536,75 @@
         return '';
     }
 
-    function normalizeAgeGeminiAnalysis(input) {
+    function buildLocalAgeAnalysis(reading) {
+        const periods = [reading.readings.day, reading.readings.month, reading.readings.year];
+        const weights = { day: 50, month: 30, year: 20 };
+        const relationEffects = {
+            'Tương hợp': 'thuận cho phối hợp và thống nhất cách làm',
+            'Lục hợp': 'tạo thêm sự hỗ trợ khi phối hợp hoặc trao đổi',
+            'Tương sinh': 'được tiếp sức, xử lý công việc thường thuận hơn',
+            'Sinh nhập': 'dễ nhận được hỗ trợ hoặc nguồn lực từ bên ngoài',
+            'Tỷ hòa': 'giữ nhịp ổn định, không nghiêng rõ về thuận hay nghịch',
+            'Tương hòa': 'giữ trạng thái cân bằng và dễ duy trì tiến độ',
+            'Đồng chi': 'làm tính chất vốn có biểu hiện rõ hơn nhưng không tự thành tốt hoặc xấu',
+            'Sinh xuất': 'cần chủ động nhiều hơn và có thể hao thêm thời gian, công sức',
+            'Khắc xuất': 'vẫn có thể kiểm soát tình thế nhưng dễ mệt vì phải tự xử lý nhiều',
+            'Tự hình': 'dễ tự tạo áp lực hoặc lặp lại cách xử lý chưa hiệu quả',
+            'Tương hình': 'dễ nảy sinh va chạm, áp lực hoặc thủ tục phải sửa lại',
+            'Tương phá': 'kế hoạch có thể bị thay đổi hoặc phát sinh chi tiết ngoài dự kiến',
+            'Tương hại': 'dễ có hiểu lầm, việc phát sinh hoặc phối hợp không trọn ý',
+            'Tương xung': 'dễ có thay đổi, bất đồng hoặc tình huống buộc phải điều chỉnh',
+            'Tương khắc': 'tạo áp lực rõ, nên tránh quyết định vội và cần kiểm tra kỹ',
+            'Khắc nhập': 'chịu lực cản từ hoàn cảnh, tiến độ có thể chậm hơn dự kiến'
+        };
+        const relationEffect = relation => relationEffects[relation.label] || relation.description;
+        const factorText = function (key) {
+            return periods.map(function (period) {
+                const relation = period.relations[key];
+                return `${period.label} ${period.profile.name}: ${relation.description} Ý nghĩa thực tế là ${relationEffect(relation)}.`;
+            }).join(' ');
+        };
+        const scoreTrend = function (score) {
+            if (score < 40) return 'nghiêng rõ về phía cần thận trọng';
+            if (score < 50) return 'có nhiều điểm cần cân nhắc';
+            if (score < 65) return 'ở quanh mức cân bằng';
+            if (score < 78) return 'có xu hướng khá thuận';
+            return 'có nhiều yếu tố hỗ trợ';
+        };
+        const cautious = [];
+        periods.forEach(function (period) {
+            Object.values(period.relations).forEach(function (relation) {
+                if (relation.tone === 'negative' || relation.tone === 'caution') {
+                    cautious.push(`${period.label.toLowerCase()} ${relation.label}: ${relationEffect(relation)}`);
+                }
+            });
+        });
+        const dateText = `${String(reading.selectedDate.day).padStart(2, '0')}/${String(reading.selectedDate.month).padStart(2, '0')}/${reading.selectedDate.year}`;
+        const day = reading.readings.day;
+        const month = reading.readings.month;
+        const year = reading.readings.year;
+        let recommendation = 'Có thể làm: công việc thường ngày, trao đổi và xử lý các việc đã có kế hoạch. Cần thận trọng: với ký kết, mua bán hoặc xây sửa, nên kiểm tra giấy tờ, thời điểm, nguồn lực và người phối hợp trước khi chốt. Nếu vẫn tiến hành: hãy giữ một phương án dự phòng.';
+        if (reading.score < 40) {
+            recommendation = 'Có thể làm: công việc thường ngày, hoàn thiện việc cũ và chuẩn bị hồ sơ. Cần thận trọng: nên cân nhắc dời việc khó đảo ngược như đặt cọc, ký hợp đồng lớn hoặc khởi công nếu thời gian cho phép. Nếu vẫn tiến hành: xác nhận lại thông tin, chia nhỏ bước thực hiện và chuẩn bị phương án dự phòng.';
+        } else if (reading.score < 50) {
+            recommendation = 'Có thể làm: công việc thường ngày và những việc đã chuẩn bị chắc chắn. Cần thận trọng: với ký kết, mua bán, đặt cọc hoặc xây sửa, chưa nên chốt vội; hãy rà soát giấy tờ, chi phí, thời hạn và ý kiến các bên. Nếu vẫn tiến hành: chọn giờ thuận tiện, làm từng bước và giữ phương án dự phòng.';
+        } else if (reading.score >= 78) {
+            recommendation = 'Có thể làm: ưu tiên công việc quan trọng khi hồ sơ và nguồn lực đã sẵn sàng. Cần thận trọng: vẫn kiểm tra điều khoản, chi phí và tiến độ, không xem điểm cao là bảo đảm kết quả. Nếu vẫn tiến hành khi còn điểm chưa thuận: chốt rõ từng bước và người chịu trách nhiệm.';
+        }
+        return {
+            overview: `Kết luận: ngày ${dateText} đối với tuổi ${reading.age.name} đạt ${reading.score}/100, thuộc mức ${reading.level.label}. Ảnh hưởng chính đến từ ngày ${day.profile.name} đạt ${day.score}/100 và ${scoreTrend(day.score)}. Công việc thường ngày vẫn có thể xử lý, còn việc quan trọng nên căn cứ thêm các điểm cần lưu ý và phương án thực hiện bên dưới.`,
+            nguHanh: factorText('element'),
+            thienCan: factorText('stem'),
+            diaChi: factorText('branch'),
+            context: `Ngày ${day.profile.name} đạt ${day.score}/100 và giữ trọng số 50%, nên là yếu tố tác động mạnh nhất. Tháng ${month.profile.name} đạt ${month.score}/100 với trọng số 30%, còn năm ${year.profile.name} đạt ${year.score}/100 với trọng số 20%. Ba phần kết hợp tạo thành ${reading.score}/100; vì vậy mức ${reading.level.label.toLowerCase()} phản ánh xu hướng chung chứ không phải xác suất may mắn.`,
+            caution: cautious.length
+                ? `Điểm dễ ảnh hưởng đến tiến độ gồm ${cautious.slice(0, 4).join('; ')}. Tác động có thể gặp là phải trao đổi lại, xử lý thêm chi tiết hoặc tốn nhiều công sức hơn dự kiến; nên kiểm tra trước những phần khó sửa sau khi đã quyết định.`
+                : 'Dữ kiện không có quan hệ xung khắc nổi bật. Dù vậy, việc quan trọng vẫn cần kiểm tra giấy tờ, nguồn lực và trách nhiệm của các bên vì điểm lịch không thay thế điều kiện thực tế.',
+            recommendation
+        };
+    }
+
+    function normalizeAgeGeminiAnalysis(input, fallbackAnalysis, forceFallback) {
         let analysis = input;
         let raw = typeof input === 'string' ? input : '';
         if (analysis && typeof analysis === 'object' && typeof analysis.overview === 'string'
@@ -560,19 +629,24 @@
             }
         }
         if (!analysis || typeof analysis !== 'object') analysis = {};
-        const safeText = function (value, fallback, minimumLength) {
+        const fallbackFields = [];
+        const safeText = function (key, value, minimumLength) {
             const text = String(value || '').trim();
-            if (!text || /^(?:[-–—]+|n\/?a|không có|chưa có)$/i.test(text) || text.length < minimumLength) return fallback;
+            if (forceFallback || !text || /^(?:[-–—]+|n\/?a|không có|chưa có)$/i.test(text) || text.length < minimumLength) {
+                fallbackFields.push(key);
+                return fallbackAnalysis[key];
+            }
             return text;
         };
         return {
-            overview: safeText(analysis.overview, 'Kết quả được tổng hợp theo dữ kiện E-GV đã tính, trong đó điểm số là chỉ số tham khảo chứ không phải phần trăm may mắn hoặc xác suất kết quả.', 40),
-            nguHanh: safeText(analysis.nguHanh || analysis.nguhanh || analysis.ngu_hanh || analysis.element, 'Ngũ hành cần được đối chiếu đồng thời với ngày, tháng và năm; một quan hệ riêng lẻ không đủ để kết luận chắc chắn tốt hoặc xấu.', 40),
-            thienCan: safeText(analysis.thienCan || analysis.thiencan || analysis.thien_can || analysis.stem, 'Thiên can được xem theo đúng quan hệ E-GV đã tính cho ngày, tháng và năm; tác động thực tế còn phụ thuộc vào tính chất công việc.', 40),
-            diaChi: safeText(analysis.diaChi || analysis.diachi || analysis.dia_chi || analysis.branch, 'Địa chi được diễn giải theo đúng quan hệ E-GV đã xác định, không tự suy thêm Tam hợp, Tứ hành xung hoặc quý nhân khi dữ liệu không nêu.', 40),
-            context: safeText(analysis.context || analysis.influence || analysis.impact || analysis.boiCanh || analysis['bốiCảnh'] || analysis.anhHuong || analysis['ảnhHưởng'], 'Ngày giữ ảnh hưởng chính 50%, tháng tạo bối cảnh 30% và năm là ảnh hưởng nền 20%; ba tầng cần được đọc cùng nhau.', 40),
-            caution: safeText(analysis.caution, 'Không nên xem một quan hệ riêng lẻ là kết luận chắc chắn tốt hoặc xấu.', 30),
-            recommendation: safeText(analysis.recommendation, 'Hãy kết hợp kết quả tham khảo với tính chất công việc và điều kiện thực tế trước khi quyết định.', 35)
+            overview: safeText('overview', analysis.overview, 80),
+            nguHanh: safeText('nguHanh', analysis.nguHanh || analysis.nguhanh || analysis.ngu_hanh || analysis.element, 70),
+            thienCan: safeText('thienCan', analysis.thienCan || analysis.thiencan || analysis.thien_can || analysis.stem, 70),
+            diaChi: safeText('diaChi', analysis.diaChi || analysis.diachi || analysis.dia_chi || analysis.branch, 70),
+            context: safeText('context', analysis.context || analysis.influence || analysis.impact || analysis.boiCanh || analysis['bốiCảnh'] || analysis.anhHuong || analysis['ảnhHưởng'], 70),
+            caution: safeText('caution', analysis.caution, 60),
+            recommendation: safeText('recommendation', analysis.recommendation, 80),
+            _fallbackFields: fallbackFields
         };
     }
 
@@ -634,7 +708,9 @@
             });
             if (requestedKey !== currentAgeReadingKey) return;
             applyAuthoritativeAgeCalculation(response.calculation);
-            const analysis = normalizeAgeGeminiAnalysis(response.analysis || {});
+            const localAnalysis = buildLocalAgeAnalysis(currentAgeReading);
+            const versionMatches = response.analysisVersion === AGE_ANALYSIS_VERSION;
+            const analysis = normalizeAgeGeminiAnalysis(response.analysis || {}, localAnalysis, !versionMatches);
             document.getElementById('ageGeminiOverview').textContent = analysis.overview;
             document.getElementById('ageGeminiNguHanh').textContent = analysis.nguHanh;
             document.getElementById('ageGeminiThienCan').textContent = analysis.thienCan;
@@ -643,7 +719,19 @@
             document.getElementById('ageGeminiCaution').textContent = analysis.caution;
             document.getElementById('ageGeminiRecommendation').textContent = analysis.recommendation;
             resultBox.hidden = false;
-            status.hidden = true;
+            const backendFallbackFields = response.analysis && response.analysis._meta && Array.isArray(response.analysis._meta.fallbackFields)
+                ? response.analysis._meta.fallbackFields : [];
+            if (!versionMatches) {
+                status.hidden = false;
+                status.className = 'age-gemini-status is-warning';
+                status.textContent = 'Web App Apps Script đang dùng phiên bản luận giải cũ. E-GV đã hiển thị phần phân tích cụ thể từ dữ kiện đang xem; hãy cập nhật và triển khai Code.gs mới để nhận nội dung Gemini đầy đủ.';
+            } else if (analysis._fallbackFields.length || backendFallbackFields.length) {
+                status.hidden = false;
+                status.className = 'age-gemini-status is-warning';
+                status.textContent = 'Gemini bỏ sót một phần nội dung; E-GV đã tự bổ sung bằng dữ kiện Can Chi và điểm số đã tính để kết quả không bị chung chung.';
+            } else {
+                status.hidden = true;
+            }
         } catch (error) {
             if (requestedKey !== currentAgeReadingKey) return;
             status.hidden = false;
