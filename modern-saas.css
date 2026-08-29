@@ -1292,7 +1292,7 @@ body.google-auth-busy { overflow: hidden; }
 
 .age-score > strong {
     color: var(--primary-dark);
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     line-height: 1.05;
 }
 
@@ -1311,6 +1311,18 @@ body.google-auth-busy { overflow: hidden; }
 .age-score.score-medium > strong { color: #a16207; }
 .age-score.score-good { border-color: #a7f3d0; background: #ecfdf5; }
 .age-score.score-good > strong { color: #047857; }
+
+.age-score-method {
+    margin: -4px 0 13px;
+    padding: 9px 12px;
+    color: #64748b;
+    border-radius: 10px;
+    background: #f8fafc;
+    font-size: .68rem;
+    line-height: 1.5;
+}
+
+.age-score-method strong { color: #334155; }
 
 .age-period-grid {
     display: grid;
@@ -1517,9 +1529,34 @@ body.google-auth-busy { overflow: hidden; }
     font-size: .86rem;
 }
 
-.age-gemini-result p { margin: 0 0 11px; }
-.age-gemini-result > div + div { margin-top: 6px; }
+.age-gemini-result p { margin: 7px 0 0; }
 .age-gemini-result strong { color: var(--text-primary); }
+
+.age-gemini-overview {
+    padding: 14px 15px;
+    border: 1px solid #dbeafe;
+    border-radius: 13px;
+    background: #f8fbff;
+}
+
+.age-gemini-grid {
+    margin-top: 11px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.age-gemini-grid article {
+    min-width: 0;
+    padding: 13px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #f8fafc;
+}
+
+.age-gemini-grid article.is-support { border-color: #bbf7d0; background: #f0fdf4; }
+.age-gemini-grid article.is-caution { border-color: #fed7aa; background: #fff7ed; }
+.age-gemini-grid article.is-action { border-color: #ddd6fe; background: #f5f3ff; }
 
 .age-gemini-mark {
     padding: 4px 7px;
@@ -1767,6 +1804,7 @@ body.google-auth-busy { overflow: hidden; }
 
     .age-reading-toolbar h2 { font-size: 1.15rem; }
     .age-reading-summary { grid-template-columns: 1fr; }
+    .age-gemini-grid { grid-template-columns: 1fr; }
 
     .age-reading-auth-gate {
         grid-template-columns: auto minmax(0, 1fr);

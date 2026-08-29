@@ -78,8 +78,9 @@
                     <div class="age-reading-result" id="ageReadingResult" hidden>
                         <header class="age-reading-result-header">
                             <div><span id="ageReadingDayLabel">Đánh giá theo ngày</span><h3 id="ageReadingTitle">Tuổi —</h3><p id="ageReadingSubtitle">Sinh năm —</p></div>
-                            <div class="age-score" id="ageReadingScoreBox"><strong id="ageReadingScore">—%</strong><span id="ageReadingLevel">Chưa đánh giá</span></div>
+                            <div class="age-score" id="ageReadingScoreBox" title="Điểm tương hợp tham khảo, không phải xác suất may mắn"><strong id="ageReadingScore">—/100</strong><span id="ageReadingLevel">Chưa đánh giá</span></div>
                         </header>
+                        <p class="age-score-method"><strong>Cách tính:</strong> ngày 50% · tháng 30% · năm 20%. Mốc 50 là cân bằng; đây không phải xác suất may mắn.</p>
 
                         <div class="age-period-grid">
                             <article class="age-period-card"><header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageDayElement">—</dd></div><div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageDayStem">—</dd></div><div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageDayBranch">—</dd></div></dl></article>
@@ -93,8 +94,17 @@
                             <p>Gemini chỉ diễn giải các quan hệ đã được hệ thống tính sẵn.</p>
                         </div>
                         <div class="age-gemini-status" id="ageGeminiStatus" role="status" aria-live="polite" hidden></div>
-                        <section class="age-gemini-result" id="ageGeminiResult" aria-labelledby="ageGeminiHeading" hidden><header><span class="age-gemini-mark">AI</span><h4 id="ageGeminiHeading">Gemini luận giải</h4></header><p id="ageGeminiOverview">—</p><div><strong>Ảnh hưởng:</strong> <span id="ageGeminiInfluence">—</span></div><div><strong>Lưu ý:</strong> <span id="ageGeminiCaution">—</span></div></section>
-                        <p class="age-reading-disclaimer" id="birthYearHint">Điểm phần trăm là quy đổi theo bộ quy tắc của E-GV, không phải xác suất khoa học. Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng. Thông tin chỉ mang tính tham khảo.</p>
+                        <section class="age-gemini-result" id="ageGeminiResult" aria-labelledby="ageGeminiHeading" hidden>
+                            <header><span class="age-gemini-mark">AI</span><h4 id="ageGeminiHeading">Gemini luận giải chi tiết</h4></header>
+                            <div class="age-gemini-overview"><strong>Tổng quan</strong><p id="ageGeminiOverview">—</p></div>
+                            <div class="age-gemini-grid">
+                                <article class="is-support"><strong>Điểm hỗ trợ</strong><p id="ageGeminiFavorable">—</p></article>
+                                <article><strong>Ảnh hưởng ngày – tháng – năm</strong><p id="ageGeminiInfluence">—</p></article>
+                                <article class="is-caution"><strong>Điểm cần lưu ý</strong><p id="ageGeminiCaution">—</p></article>
+                                <article class="is-action"><strong>Gợi ý thực hiện</strong><p id="ageGeminiRecommendation">—</p></article>
+                            </div>
+                        </section>
+                        <p class="age-reading-disclaimer" id="birthYearHint"><strong>Cách hiểu điểm:</strong> 50 là mốc cân bằng; số điểm thể hiện mức tương hợp theo bộ quy tắc E-GV, không phải phần trăm may mắn hay xác suất khoa học. Không nên dùng kết quả này làm căn cứ duy nhất cho quyết định quan trọng. Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng.</p>
                     </div>
                 </div>
             </section>
