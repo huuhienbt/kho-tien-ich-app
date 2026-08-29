@@ -9,8 +9,8 @@ const PROMPT_HEADERS = ['id', 'title', 'category', 'content', 'platform', 'acces
 const REPAIR_HEADERS = ['id', 'date', 'task', 'location', 'cost', 'warranty', 'status', 'vendor', 'reporter', 'asset_id', 'image_url', 'note'];
 const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'created_at', 'last_login'];
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
-const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v4';
-const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v7';
+const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v5';
+const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
 
 function doGet(e) {
   try {
@@ -525,7 +525,7 @@ function handleAgeReading(data, clientId) {
     JSON.stringify(facts),
     Utilities.Charset.UTF_8
   );
-  const cacheKey = 'age-reading-v9:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  const cacheKey = 'age-reading-v10:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
   try {
     const cached = cache.get(cacheKey);
     if (cached) return createResponse({ status: 'success', analysisVersion: AGE_ANALYSIS_VERSION, analysis: JSON.parse(cached), calculation: calculation, cached: true });
@@ -539,7 +539,7 @@ ${JSON.stringify(facts, null, 2)}
 YÊU CẦU BẮT BUỘC:
 1. Trích xuất và sử dụng tuyệt đối các dữ kiện E-GV đã cung cấp. Không tự tính lại, không thay đổi điểm tổng, điểm ngày, điểm tháng, điểm năm, tên Can Chi, nạp âm hoặc tên quan hệ.
 2. Điểm tổng và ba điểm thành phần là kết quả có thẩm quyền của E-GV. Phải diễn giải để nội dung nhất quán với đúng mức đánh giá đã cho, không được tự nâng hoặc hạ mức độ.
-3. Phân tích đủ ba tầng theo đúng trọng số: ngày là ảnh hưởng chính 70%, tháng là bối cảnh 20%, năm là ảnh hưởng nền 10%. Không được chỉ nói về ngày rồi bỏ qua tháng hoặc năm.
+3. Phân tích đủ ba tầng theo đúng trọng số: ngày là ảnh hưởng chính 80%, tháng là bối cảnh 15%, năm là ảnh hưởng nền 5%. Không được chỉ nói về ngày rồi bỏ qua tháng hoặc năm.
 4. Phân tích độc lập ba yếu tố Ngũ hành, Thiên can và Địa chi. Trong mỗi yếu tố, phải nhắc đủ quan hệ của tuổi với ngày, tháng và năm bằng đúng tên trong dữ kiện.
 5. Với Ngũ hành, nêu tên hành của tuổi cùng hành của ngày, tháng và năm. Chỉ nêu cơ chế như Hỏa khắc Kim hoặc Thủy sinh Mộc khi cơ chế đó được suy ra trực tiếp từ chính các hành và quan hệ đã có; tuyệt đối không thêm một quan hệ mới.
 6. Với Thiên can và Địa chi, nêu rõ cặp Can hoặc Chi đang được so sánh cùng tên quan hệ E-GV đã tính. Không tự suy diễn Tam hợp, Tứ hành xung, quý nhân, cát tinh hoặc hung tinh nếu dữ kiện không nêu.
@@ -559,7 +559,7 @@ QUY TẮC ĐẦU RA JSON:
 2. Không dùng danh sách hoặc gạch đầu dòng trong giá trị. Không để trường nào rỗng, không dùng dấu gạch ngang hoặc câu quá ngắn để thay cho nội dung.
 3. Mỗi trường phải là một đoạn văn hoàn chỉnh, rõ ý và không lặp nguyên văn trường khác.
 4. Chỉ dùng đúng bảy trường sau:
-{"overview":"3 đến 4 câu kết luận trực tiếp, giải thích mức điểm và việc thường ngày có thể tiến hành hay không, tối đa 1200 ký tự","nguHanh":"3 đến 5 câu nêu đủ quan hệ Ngũ hành ngày, tháng, năm cùng tác động thực tế và cách ứng xử, tối đa 1100 ký tự","thienCan":"3 đến 5 câu nêu đủ quan hệ Thiên can ngày, tháng, năm cùng ảnh hưởng đến chủ động, phối hợp hoặc hao công, tối đa 1100 ký tự","diaChi":"3 đến 5 câu nêu đủ quan hệ Địa chi ngày, tháng, năm cùng nguy cơ hoặc điểm hỗ trợ cụ thể; phải viết trọn ý đến hết quan hệ của năm, tối đa 1100 ký tự","context":"2 đến 4 câu chỉ rõ phần nào kéo điểm lên hoặc xuống theo trọng số ngày 70%, tháng 20% và năm 10%, tối đa 900 ký tự","caution":"2 đến 4 câu nêu các ảnh hưởng có thể gặp và phần cần kiểm tra trước khi quyết định, tối đa 800 ký tự","recommendation":"Một đoạn có đủ ba cụm Có thể làm, Cần thận trọng và Nếu vẫn tiến hành, đưa lời khuyên cụ thể cho việc thường ngày, ký kết hoặc mua bán và xây sửa, tối đa 800 ký tự"}`;
+{"overview":"3 đến 4 câu kết luận trực tiếp, giải thích mức điểm và việc thường ngày có thể tiến hành hay không, tối đa 1200 ký tự","nguHanh":"3 đến 5 câu nêu đủ quan hệ Ngũ hành ngày, tháng, năm cùng tác động thực tế và cách ứng xử, tối đa 1100 ký tự","thienCan":"3 đến 5 câu nêu đủ quan hệ Thiên can ngày, tháng, năm cùng ảnh hưởng đến chủ động, phối hợp hoặc hao công, tối đa 1100 ký tự","diaChi":"3 đến 5 câu nêu đủ quan hệ Địa chi ngày, tháng, năm cùng nguy cơ hoặc điểm hỗ trợ cụ thể; phải viết trọn ý đến hết quan hệ của năm, tối đa 1100 ký tự","context":"2 đến 4 câu chỉ rõ phần nào kéo điểm lên hoặc xuống theo trọng số ngày 80%, tháng 15% và năm 5%, tối đa 900 ký tự","caution":"2 đến 4 câu nêu các ảnh hưởng có thể gặp và phần cần kiểm tra trước khi quyết định, tối đa 800 ký tự","recommendation":"Một đoạn có đủ ba cụm Có thể làm, Cần thận trọng và Nếu vẫn tiến hành, đưa lời khuyên cụ thể cho việc thường ngày, ký kết hoặc mua bán và xây sửa, tối đa 800 ký tự"}`;
 
   const analysis = callGeminiAgeReading(promptText, facts);
   try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
@@ -649,10 +649,10 @@ function normalizeAgeReadingFacts(data) {
   const ageNapAm = cleanText(age.napAm, 60);
   if (!ageName || !ageNapAm) throw new Error('Thiếu thông tin tuổi.');
 
-  const day = period(data.day, 'Ngày', { element: 0.28, stem: 0.168, branch: 0.252, total: 0.70 });
-  const month = period(data.month, 'Tháng', { element: 1 / 15, stem: 7 / 150, branch: 13 / 150, total: 0.20 });
-  const year = period(data.year, 'Năm', { element: 0.035, stem: 0.025, branch: 0.04, total: 0.10 });
-  const totalScore = Math.round((day.diem * 70 + month.diem * 20 + year.diem * 10) / 100);
+  const day = period(data.day, 'Ngày', { element: 0.32, stem: 0.192, branch: 0.288, total: 0.80 });
+  const month = period(data.month, 'Tháng', { element: 0.05, stem: 0.035, branch: 0.065, total: 0.15 });
+  const year = period(data.year, 'Năm', { element: 0.0175, stem: 0.0125, branch: 0.02, total: 0.05 });
+  const totalScore = Math.round((day.diem * 80 + month.diem * 15 + year.diem * 5) / 100);
   delete day.contribution;
   delete month.contribution;
   delete year.contribution;
@@ -694,9 +694,9 @@ function fallbackAgeAnalysis(facts) {
   const monthName = String(facts && facts.thang && facts.thang.canChi || 'tháng đang xem');
   const yearName = String(facts && facts.nam && facts.nam.canChi || 'năm đang xem');
   const periods = [
-    { label: 'Ngày', weight: 70, value: facts && facts.ngay || {} },
-    { label: 'Tháng', weight: 20, value: facts && facts.thang || {} },
-    { label: 'Năm', weight: 10, value: facts && facts.nam || {} }
+    { label: 'Ngày', weight: 80, value: facts && facts.ngay || {} },
+    { label: 'Tháng', weight: 15, value: facts && facts.thang || {} },
+    { label: 'Năm', weight: 5, value: facts && facts.nam || {} }
   ];
   const cautious = [];
 
@@ -756,7 +756,7 @@ function fallbackAgeAnalysis(facts) {
     nguHanh: 'Tuổi ' + ageName + ' thuộc hành ' + String(facts && facts.tuoi && facts.tuoi.nguHanh || 'chưa xác định') + '. ' + factorSummary('nguHanh', 'Ngũ hành') + ' Các quan hệ này cần được đọc cùng nhau, không dùng một quan hệ riêng lẻ để kết luận toàn bộ ngày.',
     thienCan: factorSummary('thienCan', 'Can') + ' Sinh xuất hoặc Khắc xuất cho thấy có thể tốn thêm công sức; quan hệ hỗ trợ hoặc bình hòa chỉ tạo điều kiện thuận hơn chứ không bảo đảm kết quả.',
     diaChi: factorSummary('diaChi', 'Chi') + ' Phần này chỉ sử dụng đúng tên quan hệ E-GV đã tính và không tự suy thêm Tam hợp, Tứ hành xung hoặc quý nhân.',
-    context: context + ' Tổng điểm ' + score + '/100 được tổng hợp theo trọng số ngày 70%, tháng 20% và năm 10%, nên điểm ngày có ảnh hưởng chính khi so sánh từng ngày nhưng không tách rời bối cảnh tháng và năm.',
+    context: context + ' Tổng điểm ' + score + '/100 được tổng hợp theo trọng số ngày 80%, tháng 15% và năm 5%, nên điểm ngày quyết định phần lớn kết quả khi so sánh từng ngày nhưng vẫn có điều chỉnh theo bối cảnh tháng và năm.',
     caution: caution,
     recommendation: recommendation
   };

@@ -162,12 +162,12 @@
     };
     const SELF_PUNISHMENT_BRANCHES = new Set([4, 6, 9, 11]);
     const BIRTH_YEAR_STORAGE_KEY = 'egv-calendar-birth-year';
-    const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v4';
-    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v7';
+    const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v5';
+    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
     const AGE_READING_WEIGHTS = {
-        day: { element: 0.28, stem: 0.168, branch: 0.252, total: 0.70 },
-        month: { element: 1 / 15, stem: 7 / 150, branch: 13 / 150, total: 0.20 },
-        year: { element: 0.035, stem: 0.025, branch: 0.04, total: 0.10 }
+        day: { element: 0.32, stem: 0.192, branch: 0.288, total: 0.80 },
+        month: { element: 0.05, stem: 0.035, branch: 0.065, total: 0.15 },
+        year: { element: 0.0175, stem: 0.0125, branch: 0.02, total: 0.05 }
     };
     const RELATION_SCORES = {
         harmony: 88,
@@ -573,7 +573,7 @@
             year: calculatePeriodReading('year', 'Năm', yearProfile(lunarDate.year), age)
         };
         const score = Math.round(
-            (readings.day.score * 70 + readings.month.score * 20 + readings.year.score * 10) / 100
+            (readings.day.score * 80 + readings.month.score * 15 + readings.year.score * 5) / 100
         );
         return {
             selectedDate: { ...date },
@@ -760,7 +760,7 @@
 
     function buildLocalAgeAnalysis(reading) {
         const periods = [reading.readings.day, reading.readings.month, reading.readings.year];
-        const weights = { day: 70, month: 20, year: 10 };
+        const weights = { day: 80, month: 15, year: 5 };
         const relationEffects = {
             'Tương hợp': 'thuận cho phối hợp và thống nhất cách làm',
             'Lục hợp': 'tạo thêm sự hỗ trợ khi phối hợp hoặc trao đổi',
@@ -818,7 +818,7 @@
             nguHanh: factorText('element'),
             thienCan: factorText('stem'),
             diaChi: factorText('branch'),
-            context: `Ngày ${day.profile.name} đạt ${day.score}/100 và giữ trọng số 70%, nên là yếu tố tác động chính khi so sánh từng ngày. Tháng ${month.profile.name} đạt ${month.score}/100 với trọng số 20%, còn năm ${year.profile.name} đạt ${year.score}/100 với trọng số 10%. Ba phần kết hợp tạo thành ${reading.score}/100; vì vậy mức ${reading.level.label.toLowerCase()} phản ánh xu hướng chung chứ không phải xác suất may mắn.`,
+            context: `Ngày ${day.profile.name} đạt ${day.score}/100 và giữ trọng số 80%, nên quyết định phần lớn kết quả khi so sánh từng ngày. Tháng ${month.profile.name} đạt ${month.score}/100 với trọng số 15%, còn năm ${year.profile.name} đạt ${year.score}/100 với trọng số 5%. Ba phần kết hợp tạo thành ${reading.score}/100; vì vậy mức ${reading.level.label.toLowerCase()} phản ánh xu hướng chung chứ không phải xác suất may mắn.`,
             caution: cautious.length
                 ? `Điểm dễ ảnh hưởng đến tiến độ gồm ${cautious.slice(0, 4).join('; ')}. Tác động có thể gặp là phải trao đổi lại, xử lý thêm chi tiết hoặc tốn nhiều công sức hơn dự kiến; nên kiểm tra trước những phần khó sửa sau khi đã quyết định.`
                 : 'Dữ kiện không có quan hệ xung khắc nổi bật. Dù vậy, việc quan trọng vẫn cần kiểm tra giấy tờ, nguồn lực và trách nhiệm của các bên vì điểm lịch không thay thế điều kiện thực tế.',
