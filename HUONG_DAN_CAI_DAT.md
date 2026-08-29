@@ -20,6 +20,7 @@ Trước khi triển khai, hãy đổi mật khẩu quản trị và thu hồi k
 | `TOKEN_SECRET` | Có thể bỏ trống; `setupApplication` sẽ tự tạo. Không đổi sau khi đã có người dùng |
 | `GOOGLE_CLIENT_ID` | Web Client ID của Google Sign-In; bỏ trống nếu chưa dùng |
 | `GEMINI_MODEL` | Tùy chọn; mặc định `gemini-3.6-flash` |
+| `GEMINI_AGE_MODEL` | Tùy chọn; model riêng cho phần luận lịch, nếu bỏ trống sẽ dùng `GEMINI_MODEL` |
 | `MAX_UPLOAD_MB` | Tùy chọn; mặc định `100` |
 
 4. Chọn hàm `setupApplication` và bấm **Run** một lần.

@@ -242,6 +242,10 @@ body {
     background: linear-gradient(120deg, #1d4ed8 0%, #4f46e5 52%, #7c3aed 100%);
 }
 
+.page-calendar .page-heading {
+    background: linear-gradient(120deg, #075985 0%, #2563eb 52%, #6d28d9 100%);
+}
+
 .page-repairs .page-heading {
     background: linear-gradient(120deg, #075985 0%, #0284c7 50%, #2563eb 100%);
 }
@@ -315,6 +319,81 @@ body {
     background: rgba(255, 255, 255, .1);
     backdrop-filter: blur(12px);
 }
+
+.calendar-shortcut {
+    width: min(100%, 420px);
+    padding: 22px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 15px;
+    color: #172033;
+    border: 1px solid rgba(255, 255, 255, .68);
+    border-radius: 21px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 24px 54px rgba(30, 41, 59, .19);
+    text-decoration: none;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.calendar-shortcut:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 30px 62px rgba(30, 41, 59, .24);
+}
+
+.calendar-shortcut-icon {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    border-radius: 17px;
+    background: linear-gradient(145deg, #2563eb, #7c3aed);
+    box-shadow: 0 12px 24px rgba(37, 99, 235, .24);
+}
+
+.calendar-shortcut-icon svg,
+.calendar-guide-icon svg {
+    width: 27px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.calendar-shortcut-copy { min-width: 0; }
+
+.calendar-shortcut-copy small {
+    display: block;
+    margin-bottom: 4px;
+    color: #6d28d9;
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.calendar-shortcut-copy strong {
+    display: block;
+    font-size: .92rem;
+}
+
+.calendar-shortcut-copy > span {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: .7rem;
+    line-height: 1.5;
+}
+
+.calendar-shortcut-arrow {
+    color: var(--primary);
+    font-size: 1.35rem;
+    transition: transform 180ms ease;
+}
+
+.calendar-shortcut:hover .calendar-shortcut-arrow { transform: translateX(4px); }
 
 .calendar-editorial {
     width: min(100%, 410px);
@@ -400,6 +479,66 @@ body {
 }
 
 .calendar-editorial-label:disabled { opacity: 1; }
+
+/* Trang Âm lịch */
+.calendar-page-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.page-calendar .calendar-editorial {
+    width: 100%;
+    min-height: 330px;
+    padding: 30px;
+    border: 1px solid #dfe7f2;
+    background: #fff;
+    box-shadow: var(--shadow-card);
+}
+
+.page-calendar .calendar-editorial-day { font-size: clamp(4.7rem, 8vw, 6.5rem); }
+
+.calendar-guide-card {
+    padding: 27px;
+    border: 1px solid #dfe7f2;
+    border-radius: 22px;
+    background: linear-gradient(145deg, #f8fbff, #f5f3ff);
+    box-shadow: var(--shadow-card);
+}
+
+.calendar-guide-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    color: var(--primary);
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, .1);
+}
+
+.calendar-guide-card h2 {
+    margin: 18px 0 8px;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.calendar-guide-card > p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: .78rem;
+    line-height: 1.65;
+}
+
+.calendar-guide-card ul {
+    margin: 18px 0 0;
+    padding: 16px 0 0 18px;
+    color: var(--text-secondary);
+    border-top: 1px solid #dfe7f2;
+    font-size: .74rem;
+    line-height: 1.7;
+}
 
 .section-heading { margin: 34px 0 15px; }
 
@@ -495,7 +634,10 @@ body {
 .dash-prompt { --card-accent: #2563eb; }
 .dash-upload { --card-accent: #10b981; }
 .dash-ai { --card-accent: #8b5cf6; }
+.dash-calendar { --card-accent: #2563eb; }
 .dash-repair { --card-accent: #0ea5e9; }
+
+.tone-calendar { color: #2563eb; background: #eaf1ff; }
 
 .dash-card-top {
     display: flex;
@@ -1388,6 +1530,14 @@ body.google-auth-busy { overflow: hidden; }
     font-weight: 850;
 }
 
+/* Thu gọn điều hướng khi có đủ sáu mục trên màn hình máy tính nhỏ */
+@media (max-width: 1280px) {
+    .header-inner { gap: 10px; }
+    .nav-link { padding-inline: 8px; font-size: .72rem; }
+    .brand-subtitle { display: none; }
+    .user-chip { max-width: 150px; }
+}
+
 /* Máy tính bảng */
 @media (max-width: 1120px) {
     .nav-link { padding-inline: 9px; font-size: .76rem; }
@@ -1426,6 +1576,8 @@ body.google-auth-busy { overflow: hidden; }
     .hero-content { text-align: left; }
     .hero-visual { justify-items: start; }
     .calendar-editorial { width: min(100%, 440px); }
+    .calendar-page-layout { grid-template-columns: 1fr; }
+    .page-calendar .calendar-editorial { width: 100%; }
 
     .age-reading-toolbar {
         align-items: stretch;
@@ -1503,7 +1655,7 @@ body.google-auth-busy { overflow: hidden; }
         min-height: 68px;
         padding: 7px 6px calc(7px + env(safe-area-inset-bottom));
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         align-items: center;
         border-top: 1px solid rgba(220, 227, 238, .92);
         background: rgba(255, 255, 255, .96);
@@ -1522,7 +1674,7 @@ body.google-auth-busy { overflow: hidden; }
         gap: 3px;
         color: #8a98ab;
         border-radius: 12px;
-        font-size: .58rem;
+        font-size: .53rem;
         font-weight: 650;
         line-height: 1.1;
         text-align: center;
@@ -1536,9 +1688,9 @@ body.google-auth-busy { overflow: hidden; }
     }
 
     .mobile-nav-primary {
-        width: 58px;
-        min-height: 58px;
-        margin: -24px auto 0;
+        width: 54px;
+        min-height: 54px;
+        margin: -21px auto 0;
         color: #fff;
         border: 5px solid var(--bg);
         border-radius: 50%;
@@ -1591,6 +1743,21 @@ body.google-auth-busy { overflow: hidden; }
 
     .hero-actions { display: grid; grid-template-columns: 1fr; }
     .hero-actions .btn { width: 100%; }
+
+    .calendar-shortcut {
+        padding: 17px;
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .calendar-shortcut-icon { width: 50px; height: 50px; }
+    .calendar-shortcut-arrow { display: none; }
+
+    .page-calendar .calendar-editorial {
+        min-height: 0;
+        padding: 20px;
+    }
+
+    .calendar-guide-card { padding: 21px; }
 
     .age-reading-panel {
         margin-top: 16px;

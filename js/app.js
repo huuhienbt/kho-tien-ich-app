@@ -33,6 +33,7 @@
         wrench: '<path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-3.4 3.4-2.2-2.2a4 4 0 0 0 5 5l6.7 6.7a2.1 2.1 0 1 0 3-3Z"/><path d="m6.5 12.5-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8"/>',
         upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
         sparkle: '<path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6Z"/><path d="m5 16-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8Z"/><path d="m19 14-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/>',
+        calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
         menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
         lock: '<rect width="16" height="12" x="4" y="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
         logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'
@@ -48,6 +49,7 @@
             ['prompts', 'prompts.html', 'Kho Prompt', 'book'],
             ['upload', 'upload.html', 'Kho tệp Drive', 'upload'],
             ['ai', 'ai.html', 'Trợ giảng AI', 'sparkle'],
+            ['calendar', 'calendar.html', 'Âm lịch', 'calendar'],
             ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench']
         ];
         return items.map(([key, href, label, iconName]) =>
@@ -59,8 +61,9 @@
         const items = [
             ['home', 'index.html', 'Trang chủ', 'home'],
             ['prompts', 'prompts.html', 'Prompt', 'book'],
-            ['ai', 'ai.html', 'Trợ giảng', 'sparkle'],
             ['upload', 'upload.html', 'Drive', 'upload'],
+            ['ai', 'ai.html', 'Trợ giảng', 'sparkle'],
+            ['calendar', 'calendar.html', 'Âm lịch', 'calendar'],
             ['repairs', 'repairs.html', 'Nhật ký', 'wrench']
         ];
         return items.map(([key, href, label, iconName]) =>

@@ -1,10 +1,10 @@
-# E-GV v5.6.1 – Sửa nút chọn ngày
+# E-GV v6.0 – Trang Âm lịch riêng
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
 ## Cấu trúc mã nguồn
 
-- `index.html`, `prompts.html`, `repairs.html`, `upload.html`, `ai.html`: các trang giao diện.
+- `index.html`, `prompts.html`, `upload.html`, `ai.html`, `calendar.html`, `repairs.html`: các trang giao diện.
 - `style.css`: giao diện nền và các thành phần chức năng.
 - `modern-saas.css`: lớp giao diện Modern SaaS mới, màu xanh dương chủ đạo và responsive cho điện thoại.
 - `js/config.js`: URL Apps Script, Google Client ID và cấu hình chung.
@@ -16,6 +16,25 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Thêm trang `Âm lịch` riêng và đặt đúng giữa `Trợ giảng AI` với `Nhật ký sửa chữa` trên thanh điều hướng.
+- Chuyển toàn bộ tờ lịch, nút ngày trước/ngày sau, chọn ngày, xem tuổi và Gemini khỏi Trang chủ sang trang Âm lịch.
+- Trang chủ chỉ giữ thẻ mở nhanh `Âm lịch & xem ngày theo tuổi` và thêm thẻ Âm lịch trong Không gian làm việc.
+- Tách `js/calendar.js` để toàn bộ phép tính lịch chỉ chạy trên trang Âm lịch; `js/index.js` chỉ xử lý Trang chủ.
+- Bổ sung cấu trúc phản hồi Gemini bắt buộc và bộ đọc dự phòng cho JSON có khối mã, tên trường tiếng Việt hoặc phản hồi văn bản.
+- Khi Gemini thiếu một phần nội dung, hệ thống giữ phần AI hợp lệ và tự bổ sung Ảnh hưởng/Lưu ý thay vì báo lỗi cấu trúc.
+- Mục `Xem ngày theo tuổi` chỉ mở sau khi thành viên hoặc quản trị viên đăng nhập.
+- Chọn một năm sinh dạng `1992 – Nhâm Thân`; không cần tạo hoặc thêm tuổi thủ công.
+- Tự đánh giá Ngũ hành, Thiên can và Địa chi theo ba tầng: ngày 50%, tháng 30% và năm 20%.
+- Quy đổi mức độ thuận lợi thành phần trăm và các mức: Không thuận, Cần thận trọng, Trung bình, Khá thuận, Tốt, Rất tốt.
+- Thêm nút `Phân tích bằng Gemini`; website tính dữ kiện trước, Gemini chỉ tổng hợp và diễn giải.
+- Endpoint Gemini được bảo vệ bằng token đăng nhập, giới hạn số lượt và lưu kết quả tạm để giảm thời gian chờ.
+- API key chỉ nằm trong Script Properties và tự chuyển qua `GEMINI_API_KEY`, `_2`, `_3` khi cần.
+- Kết quả tự cập nhật khi bấm ngày trước, ngày sau hoặc chọn ngày bất kỳ; năm sinh được ghi nhớ trên thiết bị.
+- Hiển thị nạp âm theo vòng Lục thập hoa giáp, đồng thời nhắc chọn năm âm lịch tương ứng nếu sinh trước Tết.
+- Tự đổi màu tên thứ: Thứ Hai–Thứ Sáu màu đen, Thứ Bảy màu xanh dương và Chủ nhật màu đỏ.
+- Tự tô màu từng Thiên Can, Địa Chi và giá trị Hành theo ngũ hành: Mộc xanh lá, Hỏa đỏ, Thổ vàng đất, Kim xám bạc, Thủy xanh dương.
+- Giữ Sao và Trực ở màu trung tính để thẻ lịch rõ ràng, không lạm dụng màu sắc.
+- Gộp thông tin thành một dòng cố định: `Hành Hỏa · Sao Ngưu · Trực Mãn`.
 - Nút `Chọn ngày` gọi trực tiếp lịch hệ thống bằng `showPicker()` và tự chuyển sang phương án dự phòng trên trình duyệt chưa hỗ trợ.
 - Xem ngày hôm trước hoặc ngày hôm sau ngay trên thẻ lịch.
 - Chọn một ngày bất kỳ bằng lịch chọn ngày của máy tính hoặc điện thoại.

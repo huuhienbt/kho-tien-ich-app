@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="description" content="E-GV hỗ trợ giáo viên quản lý Prompt, tài liệu Drive, kế hoạch bài dạy và nhật ký sửa chữa.">
+    <meta name="description" content="E-GV hỗ trợ giáo viên quản lý Prompt, tài liệu Drive, kế hoạch bài dạy, âm lịch và nhật ký sửa chữa.">
     <meta name="theme-color" content="#2563eb">
     <title>E-GV – Tiện ích giáo viên</title>
     <link rel="stylesheet" href="style.css">
@@ -27,154 +27,17 @@
                     </div>
                 </div>
                 <div class="hero-visual">
-                    <article class="calendar-editorial" aria-label="Lịch dương và âm">
-                        <strong class="calendar-editorial-day" id="calendarDay">26</strong>
-                        <div class="calendar-editorial-details">
-                            <header class="calendar-editorial-header">
-                                <span class="calendar-editorial-weekday" id="calendarWeekday">Thứ Tư</span>
-                                <button class="calendar-editorial-label" id="calendarTodayButton" type="button" aria-label="Trở về ngày hôm nay" disabled>Hôm nay</button>
-                            </header>
-                            <p class="calendar-editorial-solar">
-                                <span id="calendarMonth">Tháng 08</span>
-                                <i aria-hidden="true">·</i>
-                                <span id="calendarYear">2026</span>
-                            </p>
-                            <div class="calendar-editorial-lunar">
-                                <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
-                                <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
-                            </div>
-                            <p class="calendar-editorial-meta">
-                                <span>
-                                    Hành <strong id="currentDayElement">—</strong>
-                                    <i aria-hidden="true">·</i>
-                                    Sao <strong id="currentLunarMansion">—</strong>
-                                    <i aria-hidden="true">·</i>
-                                    Trực <strong id="currentDayOfficer">—</strong>
-                                </span>
-                            </p>
-                        </div>
-                        <div class="calendar-editorial-controls" aria-label="Điều hướng lịch">
-                            <button class="calendar-nav-button" id="calendarPreviousButton" type="button" aria-label="Xem ngày hôm trước" title="Ngày hôm trước">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                            </button>
-                            <div class="calendar-date-picker">
-                                <button class="calendar-date-button" id="calendarDateButton" type="button" aria-label="Chọn ngày bất kỳ" aria-haspopup="dialog">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-                                    <span>Chọn ngày</span>
-                                </button>
-                                <input class="calendar-date-input" id="calendarDatePicker" type="date" min="1900-01-01" max="2099-12-31" tabindex="-1" aria-hidden="true">
-                            </div>
-                            <button class="calendar-nav-button" id="calendarNextButton" type="button" aria-label="Xem ngày hôm sau" title="Ngày hôm sau">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                            </button>
-                        </div>
-                    </article>
-                </div>
-            </section>
-
-            <section class="age-reading-panel" aria-labelledby="ageReadingHeading">
-                <div class="age-reading-toolbar">
-                    <div>
-                        <span class="age-reading-kicker">Dành cho thành viên</span>
-                        <h2 id="ageReadingHeading">Xem ngày theo tuổi</h2>
-                        <p>Đánh giá tuổi với ngày, tháng và năm đang xem; Gemini hỗ trợ diễn giải dễ hiểu.</p>
-                    </div>
-                </div>
-
-                <div class="age-reading-auth-gate" id="ageReadingAuthGate">
-                    <span class="age-reading-lock" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    </span>
-                    <div>
-                        <strong>Đăng nhập để xem ngày theo tuổi</strong>
-                        <p>Năm sinh và kết quả chỉ được sử dụng trong phiên làm việc của thầy.</p>
-                    </div>
-                    <button class="btn btn-primary" id="ageReadingLoginButton" type="button">Đăng nhập</button>
-                </div>
-
-                <div class="age-reading-member" id="ageReadingMemberContent" hidden>
-                    <div class="age-reading-member-controls">
-                        <label class="birth-year-field" for="birthYearSelect">
-                            <span>Năm sinh</span>
-                            <select id="birthYearSelect" aria-describedby="birthYearHint">
-                                <option value="">Chọn năm sinh</option>
-                            </select>
-                        </label>
-                        <p>Ngày đang xem: <strong id="ageReadingSelectedDate">—</strong></p>
-                    </div>
-
-                    <div class="age-reading-empty" id="ageReadingEmpty">
-                        Chọn một năm sinh, ví dụ <strong>1992 – Nhâm Thân</strong>, để bắt đầu đánh giá.
-                    </div>
-
-                    <div class="age-reading-result" id="ageReadingResult" hidden>
-                        <header class="age-reading-result-header">
-                            <div>
-                                <span id="ageReadingDayLabel">Đánh giá theo ngày</span>
-                                <h3 id="ageReadingTitle">Tuổi —</h3>
-                                <p id="ageReadingSubtitle">Sinh năm —</p>
-                            </div>
-                            <div class="age-score" id="ageReadingScoreBox">
-                                <strong id="ageReadingScore">—%</strong>
-                                <span id="ageReadingLevel">Chưa đánh giá</span>
-                            </div>
-                        </header>
-
-                        <div class="age-period-grid">
-                            <article class="age-period-card">
-                                <header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header>
-                                <dl>
-                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageDayElement">—</dd></div>
-                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageDayStem">—</dd></div>
-                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageDayBranch">—</dd></div>
-                                </dl>
-                            </article>
-                            <article class="age-period-card">
-                                <header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header>
-                                <dl>
-                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageMonthElement">—</dd></div>
-                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageMonthStem">—</dd></div>
-                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageMonthBranch">—</dd></div>
-                                </dl>
-                            </article>
-                            <article class="age-period-card">
-                                <header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header>
-                                <dl>
-                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageYearElement">—</dd></div>
-                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageYearStem">—</dd></div>
-                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageYearBranch">—</dd></div>
-                                </dl>
-                            </article>
-                        </div>
-
-                        <div class="age-reading-summary">
-                            <div>
-                                <span>Ảnh hưởng</span>
-                                <p id="ageReadingImpact">—</p>
-                            </div>
-                            <div>
-                                <span>Lưu ý</span>
-                                <p id="ageReadingNote">—</p>
-                            </div>
-                        </div>
-
-                        <div class="age-gemini-actions">
-                            <button class="btn btn-primary" id="ageGeminiButton" type="button">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8ZM19 14l-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/></svg>
-                                <span>Phân tích bằng Gemini</span>
-                            </button>
-                            <p>Gemini chỉ diễn giải các quan hệ đã được hệ thống tính sẵn.</p>
-                        </div>
-                        <div class="age-gemini-status" id="ageGeminiStatus" role="status" aria-live="polite" hidden></div>
-                        <section class="age-gemini-result" id="ageGeminiResult" aria-labelledby="ageGeminiHeading" hidden>
-                            <header><span class="age-gemini-mark">AI</span><h4 id="ageGeminiHeading">Gemini luận giải</h4></header>
-                            <p id="ageGeminiOverview">—</p>
-                            <div><strong>Ảnh hưởng:</strong> <span id="ageGeminiInfluence">—</span></div>
-                            <div><strong>Lưu ý:</strong> <span id="ageGeminiCaution">—</span></div>
-                        </section>
-
-                        <p class="age-reading-disclaimer" id="birthYearHint">Điểm phần trăm là quy đổi theo bộ quy tắc của E-GV, không phải xác suất khoa học. Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng. Thông tin chỉ mang tính tham khảo.</p>
-                    </div>
+                    <a class="calendar-shortcut" href="calendar.html" aria-label="Mở trang Âm lịch">
+                        <span class="calendar-shortcut-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+                        </span>
+                        <span class="calendar-shortcut-copy">
+                            <small>Tiện ích mới</small>
+                            <strong>Âm lịch &amp; xem ngày theo tuổi</strong>
+                            <span>Xem ngày trước, ngày sau, chọn ngày bất kỳ và nhận luận giải Gemini.</span>
+                        </span>
+                        <span class="calendar-shortcut-arrow" aria-hidden="true">→</span>
+                    </a>
                 </div>
             </section>
 
@@ -183,7 +46,7 @@
                 <article class="stat-card stat-blue"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span><div><span class="stat-label">Prompt đang lưu</span><strong class="stat-value" id="statPrompts">—</strong><div class="stat-hint">Câu lệnh hỗ trợ công việc</div></div></article>
                 <article class="stat-card stat-orange"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.8 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg></span><div><span class="stat-label">Đang cần xử lý</span><strong class="stat-value" id="statPending">—</strong><div class="stat-hint">Hạng mục chưa hoàn thành</div></div></article>
                 <article class="stat-card stat-teal"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><span class="stat-label">Cần theo dõi</span><strong class="stat-value" id="statWatch">—</strong><div class="stat-hint">Thiết bị cần kiểm tra lại</div></div></article>
-                <article class="stat-card stat-violet"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><div><span class="stat-label">Tiện ích chính</span><strong class="stat-value">04</strong><div class="stat-hint">Sẵn sàng sử dụng</div></div></article>
+                <article class="stat-card stat-violet"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><div><span class="stat-label">Tiện ích chính</span><strong class="stat-value">05</strong><div class="stat-hint">Sẵn sàng sử dụng</div></div></article>
             </section>
 
             <div class="section-heading"><h2>Không gian làm việc</h2><span>Chọn công cụ cần sử dụng</span></div>
@@ -191,6 +54,7 @@
                 <a href="prompts.html" class="dash-card dash-prompt"><div class="dash-card-top"><div class="dash-icon-wrap tone-prompt"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></div><span class="dash-badge">Thư viện</span></div><div class="dash-title">Kho Prompt</div><div class="dash-desc">Prompt thường dùng công khai; Prompt VIP dành cho thành viên đăng nhập.</div><div class="dash-link">Mở công cụ <span>→</span></div></a>
                 <a href="upload.html" class="dash-card dash-upload"><div class="dash-card-top"><div class="dash-icon-wrap tone-upload"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m12-7-3-3-3 3m3-3v12"/></svg></div><span class="dash-badge">Không cần đăng nhập</span></div><div class="dash-title">Kho tệp Drive</div><div class="dash-desc">Tải nhiều tệp lên Drive không cần đăng nhập và theo dõi tiến trình.</div><div class="dash-link">Tải tệp lên <span>→</span></div></a>
                 <a href="ai.html" class="dash-card dash-ai"><div class="dash-card-top"><div class="dash-icon-wrap tone-ai"><svg viewBox="0 0 24 24"><path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8ZM19 14l-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/></svg></div><span class="dash-badge">Gemini AI</span></div><div class="dash-title">Trợ giảng AI</div><div class="dash-desc">Soạn kế hoạch bài dạy, xuất Word .docx và lưu trực tiếp lên Drive.</div><div class="dash-link">Bắt đầu soạn <span>→</span></div></a>
+                <a href="calendar.html" class="dash-card dash-calendar"><div class="dash-card-top"><div class="dash-icon-wrap tone-calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div><span class="dash-badge">Lịch Việt</span></div><div class="dash-title">Âm lịch</div><div class="dash-desc">Xem Can Chi, ngũ hành, Sao – Trực và phân tích ngày theo năm sinh.</div><div class="dash-link">Mở lịch <span>→</span></div></a>
                 <a href="repairs.html" class="dash-card dash-repair"><div class="dash-card-top"><div class="dash-icon-wrap tone-repair"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-3.4 3.4-2.2-2.2a4 4 0 0 0 5 5l6.7 6.7a2.1 2.1 0 1 0 3-3Z"/><path d="m6.5 12.5-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8"/></svg></div><span class="dash-badge">Theo dõi</span></div><div class="dash-title">Nhật ký sửa chữa</div><div class="dash-desc">Theo dõi sự cố, tiến độ xử lý, chi phí và thời hạn bảo hành.</div><div class="dash-link">Xem nhật ký <span>→</span></div></a>
             </section>
         </div>

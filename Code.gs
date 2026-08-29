@@ -41,6 +41,12 @@ function doPost(e) {
     if (action === 'user_login') return handleUserLogin(data, payload.clientId);
     if (action === 'google_login') return handleGoogleLogin(data, payload.clientId);
 
+    if (action === 'age_reading') {
+      const principal = resolvePrincipal(payload);
+      if (!principal) return createResponse({ status: 'error', message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.' });
+      return handleAgeReading(data, payload.clientId);
+    }
+
     if (action === 'get_prompts') {
       const principal = resolvePrincipal(payload);
       if (!principal) return createResponse({ status: 'error', message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.' });
@@ -506,6 +512,289 @@ function deleteFavoritesForPrompt(promptId) {
 }
 
 /* ========================= GEMINI ========================= */
+
+function handleAgeReading(data, clientId) {
+  enforceRateLimit(clientId, 'age-reading', 30);
+  const facts = normalizeAgeReadingFacts(data || {});
+  const cache = CacheService.getScriptCache();
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    JSON.stringify(facts),
+    Utilities.Charset.UTF_8
+  );
+  const cacheKey = 'age-reading:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) return createResponse({ status: 'success', analysis: JSON.parse(cached), cached: true });
+  } catch (_) {}
+
+  const promptText = `Bạn là người biên tập nội dung lịch Can Chi bằng tiếng Việt rõ ràng, thận trọng và dễ hiểu.
+
+DỮ KIỆN ĐÃ ĐƯỢC HỆ THỐNG E-GV TÍNH SẴN:
+${JSON.stringify(facts, null, 2)}
+
+YÊU CẦU BẮT BUỘC:
+1. Không tự tính lại, không thay đổi điểm phần trăm, tên Can Chi hoặc bất kỳ quan hệ nào trong dữ kiện.
+2. Tổng hợp đủ ba tầng: ngày là ảnh hưởng chính, tháng là bối cảnh và năm là ảnh hưởng nền.
+3. Giải thích cân bằng cả điểm thuận lẫn điểm chưa thuận; không phóng đại thành dự đoán chắc chắn, tai họa, quý nhân hoặc may mắn tuyệt đối.
+4. Dùng cụm từ "có thể", "dễ", "nên lưu ý"; khẳng định đây là thông tin tham khảo theo năm sinh.
+5. Không dùng Markdown, không đặt tiêu đề, không dùng danh sách.
+6. Chỉ trả về một đối tượng JSON hợp lệ theo đúng cấu trúc:
+{"overview":"2-3 câu tổng hợp, tối đa 600 ký tự","influence":"1-2 câu về ảnh hưởng thực tế, tối đa 350 ký tự","caution":"1-2 câu lưu ý hành động, tối đa 350 ký tự"}`;
+
+  const analysis = callGeminiAgeReading(promptText, facts);
+  try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
+  return createResponse({ status: 'success', analysis: analysis, cached: false });
+}
+
+function normalizeAgeReadingFacts(data) {
+  const relationNames = [
+    'Tỷ hòa', 'Tương hòa', 'Tương hợp', 'Tương sinh', 'Sinh nhập', 'Sinh xuất',
+    'Tương khắc', 'Khắc nhập', 'Khắc xuất', 'Đồng chi', 'Tự hình', 'Lục hợp',
+    'Tương xung', 'Tương hại', 'Tương hình', 'Tương phá'
+  ];
+  const relationScores = {
+    'Tỷ hòa': 65, 'Tương hòa': 65, 'Tương hợp': 95, 'Tương sinh': 80,
+    'Sinh nhập': 80, 'Sinh xuất': 35, 'Tương khắc': 10, 'Khắc nhập': 10,
+    'Khắc xuất': 35, 'Đồng chi': 50, 'Tự hình': 25, 'Lục hợp': 95,
+    'Tương xung': 10, 'Tương hại': 20, 'Tương hình': 25, 'Tương phá': 25
+  };
+  const elements = ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'];
+
+  function integerInRange(value, minimum, maximum, label) {
+    const number = Number(value);
+    if (!isFinite(number) || Math.floor(number) !== number || number < minimum || number > maximum) {
+      throw new Error(label + ' không hợp lệ.');
+    }
+    return number;
+  }
+
+  function allowedText(value, allowed, label) {
+    const text = cleanText(value, 40);
+    if (allowed.indexOf(text) === -1) throw new Error(label + ' không hợp lệ.');
+    return text;
+  }
+
+  function relation(input, label) {
+    const name = allowedText(input && input.label, relationNames, label);
+    return { ten: name, diem: relationScores[name] };
+  }
+
+  function period(input, label, weights) {
+    const value = input || {};
+    const relations = value.relations || {};
+    const name = cleanText(value.name, 40);
+    const napAm = cleanText(value.napAm, 60);
+    if (!name || !napAm) throw new Error('Thiếu Can Chi hoặc nạp âm của ' + label.toLowerCase() + '.');
+    const elementRelation = relation(relations.element, 'Quan hệ ngũ hành ' + label.toLowerCase());
+    const stemRelation = relation(relations.stem, 'Quan hệ Thiên can ' + label.toLowerCase());
+    const branchRelation = relation(relations.branch, 'Quan hệ Địa chi ' + label.toLowerCase());
+    const contribution = elementRelation.diem * weights.element
+      + stemRelation.diem * weights.stem
+      + branchRelation.diem * weights.branch;
+    return {
+      canChi: name,
+      napAm: napAm,
+      nguHanh: allowedText(value.element, elements, 'Ngũ hành ' + label.toLowerCase()),
+      diem: Math.round(contribution / weights.total),
+      quanHe: {
+        nguHanh: elementRelation,
+        thienCan: stemRelation,
+        diaChi: branchRelation
+      },
+      contribution: contribution
+    };
+  }
+
+  const birthYear = integerInRange(data.birthYear, 1900, new Date().getFullYear(), 'Năm sinh');
+  const solarDate = cleanText(data.solarDate, 10);
+  const lunarDate = cleanText(data.lunarDate, 20);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(solarDate) || !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(lunarDate)) {
+    throw new Error('Ngày được chọn không hợp lệ.');
+  }
+  const age = data.age || {};
+  const ageName = cleanText(age.name, 40);
+  const ageNapAm = cleanText(age.napAm, 60);
+  if (!ageName || !ageNapAm) throw new Error('Thiếu thông tin tuổi.');
+
+  const day = period(data.day, 'Ngày', { element: 0.20, stem: 0.12, branch: 0.18, total: 0.50 });
+  const month = period(data.month, 'Tháng', { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 });
+  const year = period(data.year, 'Năm', { element: 0.07, stem: 0.05, branch: 0.08, total: 0.20 });
+  const totalScore = Math.round(day.contribution + month.contribution + year.contribution);
+  delete day.contribution;
+  delete month.contribution;
+  delete year.contribution;
+  return {
+    tuoi: {
+      namSinh: birthYear,
+      canChi: ageName,
+      napAm: ageNapAm,
+      nguHanh: allowedText(age.element, elements, 'Ngũ hành tuổi')
+    },
+    ngayDuong: solarDate,
+    ngayAm: lunarDate,
+    diemThuanLoi: totalScore,
+    mucDanhGia: ageReadingLevel(totalScore),
+    ngay: day,
+    thang: month,
+    nam: year,
+    sao: cleanText(data.lunarMansion, 30),
+    truc: cleanText(data.dayOfficer, 30),
+    ghiChu: 'Điểm phần trăm là quy đổi theo bộ quy tắc E-GV và chỉ mang tính tham khảo theo năm sinh.'
+  };
+}
+
+function ageReadingLevel(score) {
+  if (score < 30) return 'Không thuận';
+  if (score < 45) return 'Cần thận trọng';
+  if (score < 60) return 'Trung bình';
+  if (score < 75) return 'Khá thuận';
+  if (score < 90) return 'Tốt';
+  return 'Rất tốt';
+}
+
+function fallbackAgeAnalysis(facts) {
+  const score = Number(facts && facts.diemThuanLoi || 0);
+  const level = String(facts && facts.mucDanhGia || 'Trung bình');
+  const ageName = String(facts && facts.tuoi && facts.tuoi.canChi || 'tuổi đã chọn');
+  const dayName = String(facts && facts.ngay && facts.ngay.canChi || 'ngày đang xem');
+  const monthName = String(facts && facts.thang && facts.thang.canChi || 'tháng đang xem');
+  const yearName = String(facts && facts.nam && facts.nam.canChi || 'năm đang xem');
+  let influence = 'Ngày có cả yếu tố thuận và chưa thuận; kết quả phụ thuộc nhiều vào sự chuẩn bị và cách xử lý.';
+  let caution = 'Nên kiểm tra kỹ thông tin, giữ bình tĩnh khi trao đổi và tránh quyết định quá vội.';
+  if (score >= 75) {
+    influence = 'Các quan hệ ngày, tháng và năm tạo được nhiều điểm hỗ trợ cho tuổi đã chọn.';
+    caution = 'Có thể ưu tiên công việc quan trọng nhưng vẫn nên chuẩn bị đầy đủ và kiểm tra chi tiết.';
+  } else if (score >= 60) {
+    influence = 'Tổng thể khá thuận, dù vẫn còn một số yếu tố cần chủ động cân nhắc.';
+    caution = 'Nên tận dụng các điểm hỗ trợ và xử lý thận trọng phần chưa tương hợp.';
+  } else if (score < 45) {
+    influence = 'Các yếu tố chưa thuận chiếm ưu thế, có thể khiến công việc tốn sức hoặc tiến triển chậm.';
+    caution = score < 30
+      ? 'Nếu có thể nên cân nhắc ngày khác; trường hợp vẫn tiến hành cần chuẩn bị phương án dự phòng.'
+      : 'Nên chuẩn bị kỹ, kiểm tra giấy tờ và tránh quyết định việc lớn quá vội.';
+  }
+  return {
+    overview: 'Tuổi ' + ageName + ' đạt ' + score + '% – ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Đây là kết quả tham khảo theo năm sinh.',
+    influence: influence,
+    caution: caution
+  };
+}
+
+function parseGeminiAgeResponse(text, facts) {
+  const fallback = fallbackAgeAnalysis(facts);
+  const cleaned = String(text || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  let parsed = null;
+  const attempts = [cleaned];
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) attempts.push(cleaned.slice(firstBrace, lastBrace + 1));
+  for (let index = 0; index < attempts.length && !parsed; index++) {
+    try {
+      parsed = JSON.parse(attempts[index]);
+      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+      if (Array.isArray(parsed)) parsed = parsed[0] || null;
+    } catch (_) {}
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    if (parsed.analysis && typeof parsed.analysis === 'object') parsed = parsed.analysis;
+    const firstText = function (names) {
+      for (let index = 0; index < names.length; index++) {
+        const value = parsed[names[index]];
+        if (typeof value === 'string' && value.trim()) return value;
+      }
+      return '';
+    };
+    const overview = firstText(['overview', 'summary', 'tongQuan', 'tổngQuan', 'tong_quan', 'nhanXet', 'nhậnXét']);
+    const influence = firstText(['influence', 'impact', 'anhHuong', 'ảnhHưởng', 'anh_huong']);
+    const caution = firstText(['caution', 'advice', 'note', 'luuY', 'lưuÝ', 'luu_y', 'recommendation']);
+    return {
+      overview: cleanText(overview || fallback.overview, 600),
+      influence: cleanText(influence || fallback.influence, 350),
+      caution: cleanText(caution || fallback.caution, 350)
+    };
+  }
+
+  if (cleaned) {
+    return {
+      overview: cleanText(cleaned, 600),
+      influence: fallback.influence,
+      caution: fallback.caution
+    };
+  }
+  return fallback;
+}
+
+function callGeminiAgeReading(promptText, facts) {
+  const apiKeys = getGeminiApiKeys();
+  const defaultModel = getSetting('GEMINI_MODEL', false, 'gemini-3.6-flash');
+  const model = getSetting('GEMINI_AGE_MODEL', false, defaultModel);
+  const requestBody = {
+    contents: [{ parts: [{ text: promptText }] }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 1200,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          overview: { type: 'STRING' },
+          influence: { type: 'STRING' },
+          caution: { type: 'STRING' }
+        },
+        required: ['overview', 'influence', 'caution']
+      }
+    }
+  };
+  let lastMessage = 'Gemini không trả về nội dung.';
+
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKeys[keyIndex]);
+    let response;
+    try {
+      response = UrlFetchApp.fetch(url, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(requestBody),
+        muteHttpExceptions: true
+      });
+    } catch (fetchError) {
+      lastMessage = safeError(fetchError);
+      if (keyIndex < apiKeys.length - 1) {
+        Utilities.sleep(400 * (keyIndex + 1));
+        continue;
+      }
+      break;
+    }
+
+    const responseCode = response.getResponseCode();
+    let result = {};
+    try {
+      result = JSON.parse(response.getContentText() || '{}');
+    } catch (_) {
+      lastMessage = 'Phản hồi Gemini không đúng định dạng.';
+      if (keyIndex < apiKeys.length - 1) continue;
+      break;
+    }
+
+    if (responseCode >= 200 && responseCode < 300 && result.candidates && result.candidates.length) {
+      const text = ((result.candidates[0].content && result.candidates[0].content.parts) || [])
+        .map(function (part) { return part.text || ''; }).join('\n').trim();
+      return parseGeminiAgeResponse(text, facts);
+    }
+
+    lastMessage = result.error && result.error.message ? String(result.error.message) : 'Gemini không trả về nội dung.';
+    const canTryNext = keyIndex < apiKeys.length - 1 && shouldTryNextGeminiKey(responseCode, result, lastMessage);
+    if (!canTryNext) break;
+    Utilities.sleep(responseCode === 429 ? 1000 : 400 * (keyIndex + 1));
+  }
+  throw new Error('Gemini hiện chưa sẵn sàng. ' + lastMessage);
+}
 
 function handleLessonPlan(data) {
   const apiKeys = getGeminiApiKeys();
