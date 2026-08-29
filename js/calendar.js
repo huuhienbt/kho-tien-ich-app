@@ -162,6 +162,7 @@
     };
     const SELF_PUNISHMENT_BRANCHES = new Set([4, 6, 9, 11]);
     const BIRTH_YEAR_STORAGE_KEY = 'egv-calendar-birth-year';
+    const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
     const AGE_READING_WEIGHTS = {
         day: { element: 0.20, stem: 0.12, branch: 0.18, total: 0.50 },
         month: { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 },
@@ -493,6 +494,7 @@
         const julianDay = jdFromDate(reading.selectedDate.day, reading.selectedDate.month, reading.selectedDate.year);
         return {
             birthYear: reading.age.year,
+            scoreModelVersion: AGE_SCORE_MODEL_VERSION,
             age: { name: reading.age.name, napAm: reading.age.napAm, element: reading.age.element },
             solarDate: toDateValue(reading.selectedDate),
             lunarDate: `${reading.lunarDate.day}/${reading.lunarDate.month}/${reading.lunarDate.year}`,
@@ -556,13 +558,44 @@
             }
         }
         if (!analysis || typeof analysis !== 'object') analysis = {};
-        return {
-            overview: String(analysis.overview || 'Gemini chưa trả về phần tổng quan.').trim(),
-            favorable: String(analysis.favorable || 'Các điểm hỗ trợ đã được thể hiện trong ba nhóm Ngũ hành, Thiên can và Địa chi ở phía trên.').trim(),
-            influence: String(analysis.influence || 'Cần xem đồng thời ảnh hưởng chính của ngày, bối cảnh tháng và ảnh hưởng nền của năm.').trim(),
-            caution: String(analysis.caution || 'Không nên xem một quan hệ riêng lẻ là kết luận chắc chắn tốt hoặc xấu.').trim(),
-            recommendation: String(analysis.recommendation || 'Hãy kết hợp kết quả tham khảo với tính chất công việc và điều kiện thực tế trước khi quyết định.').trim()
+        const safeText = function (value, fallback, minimumLength) {
+            const text = String(value || '').trim();
+            if (!text || /^(?:[-–—]+|n\/?a|không có|chưa có)$/i.test(text) || text.length < minimumLength) return fallback;
+            return text;
         };
+        return {
+            overview: safeText(analysis.overview, 'Gemini chưa trả về phần tổng quan đầy đủ.', 40),
+            favorable: safeText(analysis.favorable, 'Chưa có quan hệ hỗ trợ nổi trội; điều này không đồng nghĩa ngày chắc chắn xấu.', 24),
+            influence: safeText(analysis.influence, 'Cần xem đồng thời ảnh hưởng chính của ngày, bối cảnh tháng và ảnh hưởng nền của năm.', 35),
+            caution: safeText(analysis.caution, 'Không nên xem một quan hệ riêng lẻ là kết luận chắc chắn tốt hoặc xấu.', 30),
+            recommendation: safeText(analysis.recommendation, 'Hãy kết hợp kết quả tham khảo với tính chất công việc và điều kiện thực tế trước khi quyết định.', 35)
+        };
+    }
+
+    function applyAuthoritativeAgeCalculation(calculation) {
+        if (!currentAgeReading || !calculation || typeof calculation !== 'object') return;
+        const score = Number(calculation.score);
+        const periods = calculation.periods || {};
+        if (!Number.isInteger(score) || score < 0 || score > 100) return;
+
+        const level = scoreLevel(score);
+        if (typeof calculation.level === 'string' && calculation.level.trim()) level.label = calculation.level.trim();
+        currentAgeReading.score = score;
+        currentAgeReading.level = level;
+        currentAgeReading.summary = readingSummary(score);
+
+        document.getElementById('ageReadingScore').textContent = `${score}/100`;
+        document.getElementById('ageReadingLevel').textContent = level.label;
+        document.getElementById('ageReadingScoreBox').className = `age-score ${level.className}`;
+
+        [['day', 'Day'], ['month', 'Month'], ['year', 'Year']].forEach(function ([key, prefix]) {
+            const periodScore = Number(periods[key]);
+            if (!Number.isInteger(periodScore) || periodScore < 0 || periodScore > 100) return;
+            currentAgeReading.readings[key].score = periodScore;
+            document.getElementById(`age${prefix}Score`).textContent = `${periodScore}/100`;
+        });
+        document.getElementById('ageReadingImpact').textContent = currentAgeReading.summary.impact;
+        document.getElementById('ageReadingNote').textContent = currentAgeReading.summary.note;
     }
 
     async function requestAgeGeminiAnalysis() {
@@ -596,6 +629,7 @@
                 timeoutMessage: 'Gemini phản hồi quá lâu. Vui lòng thử lại.'
             });
             if (requestedKey !== currentAgeReadingKey) return;
+            applyAuthoritativeAgeCalculation(response.calculation);
             const analysis = normalizeAgeGeminiAnalysis(response.analysis || {});
             document.getElementById('ageGeminiOverview').textContent = analysis.overview;
             document.getElementById('ageGeminiFavorable').textContent = analysis.favorable;

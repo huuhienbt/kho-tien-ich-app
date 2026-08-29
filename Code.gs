@@ -9,6 +9,7 @@ const PROMPT_HEADERS = ['id', 'title', 'category', 'content', 'platform', 'acces
 const REPAIR_HEADERS = ['id', 'date', 'task', 'location', 'cost', 'warranty', 'status', 'vendor', 'reporter', 'asset_id', 'image_url', 'note'];
 const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'created_at', 'last_login'];
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
+const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
 
 function doGet(e) {
   try {
@@ -516,16 +517,17 @@ function deleteFavoritesForPrompt(promptId) {
 function handleAgeReading(data, clientId) {
   enforceRateLimit(clientId, 'age-reading', 30);
   const facts = normalizeAgeReadingFacts(data || {});
+  const calculation = ageReadingCalculation(facts);
   const cache = CacheService.getScriptCache();
   const digest = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
     JSON.stringify(facts),
     Utilities.Charset.UTF_8
   );
-  const cacheKey = 'age-reading:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  const cacheKey = 'age-reading-v4:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
   try {
     const cached = cache.get(cacheKey);
-    if (cached) return createResponse({ status: 'success', analysis: JSON.parse(cached), cached: true });
+    if (cached) return createResponse({ status: 'success', analysis: JSON.parse(cached), calculation: calculation, cached: true });
   } catch (_) {}
 
   const promptText = `Bạn là người biên tập nội dung lịch Can Chi bằng tiếng Việt rõ ràng, thận trọng và dễ hiểu.
@@ -534,17 +536,34 @@ DỮ KIỆN ĐÃ ĐƯỢC HỆ THỐNG E-GV TÍNH SẴN:
 ${JSON.stringify(facts, null, 2)}
 
 YÊU CẦU BẮT BUỘC:
-1. Không tự tính lại, không thay đổi điểm phần trăm, tên Can Chi hoặc bất kỳ quan hệ nào trong dữ kiện.
-2. Tổng hợp đủ ba tầng: ngày là ảnh hưởng chính, tháng là bối cảnh và năm là ảnh hưởng nền.
-3. Giải thích cân bằng cả điểm thuận lẫn điểm chưa thuận; không phóng đại thành dự đoán chắc chắn, tai họa, quý nhân hoặc may mắn tuyệt đối.
-4. Dùng cụm từ "có thể", "dễ", "nên lưu ý"; khẳng định đây là thông tin tham khảo theo năm sinh.
-5. Không dùng Markdown, không đặt tiêu đề, không dùng danh sách.
-6. Chỉ trả về một đối tượng JSON hợp lệ theo đúng cấu trúc:
-{"overview":"2-3 câu tổng hợp, tối đa 600 ký tự","influence":"1-2 câu về ảnh hưởng thực tế, tối đa 350 ký tự","caution":"1-2 câu lưu ý hành động, tối đa 350 ký tự"}`;
+1. Không tự tính lại, không thay đổi điểm tương hợp, tên Can Chi hoặc bất kỳ quan hệ nào trong dữ kiện.
+2. Tổng hợp đủ ba tầng: ngày là ảnh hưởng chính 50%, tháng là bối cảnh 30% và năm là ảnh hưởng nền 20%.
+3. Giải thích cụ thể từng điểm hỗ trợ và điểm cần lưu ý bằng đúng tên quan hệ trong dữ kiện; không chỉ lặp lại con số.
+4. Phân biệt rõ Sinh xuất/Khắc xuất là trạng thái có thể tốn thêm công sức, không mặc định là xấu; Đồng chi là cân bằng, không tự suy thành cát hoặc hung.
+5. Không phóng đại thành dự đoán chắc chắn, tai họa, quý nhân hoặc may mắn tuyệt đối. Dùng cụm từ "có thể", "dễ", "nên lưu ý".
+6. Nêu một gợi ý thực tế: việc thường ngày có thể tiến hành thế nào; việc quan trọng cần chuẩn bị hoặc kiểm tra gì.
+7. Khẳng định điểm trên thang 100 là chỉ số tham khảo, không phải phần trăm may mắn hay xác suất kết quả.
+8. Không dùng Markdown, không đặt tiêu đề và không dùng danh sách trong giá trị các trường.
+9. Không để trường nào rỗng; không dùng dấu "-", "–", "—" hoặc câu quá ngắn để thay cho nội dung.
+10. Chỉ trả về một đối tượng JSON hợp lệ theo đúng cấu trúc:
+{"overview":"3-4 câu tổng hợp, tối đa 900 ký tự","favorable":"2-3 câu về các điểm hỗ trợ, tối đa 500 ký tự","influence":"2-3 câu kết nối ảnh hưởng ngày-tháng-năm, tối đa 600 ký tự","caution":"2-3 câu về điểm cần lưu ý, tối đa 500 ký tự","recommendation":"2-3 câu gợi ý thực hiện, tối đa 500 ký tự"}`;
 
   const analysis = callGeminiAgeReading(promptText, facts);
   try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
-  return createResponse({ status: 'success', analysis: analysis, cached: false });
+  return createResponse({ status: 'success', analysis: analysis, calculation: calculation, cached: false });
+}
+
+function ageReadingCalculation(facts) {
+  return {
+    version: AGE_SCORE_MODEL_VERSION,
+    score: Number(facts && facts.diemTuongHop || 0),
+    level: String(facts && facts.mucDanhGia || 'Cân bằng'),
+    periods: {
+      day: Number(facts && facts.ngay && facts.ngay.diem || 0),
+      month: Number(facts && facts.thang && facts.thang.diem || 0),
+      year: Number(facts && facts.nam && facts.nam.diem || 0)
+    }
+  };
 }
 
 function normalizeAgeReadingFacts(data) {
@@ -554,10 +573,10 @@ function normalizeAgeReadingFacts(data) {
     'Tương xung', 'Tương hại', 'Tương hình', 'Tương phá'
   ];
   const relationScores = {
-    'Tỷ hòa': 65, 'Tương hòa': 65, 'Tương hợp': 95, 'Tương sinh': 80,
-    'Sinh nhập': 80, 'Sinh xuất': 35, 'Tương khắc': 10, 'Khắc nhập': 10,
-    'Khắc xuất': 35, 'Đồng chi': 50, 'Tự hình': 25, 'Lục hợp': 95,
-    'Tương xung': 10, 'Tương hại': 20, 'Tương hình': 25, 'Tương phá': 25
+    'Tỷ hòa': 68, 'Tương hòa': 68, 'Tương hợp': 88, 'Tương sinh': 78,
+    'Sinh nhập': 78, 'Sinh xuất': 52, 'Tương khắc': 32, 'Khắc nhập': 32,
+    'Khắc xuất': 52, 'Đồng chi': 60, 'Tự hình': 42, 'Lục hợp': 88,
+    'Tương xung': 32, 'Tương hại': 38, 'Tương hình': 42, 'Tương phá': 42
   };
   const elements = ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'];
 
@@ -625,6 +644,7 @@ function normalizeAgeReadingFacts(data) {
   delete month.contribution;
   delete year.contribution;
   return {
+    phienBanTinhDiem: AGE_SCORE_MODEL_VERSION,
     tuoi: {
       namSinh: birthYear,
       canChi: ageName,
@@ -633,52 +653,107 @@ function normalizeAgeReadingFacts(data) {
     },
     ngayDuong: solarDate,
     ngayAm: lunarDate,
-    diemThuanLoi: totalScore,
+    diemTuongHop: totalScore,
     mucDanhGia: ageReadingLevel(totalScore),
     ngay: day,
     thang: month,
     nam: year,
     sao: cleanText(data.lunarMansion, 30),
     truc: cleanText(data.dayOfficer, 30),
-    ghiChu: 'Điểm phần trăm là quy đổi theo bộ quy tắc E-GV và chỉ mang tính tham khảo theo năm sinh.'
+    ghiChu: 'Điểm trên thang 100 là chỉ số tương hợp theo bộ quy tắc E-GV, lấy 50 làm mốc cân bằng; không phải phần trăm may mắn hoặc xác suất khoa học.'
   };
 }
 
 function ageReadingLevel(score) {
-  if (score < 30) return 'Không thuận';
-  if (score < 45) return 'Cần thận trọng';
-  if (score < 60) return 'Trung bình';
-  if (score < 75) return 'Khá thuận';
-  if (score < 90) return 'Tốt';
-  return 'Rất tốt';
+  if (score < 40) return 'Nên thận trọng';
+  if (score < 50) return 'Cần cân nhắc';
+  if (score < 65) return 'Cân bằng';
+  if (score < 78) return 'Khá thuận';
+  if (score < 90) return 'Thuận';
+  return 'Rất thuận';
 }
 
 function fallbackAgeAnalysis(facts) {
-  const score = Number(facts && facts.diemThuanLoi || 0);
-  const level = String(facts && facts.mucDanhGia || 'Trung bình');
+  const score = Number(facts && facts.diemTuongHop || 0);
+  const level = String(facts && facts.mucDanhGia || 'Cân bằng');
   const ageName = String(facts && facts.tuoi && facts.tuoi.canChi || 'tuổi đã chọn');
   const dayName = String(facts && facts.ngay && facts.ngay.canChi || 'ngày đang xem');
   const monthName = String(facts && facts.thang && facts.thang.canChi || 'tháng đang xem');
   const yearName = String(facts && facts.nam && facts.nam.canChi || 'năm đang xem');
-  let influence = 'Ngày có cả yếu tố thuận và chưa thuận; kết quả phụ thuộc nhiều vào sự chuẩn bị và cách xử lý.';
-  let caution = 'Nên kiểm tra kỹ thông tin, giữ bình tĩnh khi trao đổi và tránh quyết định quá vội.';
-  if (score >= 75) {
-    influence = 'Các quan hệ ngày, tháng và năm tạo được nhiều điểm hỗ trợ cho tuổi đã chọn.';
-    caution = 'Có thể ưu tiên công việc quan trọng nhưng vẫn nên chuẩn bị đầy đủ và kiểm tra chi tiết.';
-  } else if (score >= 60) {
-    influence = 'Tổng thể khá thuận, dù vẫn còn một số yếu tố cần chủ động cân nhắc.';
-    caution = 'Nên tận dụng các điểm hỗ trợ và xử lý thận trọng phần chưa tương hợp.';
-  } else if (score < 45) {
-    influence = 'Các yếu tố chưa thuận chiếm ưu thế, có thể khiến công việc tốn sức hoặc tiến triển chậm.';
-    caution = score < 30
-      ? 'Nếu có thể nên cân nhắc ngày khác; trường hợp vẫn tiến hành cần chuẩn bị phương án dự phòng.'
-      : 'Nên chuẩn bị kỹ, kiểm tra giấy tờ và tránh quyết định việc lớn quá vội.';
+  const periods = [
+    { label: 'Ngày', value: facts && facts.ngay || {} },
+    { label: 'Tháng', value: facts && facts.thang || {} },
+    { label: 'Năm', value: facts && facts.nam || {} }
+  ];
+  const relationLabels = { nguHanh: 'Ngũ hành', thienCan: 'Thiên can', diaChi: 'Địa chi' };
+  const supportive = [];
+  const cautious = [];
+
+  periods.forEach(function (period) {
+    const relations = period.value.quanHe || {};
+    Object.keys(relationLabels).forEach(function (key) {
+      const relation = relations[key] || {};
+      const item = period.label + ' – ' + relationLabels[key] + ' ' + String(relation.ten || 'chưa xác định');
+      if (Number(relation.diem || 0) >= 60) supportive.push(item);
+      if (Number(relation.diem || 0) <= 52) cautious.push(item);
+    });
+  });
+
+  const influence = periods.map(function (period) {
+    const relations = period.value.quanHe || {};
+    return period.label + ' ' + String(period.value.canChi || '—') + ' đạt ' + Number(period.value.diem || 0)
+      + '/100: Ngũ hành ' + String(relations.nguHanh && relations.nguHanh.ten || '—')
+      + ', Thiên can ' + String(relations.thienCan && relations.thienCan.ten || '—')
+      + ', Địa chi ' + String(relations.diaChi && relations.diaChi.ten || '—') + '.';
+  }).join(' ');
+
+  const favorable = supportive.length
+    ? 'Các điểm hỗ trợ đáng chú ý gồm ' + supportive.slice(0, 5).join('; ') + '. Những yếu tố này giúp cân bằng phần chưa tương hợp.'
+    : 'Chưa có quan hệ hỗ trợ nổi trội, nhưng điều này không đồng nghĩa ngày chắc chắn xấu; kết quả thực tế còn phụ thuộc vào sự chuẩn bị và tính chất công việc.';
+  const caution = cautious.length
+    ? 'Các điểm cần lưu ý gồm ' + cautious.slice(0, 5).join('; ') + '. Sinh xuất hoặc Khắc xuất chủ yếu cho thấy có thể phải bỏ thêm công sức, không phải dấu hiệu thất bại chắc chắn.'
+    : 'Không có điểm xung khắc nổi bật trong dữ kiện. Dù vậy vẫn nên kiểm tra thông tin và tránh xem kết quả tham khảo là bảo đảm chắc chắn.';
+
+  let recommendation = 'Công việc thường ngày có thể tiến hành bình thường. Với việc quan trọng, nên kiểm tra thêm thời điểm, nguồn lực và phương án dự phòng trước khi quyết định.';
+  if (score >= 78) {
+    recommendation = 'Có thể ưu tiên công việc quan trọng nếu các điều kiện thực tế đã sẵn sàng. Vẫn nên kiểm tra giấy tờ, thời gian và người phối hợp.';
+  } else if (score < 40) {
+    recommendation = 'Nếu là việc hệ trọng và có thể linh hoạt, nên tham khảo thêm ngày khác. Nếu vẫn tiến hành, hãy chia nhỏ công việc, kiểm tra kỹ và chuẩn bị phương án dự phòng.';
   }
   return {
-    overview: 'Tuổi ' + ageName + ' đạt ' + score + '% – ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Đây là kết quả tham khảo theo năm sinh.',
+    overview: 'Tuổi ' + ageName + ' có điểm tương hợp ' + score + '/100 – mức ' + level + ' khi xét ngày ' + dayName + ', tháng ' + monthName + ' và năm ' + yearName + '. Mốc 50 được xem là cân bằng. Đây là chỉ số tham khảo theo năm sinh, không phải phần trăm may mắn hoặc dự báo chắc chắn.',
+    favorable: favorable,
     influence: influence,
-    caution: caution
+    caution: caution,
+    recommendation: recommendation
   };
+}
+
+function extractLooseGeminiField(source, names) {
+  const text = String(source || '');
+  for (let nameIndex = 0; nameIndex < names.length; nameIndex++) {
+    const safeName = String(names[nameIndex]).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = new RegExp('["\\\']?' + safeName + '["\\\']?\\s*:\\s*["\\\']', 'i').exec(text);
+    if (!match) continue;
+    const quote = match[0].slice(-1);
+    let value = '';
+    let escaped = false;
+    for (let index = match.index + match[0].length; index < text.length; index++) {
+      const character = text[index];
+      if (escaped) {
+        value += character === 'n' ? '\n' : character;
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === quote) {
+        break;
+      } else {
+        value += character;
+      }
+    }
+    if (value.trim()) return value.trim();
+  }
+  return '';
 }
 
 function parseGeminiAgeResponse(text, facts) {
@@ -701,33 +776,42 @@ function parseGeminiAgeResponse(text, facts) {
     } catch (_) {}
   }
 
-  if (parsed && typeof parsed === 'object') {
-    if (parsed.analysis && typeof parsed.analysis === 'object') parsed = parsed.analysis;
-    const firstText = function (names) {
-      for (let index = 0; index < names.length; index++) {
-        const value = parsed[names[index]];
-        if (typeof value === 'string' && value.trim()) return value;
-      }
-      return '';
-    };
-    const overview = firstText(['overview', 'summary', 'tongQuan', 'tổngQuan', 'tong_quan', 'nhanXet', 'nhậnXét']);
-    const influence = firstText(['influence', 'impact', 'anhHuong', 'ảnhHưởng', 'anh_huong']);
-    const caution = firstText(['caution', 'advice', 'note', 'luuY', 'lưuÝ', 'luu_y', 'recommendation']);
-    return {
-      overview: cleanText(overview || fallback.overview, 600),
-      influence: cleanText(influence || fallback.influence, 350),
-      caution: cleanText(caution || fallback.caution, 350)
-    };
-  }
+  if (parsed && typeof parsed === 'object' && parsed.analysis && typeof parsed.analysis === 'object') parsed = parsed.analysis;
+  const usableText = function (value, minimumLength) {
+    const candidate = typeof value === 'string' ? value.trim() : '';
+    if (!candidate || /^(?:[-–—]+|n\/?a|không có|chưa có)$/i.test(candidate)) return '';
+    return candidate.length >= minimumLength ? candidate : '';
+  };
+  const firstText = function (object, names, minimumLength) {
+    for (let index = 0; index < names.length; index++) {
+      const value = object && object[names[index]];
+      const candidate = usableText(value, minimumLength);
+      if (candidate) return candidate;
+    }
+    return '';
+  };
+  const fields = {
+    overview: { minimum: 80, names: ['overview', 'summary', 'tongQuan', 'tổngQuan', 'tong_quan', 'nhanXet', 'nhậnXét'] },
+    favorable: { minimum: 35, names: ['favorable', 'support', 'positive', 'diemThuan', 'điểmThuận', 'diem_ho_tro'] },
+    influence: { minimum: 70, names: ['influence', 'impact', 'anhHuong', 'ảnhHưởng', 'anh_huong'] },
+    caution: { minimum: 50, names: ['caution', 'note', 'luuY', 'lưuÝ', 'luu_y'] },
+    recommendation: { minimum: 50, names: ['recommendation', 'advice', 'goiY', 'gợiÝ', 'goi_y'] }
+  };
+  const normalized = {};
+  Object.keys(fields).forEach(function (key) {
+    const field = fields[key];
+    normalized[key] = firstText(parsed, field.names, field.minimum)
+      || usableText(extractLooseGeminiField(cleaned, field.names), field.minimum)
+      || fallback[key];
+  });
 
-  if (cleaned) {
-    return {
-      overview: cleanText(cleaned, 600),
-      influence: fallback.influence,
-      caution: fallback.caution
-    };
-  }
-  return fallback;
+  return {
+    overview: cleanText(normalized.overview, 900),
+    favorable: cleanText(normalized.favorable, 500),
+    influence: cleanText(normalized.influence, 600),
+    caution: cleanText(normalized.caution, 500),
+    recommendation: cleanText(normalized.recommendation, 500)
+  };
 }
 
 function callGeminiAgeReading(promptText, facts) {
@@ -738,16 +822,18 @@ function callGeminiAgeReading(promptText, facts) {
     contents: [{ parts: [{ text: promptText }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 1800,
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',
         properties: {
           overview: { type: 'STRING' },
+          favorable: { type: 'STRING' },
           influence: { type: 'STRING' },
-          caution: { type: 'STRING' }
+          caution: { type: 'STRING' },
+          recommendation: { type: 'STRING' }
         },
-        required: ['overview', 'influence', 'caution']
+        required: ['overview', 'favorable', 'influence', 'caution', 'recommendation']
       }
     }
   };

@@ -1,4 +1,4 @@
-# E-GV v6.0 – Trang Âm lịch riêng
+# E-GV v6.2 – Đồng bộ kết quả lịch và Gemini
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,16 +16,22 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Đồng bộ một phiên bản công thức cho phần điểm phía trên và phần Gemini; máy chủ trả lại điểm tổng cùng điểm ngày, tháng, năm để giao diện đối chiếu ngay sau khi phân tích.
+- Thêm mã phiên bản vào CSS/JavaScript của trang lịch để trình duyệt không tiếp tục dùng `calendar.js` cũ sau khi triển khai.
+- Tự thay nội dung Gemini quá ngắn hoặc chỉ có dấu `–` bằng phần luận giải dự phòng đầy đủ.
+- Đổi vùng nhớ tạm của luận lịch để loại bỏ kết quả cũ chưa đồng bộ.
 - Thêm trang `Âm lịch` riêng và đặt đúng giữa `Trợ giảng AI` với `Nhật ký sửa chữa` trên thanh điều hướng.
 - Chuyển toàn bộ tờ lịch, nút ngày trước/ngày sau, chọn ngày, xem tuổi và Gemini khỏi Trang chủ sang trang Âm lịch.
 - Trang chủ chỉ giữ thẻ mở nhanh `Âm lịch & xem ngày theo tuổi` và thêm thẻ Âm lịch trong Không gian làm việc.
 - Tách `js/calendar.js` để toàn bộ phép tính lịch chỉ chạy trên trang Âm lịch; `js/index.js` chỉ xử lý Trang chủ.
-- Bổ sung cấu trúc phản hồi Gemini bắt buộc và bộ đọc dự phòng cho JSON có khối mã, tên trường tiếng Việt hoặc phản hồi văn bản.
-- Khi Gemini thiếu một phần nội dung, hệ thống giữ phần AI hợp lệ và tự bổ sung Ảnh hưởng/Lưu ý thay vì báo lỗi cấu trúc.
+- Mở rộng luận giải Gemini thành 5 phần: Tổng quan, Điểm hỗ trợ, Ảnh hưởng ngày–tháng–năm, Điểm cần lưu ý và Gợi ý thực hiện.
+- Sửa lỗi chuỗi JSON như `{"overview":...}` lọt ra giao diện khi phản hồi Gemini bị cắt hoặc thiếu dấu đóng.
+- Bộ đọc dự phòng nhận JSON hoàn chỉnh, JSON trong khối mã, tên trường tiếng Việt, JSON bị cắt và phản hồi thiếu trường.
 - Mục `Xem ngày theo tuổi` chỉ mở sau khi thành viên hoặc quản trị viên đăng nhập.
 - Chọn một năm sinh dạng `1992 – Nhâm Thân`; không cần tạo hoặc thêm tuổi thủ công.
 - Tự đánh giá Ngũ hành, Thiên can và Địa chi theo ba tầng: ngày 50%, tháng 30% và năm 20%.
-- Quy đổi mức độ thuận lợi thành phần trăm và các mức: Không thuận, Cần thận trọng, Trung bình, Khá thuận, Tốt, Rất tốt.
+- Đổi phần trăm thành điểm tương hợp trên thang 100, lấy 50 làm mốc cân bằng; đây không phải xác suất may mắn.
+- Hiệu chỉnh thang điểm để Sinh xuất/Khắc xuất thể hiện sự hao công thay vì bị xem là quá xấu; các mức mới là Nên thận trọng, Cần cân nhắc, Cân bằng, Khá thuận, Thuận và Rất thuận.
 - Thêm nút `Phân tích bằng Gemini`; website tính dữ kiện trước, Gemini chỉ tổng hợp và diễn giải.
 - Endpoint Gemini được bảo vệ bằng token đăng nhập, giới hạn số lượt và lưu kết quả tạm để giảm thời gian chờ.
 - API key chỉ nằm trong Script Properties và tự chuyển qua `GEMINI_API_KEY`, `_2`, `_3` khi cần.
