@@ -75,66 +75,106 @@
             <section class="age-reading-panel" aria-labelledby="ageReadingHeading">
                 <div class="age-reading-toolbar">
                     <div>
-                        <span class="age-reading-kicker">Tham khảo theo năm sinh</span>
+                        <span class="age-reading-kicker">Dành cho thành viên</span>
                         <h2 id="ageReadingHeading">Xem ngày theo tuổi</h2>
-                        <p>Chọn năm sinh để xem mức độ tương tác với ngày đang hiển thị trên lịch.</p>
+                        <p>Đánh giá tuổi với ngày, tháng và năm đang xem; Gemini hỗ trợ diễn giải dễ hiểu.</p>
                     </div>
-                    <label class="birth-year-field" for="birthYearSelect">
-                        <span>Năm sinh</span>
-                        <select id="birthYearSelect" aria-describedby="birthYearHint">
-                            <option value="">Chọn năm sinh</option>
-                        </select>
-                    </label>
                 </div>
 
-                <div class="age-reading-empty" id="ageReadingEmpty">
-                    Chọn một năm sinh, ví dụ <strong>1992 – Nhâm Thân</strong>, để xem luận giải ngắn gọn.
+                <div class="age-reading-auth-gate" id="ageReadingAuthGate">
+                    <span class="age-reading-lock" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    </span>
+                    <div>
+                        <strong>Đăng nhập để xem ngày theo tuổi</strong>
+                        <p>Năm sinh và kết quả chỉ được sử dụng trong phiên làm việc của thầy.</p>
+                    </div>
+                    <button class="btn btn-primary" id="ageReadingLoginButton" type="button">Đăng nhập</button>
                 </div>
 
-                <div class="age-reading-result" id="ageReadingResult" hidden>
-                    <header class="age-reading-result-header">
-                        <div>
-                            <span id="ageReadingDayLabel">Đánh giá theo ngày</span>
-                            <h3 id="ageReadingTitle">Tuổi —</h3>
-                            <p id="ageReadingSubtitle">Sinh năm —</p>
-                        </div>
-                    </header>
-
-                    <div class="age-relation-grid">
-                        <article class="age-relation-card">
-                            <div class="age-relation-heading">
-                                <span>Ngũ hành</span>
-                                <strong class="age-relation-badge" id="ageElementRelation">—</strong>
-                            </div>
-                            <p id="ageElementDescription">—</p>
-                        </article>
-                        <article class="age-relation-card">
-                            <div class="age-relation-heading">
-                                <span>Thiên can</span>
-                                <strong class="age-relation-badge" id="ageStemRelation">—</strong>
-                            </div>
-                            <p id="ageStemDescription">—</p>
-                        </article>
-                        <article class="age-relation-card">
-                            <div class="age-relation-heading">
-                                <span>Địa chi</span>
-                                <strong class="age-relation-badge" id="ageBranchRelation">—</strong>
-                            </div>
-                            <p id="ageBranchDescription">—</p>
-                        </article>
+                <div class="age-reading-member" id="ageReadingMemberContent" hidden>
+                    <div class="age-reading-member-controls">
+                        <label class="birth-year-field" for="birthYearSelect">
+                            <span>Năm sinh</span>
+                            <select id="birthYearSelect" aria-describedby="birthYearHint">
+                                <option value="">Chọn năm sinh</option>
+                            </select>
+                        </label>
+                        <p>Ngày đang xem: <strong id="ageReadingSelectedDate">—</strong></p>
                     </div>
 
-                    <div class="age-reading-summary">
-                        <div>
-                            <span>Ảnh hưởng</span>
-                            <p id="ageReadingImpact">—</p>
-                        </div>
-                        <div>
-                            <span>Lưu ý</span>
-                            <p id="ageReadingNote">—</p>
-                        </div>
+                    <div class="age-reading-empty" id="ageReadingEmpty">
+                        Chọn một năm sinh, ví dụ <strong>1992 – Nhâm Thân</strong>, để bắt đầu đánh giá.
                     </div>
-                    <p class="age-reading-disclaimer" id="birthYearHint">Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng. Thông tin mang tính tham khảo theo năm sinh.</p>
+
+                    <div class="age-reading-result" id="ageReadingResult" hidden>
+                        <header class="age-reading-result-header">
+                            <div>
+                                <span id="ageReadingDayLabel">Đánh giá theo ngày</span>
+                                <h3 id="ageReadingTitle">Tuổi —</h3>
+                                <p id="ageReadingSubtitle">Sinh năm —</p>
+                            </div>
+                            <div class="age-score" id="ageReadingScoreBox">
+                                <strong id="ageReadingScore">—%</strong>
+                                <span id="ageReadingLevel">Chưa đánh giá</span>
+                            </div>
+                        </header>
+
+                        <div class="age-period-grid">
+                            <article class="age-period-card">
+                                <header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header>
+                                <dl>
+                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageDayElement">—</dd></div>
+                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageDayStem">—</dd></div>
+                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageDayBranch">—</dd></div>
+                                </dl>
+                            </article>
+                            <article class="age-period-card">
+                                <header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header>
+                                <dl>
+                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageMonthElement">—</dd></div>
+                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageMonthStem">—</dd></div>
+                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageMonthBranch">—</dd></div>
+                                </dl>
+                            </article>
+                            <article class="age-period-card">
+                                <header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header>
+                                <dl>
+                                    <div><dt>Ngũ hành</dt><dd class="age-relation-badge" id="ageYearElement">—</dd></div>
+                                    <div><dt>Thiên can</dt><dd class="age-relation-badge" id="ageYearStem">—</dd></div>
+                                    <div><dt>Địa chi</dt><dd class="age-relation-badge" id="ageYearBranch">—</dd></div>
+                                </dl>
+                            </article>
+                        </div>
+
+                        <div class="age-reading-summary">
+                            <div>
+                                <span>Ảnh hưởng</span>
+                                <p id="ageReadingImpact">—</p>
+                            </div>
+                            <div>
+                                <span>Lưu ý</span>
+                                <p id="ageReadingNote">—</p>
+                            </div>
+                        </div>
+
+                        <div class="age-gemini-actions">
+                            <button class="btn btn-primary" id="ageGeminiButton" type="button">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8ZM19 14l-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/></svg>
+                                <span>Phân tích bằng Gemini</span>
+                            </button>
+                            <p>Gemini chỉ diễn giải các quan hệ đã được hệ thống tính sẵn.</p>
+                        </div>
+                        <div class="age-gemini-status" id="ageGeminiStatus" role="status" aria-live="polite" hidden></div>
+                        <section class="age-gemini-result" id="ageGeminiResult" aria-labelledby="ageGeminiHeading" hidden>
+                            <header><span class="age-gemini-mark">AI</span><h4 id="ageGeminiHeading">Gemini luận giải</h4></header>
+                            <p id="ageGeminiOverview">—</p>
+                            <div><strong>Ảnh hưởng:</strong> <span id="ageGeminiInfluence">—</span></div>
+                            <div><strong>Lưu ý:</strong> <span id="ageGeminiCaution">—</span></div>
+                        </section>
+
+                        <p class="age-reading-disclaimer" id="birthYearHint">Điểm phần trăm là quy đổi theo bộ quy tắc của E-GV, không phải xác suất khoa học. Nếu sinh trước Tết, cần chọn năm âm lịch tương ứng. Thông tin chỉ mang tính tham khảo.</p>
+                    </div>
                 </div>
             </section>
 

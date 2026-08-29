@@ -990,6 +990,73 @@ body.google-auth-busy { overflow: hidden; }
     font-size: .82rem;
 }
 
+.age-reading-auth-gate {
+    margin-top: 20px;
+    padding: 18px 19px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #dbe7f7;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+}
+
+.age-reading-auth-gate[hidden],
+.age-reading-member[hidden],
+.age-gemini-status[hidden],
+.age-gemini-result[hidden] { display: none; }
+
+.age-reading-lock {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    color: var(--primary);
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 7px 18px rgba(37, 99, 235, .1);
+}
+
+.age-reading-lock svg {
+    width: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.age-reading-auth-gate strong {
+    color: var(--text-primary);
+    font-size: .84rem;
+}
+
+.age-reading-auth-gate p {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: .72rem;
+}
+
+.age-reading-member {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.age-reading-member-controls {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.age-reading-member-controls > p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+    font-size: .74rem;
+}
+
+.age-reading-member-controls > p strong { color: var(--text-primary); }
+
 .birth-year-field {
     width: min(100%, 330px);
     flex: 0 0 auto;
@@ -1069,6 +1136,97 @@ body.google-auth-busy { overflow: hidden; }
     color: var(--text-secondary);
     font-size: .77rem;
 }
+
+.age-score {
+    min-width: 118px;
+    padding: 11px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid #dbeafe;
+    border-radius: 15px;
+    background: #eff6ff;
+}
+
+.age-score > strong {
+    color: var(--primary-dark);
+    font-size: 1.45rem;
+    line-height: 1.05;
+}
+
+.age-score > span {
+    margin-top: 5px;
+    color: var(--text-secondary);
+    font-size: .62rem;
+    font-weight: 750;
+}
+
+.age-score.score-low { border-color: #fecaca; background: #fef2f2; }
+.age-score.score-low > strong { color: #b91c1c; }
+.age-score.score-caution { border-color: #fed7aa; background: #fff7ed; }
+.age-score.score-caution > strong { color: #c2410c; }
+.age-score.score-medium { border-color: #fde68a; background: #fffbeb; }
+.age-score.score-medium > strong { color: #a16207; }
+.age-score.score-good { border-color: #a7f3d0; background: #ecfdf5; }
+.age-score.score-good > strong { color: #047857; }
+
+.age-period-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.age-period-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e1e8f2;
+    border-radius: 16px;
+    background: #fbfcfe;
+}
+
+.age-period-card > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e6edf6;
+}
+
+.age-period-card header span {
+    color: var(--text-secondary);
+    font-size: .62rem;
+    font-weight: 700;
+}
+
+.age-period-card h4 {
+    margin: 3px 0 0;
+    color: var(--text-primary);
+    font-size: .86rem;
+}
+
+.age-period-card header > strong {
+    color: var(--primary);
+    font-size: .74rem;
+    white-space: nowrap;
+}
+
+.age-period-card dl { margin: 10px 0 0; }
+
+.age-period-card dl > div {
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.age-period-card dt {
+    color: var(--text-secondary);
+    font-size: .7rem;
+}
+
+.age-period-card dd { margin: 0; }
 
 .age-relation-grid {
     display: grid;
@@ -1152,6 +1310,84 @@ body.google-auth-busy { overflow: hidden; }
     line-height: 1.5;
 }
 
+.age-gemini-actions {
+    margin-top: 15px;
+    padding: 14px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid #ddd6fe;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #f5f3ff, #eff6ff);
+}
+
+.age-gemini-actions .btn { flex: 0 0 auto; }
+
+.age-gemini-actions .btn svg {
+    width: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.age-gemini-actions p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: .69rem;
+    text-align: right;
+}
+
+.age-gemini-status {
+    margin-top: 12px;
+    padding: 12px 14px;
+    color: #4338ca;
+    border-radius: 12px;
+    background: #eef2ff;
+    font-size: .73rem;
+}
+
+.age-gemini-status.is-error { color: #b91c1c; background: #fef2f2; }
+
+.age-gemini-result {
+    margin-top: 12px;
+    padding: 17px;
+    color: var(--text-secondary);
+    border: 1px solid #ddd6fe;
+    border-radius: 16px;
+    background: #fff;
+    font-size: .75rem;
+    line-height: 1.65;
+}
+
+.age-gemini-result header {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.age-gemini-result h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: .86rem;
+}
+
+.age-gemini-result p { margin: 0 0 11px; }
+.age-gemini-result > div + div { margin-top: 6px; }
+.age-gemini-result strong { color: var(--text-primary); }
+
+.age-gemini-mark {
+    padding: 4px 7px;
+    color: #fff;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    font-size: .58rem;
+    font-weight: 850;
+}
+
 /* Máy tính bảng */
 @media (max-width: 1120px) {
     .nav-link { padding-inline: 9px; font-size: .76rem; }
@@ -1198,7 +1434,16 @@ body.google-auth-busy { overflow: hidden; }
     }
 
     .birth-year-field { width: 100%; }
-    .age-relation-grid { grid-template-columns: 1fr; }
+    .age-relation-grid,
+    .age-period-grid { grid-template-columns: 1fr; }
+
+    .age-reading-member-controls {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .age-reading-member-controls > p { margin: 0; }
 
     .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat-card { min-height: 118px; }
@@ -1355,6 +1600,30 @@ body.google-auth-busy { overflow: hidden; }
 
     .age-reading-toolbar h2 { font-size: 1.15rem; }
     .age-reading-summary { grid-template-columns: 1fr; }
+
+    .age-reading-auth-gate {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .age-reading-auth-gate .btn {
+        width: 100%;
+        grid-column: 1 / -1;
+    }
+
+    .age-reading-result-header { align-items: flex-start; }
+
+    .age-score {
+        min-width: 102px;
+        padding-inline: 10px;
+    }
+
+    .age-gemini-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .age-gemini-actions .btn { width: 100%; }
+    .age-gemini-actions p { text-align: left; }
 
     .calendar-editorial {
         padding: 18px;
