@@ -403,8 +403,18 @@
         return profile.stemIndex % 2 === 0 ? 'polarity-duong' : 'polarity-am';
     }
 
+    function napAmPolarityLabel(profile) {
+        return profile.stemIndex % 2 === 0 ? 'Dương' : 'Âm';
+    }
+
     function napAmValueClass(profile, baseClass) {
         return `${baseClass} element-${profile.elementKey} ${napAmPolarityClass(profile)}`;
+    }
+
+    function setNapAmAccessibility(element, profile) {
+        const polarity = napAmPolarityLabel(profile);
+        element.title = `Nạp âm ${polarity}`;
+        element.setAttribute('aria-label', `${profile.napAm}, nạp âm ${polarity}`);
     }
 
     function renderPeriodReading(prefix, reading) {
@@ -415,6 +425,7 @@
         const branchValue = document.getElementById(`age${prefix}BranchValue`);
         elementValue.textContent = reading.profile.napAm;
         elementValue.className = napAmValueClass(reading.profile, 'age-period-value');
+        setNapAmAccessibility(elementValue, reading.profile);
         stemValue.textContent = reading.profile.stem;
         stemValue.className = `age-period-value element-${STEM_ELEMENT_KEYS[reading.profile.stemIndex]}`;
         branchValue.textContent = reading.profile.branch;
@@ -478,7 +489,8 @@
         currentAgeReading = { key: readingKey, selectedDate: { ...selectedDate }, lunarDate, age, readings, score, level, summary };
         document.getElementById('ageReadingDayLabel').textContent = `Đánh giá theo ngày ${readings.day.profile.name}, tháng ${readings.month.profile.name}, năm ${readings.year.profile.name}`;
         document.getElementById('ageReadingTitle').textContent = `Tuổi ${age.name}`;
-        document.getElementById('ageReadingSubtitle').innerHTML = `Sinh năm ${year} – Mệnh <span class="${napAmValueClass(age, 'age-nap-am-value')}">${age.napAm}</span>`;
+        const agePolarity = napAmPolarityLabel(age);
+        document.getElementById('ageReadingSubtitle').innerHTML = `Sinh năm ${year} – Mệnh <span class="${napAmValueClass(age, 'age-nap-am-value')}" title="Nạp âm ${agePolarity}" aria-label="${age.napAm}, nạp âm ${agePolarity}">${age.napAm}</span>`;
         document.getElementById('ageReadingScore').textContent = `${score}/100`;
         document.getElementById('ageReadingLevel').textContent = level.label;
         document.getElementById('ageReadingScoreBox').className = `age-score ${level.className}`;
