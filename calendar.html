@@ -6,11 +6,11 @@
     <meta name="description" content="Âm lịch E-GV: xem ngày dương, ngày âm, Can Chi, ngũ hành và phân tích ngày theo năm sinh.">
     <meta name="theme-color" content="#2563eb">
     <title>Âm lịch – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=7.0.0">
-    <link rel="stylesheet" href="modern-saas.css?v=7.0.0">
-    <script src="js/config.js?v=7.0.0" defer></script>
-    <script src="js/app.js?v=7.0.0" defer></script>
-    <script src="js/calendar.js?v=7.0.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=7.1.0">
+    <link rel="stylesheet" href="modern-saas.css?v=7.1.0">
+    <script src="js/config.js?v=7.1.0" defer></script>
+    <script src="js/app.js?v=7.1.0" defer></script>
+    <script src="js/calendar.js?v=7.1.0" defer></script>
 </head>
 <body class="page-calendar">
     <div id="appShell"></div>
@@ -71,6 +71,24 @@
                             <div class="age-score" id="ageReadingScoreBox" title="Điểm tương hợp tham khảo, không phải xác suất may mắn"><strong id="ageReadingScore">—/100</strong><span id="ageReadingLevel">Chưa đánh giá</span></div>
                         </header>
                         <p class="age-score-method"><strong>Cách tính:</strong> ngày 50% · tháng 30% · năm 20%. Mốc 50 là cân bằng; đây không phải xác suất may mắn.</p>
+
+                        <section class="age-weekly-chart" aria-labelledby="ageWeekChartTitle">
+                            <header>
+                                <div><span>Tổng quan 7 ngày</span><h4 id="ageWeekChartTitle">Mức độ thuận lợi theo tuần</h4></div>
+                                <div class="age-week-navigation" aria-label="Chuyển tuần">
+                                    <button id="ageWeekPrevious" type="button" aria-label="Xem tuần trước">‹</button>
+                                    <button id="ageWeekCurrent" type="button">Tuần này</button>
+                                    <button id="ageWeekNext" type="button" aria-label="Xem tuần sau">›</button>
+                                </div>
+                            </header>
+                            <div class="age-week-meta"><strong id="ageWeekRange">—</strong><span id="ageWeekSummary">—</span></div>
+                            <div class="age-week-bars" id="ageWeekBars" role="group" aria-label="Biểu đồ cột chỉ số tương hợp từng ngày trong tuần"></div>
+                            <div class="age-week-legend" aria-label="Chú thích màu biểu đồ">
+                                <span class="tone-low">Cần thận trọng</span><span class="tone-caution">Cần cân nhắc</span><span class="tone-medium">Cân bằng</span><span class="tone-good">Khá thuận</span><span class="tone-high">Thuận</span>
+                            </div>
+                            <p class="age-week-note">Bấm vào một cột để xem chi tiết ngày đó. Đây là chỉ số tương hợp E‑GV theo tuổi đã chọn, không phải phần trăm may mắn.</p>
+                        </section>
+
                         <div class="age-polarity-legend" aria-label="Quy ước nhận biết âm dương của nạp âm">
                             <span><b class="age-polarity-symbol is-duong" aria-hidden="true">●</b>Sắc đậm: Dương</span>
                             <span><b class="age-polarity-symbol is-am" aria-hidden="true">○</b>Sắc nhạt: Âm</span>

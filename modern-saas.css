@@ -1344,6 +1344,216 @@ body.google-auth-busy { overflow: hidden; }
 
 .age-score-method strong { color: #334155; }
 
+.age-weekly-chart {
+    margin: 0 0 13px;
+    padding: 15px 16px 13px;
+    border: 1px solid #dbe7f5;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+}
+
+.age-weekly-chart > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.age-weekly-chart > header span {
+    color: var(--primary);
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.age-weekly-chart > header h4 {
+    margin: 3px 0 0;
+    color: var(--text-primary);
+    font-size: .92rem;
+}
+
+.age-week-navigation {
+    display: inline-grid;
+    grid-template-columns: 34px auto 34px;
+    gap: 5px;
+}
+
+.age-week-navigation button {
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 1px solid #dbe4f0;
+    border-radius: 9px;
+    background: #fff;
+    color: var(--primary);
+    font: inherit;
+    font-size: .66rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.age-week-navigation button:hover { border-color: #93c5fd; background: #eff6ff; }
+.age-week-navigation button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.age-week-meta {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: .67rem;
+    line-height: 1.45;
+}
+
+.age-week-meta strong { color: #334155; white-space: nowrap; }
+.age-week-meta span { text-align: right; }
+
+.age-week-bars {
+    min-height: 220px;
+    margin-top: 12px;
+    padding: 13px 10px 8px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: end;
+    gap: 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background-color: #fff;
+    background-image: repeating-linear-gradient(to top, transparent 0, transparent 49px, #edf2f7 50px);
+}
+
+.age-week-bar {
+    min-width: 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: 18px 150px auto auto;
+    justify-items: stretch;
+    gap: 3px;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.age-week-score {
+    color: #334155;
+    font-size: .66rem;
+    font-weight: 850;
+    text-align: center;
+}
+
+.age-week-track {
+    width: min(100%, 42px);
+    height: 150px;
+    margin-inline: auto;
+    padding: 3px;
+    display: flex;
+    align-items: flex-end;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px 9px 5px 5px;
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.age-week-track i {
+    width: 100%;
+    min-height: 6px;
+    display: block;
+    border-radius: 6px 6px 3px 3px;
+    transition: height .24s ease, filter .16s ease;
+}
+
+.age-week-track i.tone-low { background: linear-gradient(180deg, #ef4444, #dc2626); }
+.age-week-track i.tone-caution { background: linear-gradient(180deg, #fb923c, #ea580c); }
+.age-week-track i.tone-medium { background: linear-gradient(180deg, #facc15, #ca8a04); }
+.age-week-track i.tone-good { background: linear-gradient(180deg, #38bdf8, #0284c7); }
+.age-week-track i.tone-high { background: linear-gradient(180deg, #34d399, #059669); }
+
+.age-week-bar > strong {
+    margin-top: 2px;
+    font-size: .68rem;
+    text-align: center;
+}
+
+.age-week-bar > small {
+    color: var(--text-secondary);
+    font-size: .59rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.age-week-bar:hover .age-week-track i { filter: saturate(1.2) brightness(.96); }
+
+.age-week-bar:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
+.age-week-bar.is-selected .age-week-track {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
+}
+
+.age-week-bar.is-selected > strong,
+.age-week-bar.is-selected > small { color: var(--primary); }
+
+.age-week-bar.weekday-saturday > strong { color: #2563eb; }
+.age-week-bar.weekday-sunday > strong { color: #dc2626; }
+.age-week-bar.is-selected.weekday-sunday > strong { color: #dc2626; }
+
+.age-week-legend {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px 13px;
+    color: var(--text-secondary);
+    font-size: .61rem;
+    font-weight: 700;
+}
+
+.age-week-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.age-week-legend span::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    background: currentColor;
+}
+
+.age-week-legend .tone-low { color: #dc2626; }
+.age-week-legend .tone-caution { color: #ea580c; }
+.age-week-legend .tone-medium { color: #a16207; }
+.age-week-legend .tone-good { color: #0284c7; }
+.age-week-legend .tone-high { color: #059669; }
+
+.age-week-note {
+    margin: 8px 0 0;
+    color: #718096;
+    font-size: .61rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+    .age-weekly-chart { padding-inline: 12px; }
+    .age-weekly-chart > header,
+    .age-week-meta { align-items: stretch; flex-direction: column; }
+    .age-week-navigation { align-self: stretch; grid-template-columns: 34px 1fr 34px; }
+    .age-week-meta span { text-align: left; }
+    .age-week-bars { gap: 4px; padding-inline: 5px; }
+    .age-week-bar { grid-template-rows: 18px 132px auto auto; }
+    .age-week-track { width: min(100%, 34px); height: 132px; }
+    .age-week-bar > small { font-size: .53rem; }
+}
+
 .age-period-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

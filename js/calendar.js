@@ -564,6 +564,81 @@
         if (result) result.hidden = true;
     }
 
+    function calculateAgeReadingForDate(date, birthYear) {
+        const lunarDate = solarToLunar(date.day, date.month, date.year, LUNAR_TIME_ZONE);
+        const age = yearProfile(birthYear);
+        const readings = {
+            day: calculatePeriodReading('day', 'Ngày', dayProfile(date), age),
+            month: calculatePeriodReading('month', 'Tháng', monthProfile(lunarDate), age),
+            year: calculatePeriodReading('year', 'Năm', yearProfile(lunarDate.year), age)
+        };
+        const score = Math.round(readings.day.contribution + readings.month.contribution + readings.year.contribution);
+        return {
+            selectedDate: { ...date },
+            lunarDate,
+            age,
+            readings,
+            score,
+            level: scoreLevel(score),
+            summary: readingSummary(score)
+        };
+    }
+
+    function weekStartDate(date) {
+        const dateAtNoonUtc = new Date(Date.UTC(date.year, date.month - 1, date.day, 12));
+        const dayOfWeek = dateAtNoonUtc.getUTCDay();
+        return shiftDate(date, -(dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    }
+
+    function formatWeekRange(start, end) {
+        const dayStart = String(start.day).padStart(2, '0');
+        const dayEnd = String(end.day).padStart(2, '0');
+        const monthStart = String(start.month).padStart(2, '0');
+        const monthEnd = String(end.month).padStart(2, '0');
+        if (start.year === end.year && start.month === end.month) {
+            return `${dayStart}–${dayEnd}/${monthEnd}/${end.year}`;
+        }
+        if (start.year === end.year) {
+            return `${dayStart}/${monthStart}–${dayEnd}/${monthEnd}/${end.year}`;
+        }
+        return `${dayStart}/${monthStart}/${start.year}–${dayEnd}/${monthEnd}/${end.year}`;
+    }
+
+    function weekScoreTone(score) {
+        if (score < 40) return 'low';
+        if (score < 50) return 'caution';
+        if (score < 65) return 'medium';
+        if (score < 78) return 'good';
+        return 'high';
+    }
+
+    function renderAgeWeekChart(birthYear) {
+        const weekStart = weekStartDate(selectedDate);
+        const weekDays = Array.from({ length: 7 }, function (_, index) {
+            const date = shiftDate(weekStart, index);
+            return { date, reading: calculateAgeReadingForDate(date, birthYear) };
+        });
+        const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+        const weekdayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật'];
+        const selectedValue = toDateValue(selectedDate);
+        const best = weekDays.reduce((current, item) => item.reading.score > current.reading.score ? item : current);
+        const caution = weekDays.reduce((current, item) => item.reading.score < current.reading.score ? item : current);
+        const bestIndex = weekDays.indexOf(best);
+        const cautionIndex = weekDays.indexOf(caution);
+
+        document.getElementById('ageWeekRange').textContent = `Tuần ${formatWeekRange(weekStart, weekDays[6].date)}`;
+        document.getElementById('ageWeekSummary').textContent = `Thuận nhất: ${weekdayLabels[bestIndex]} ${String(best.date.day).padStart(2, '0')}/${String(best.date.month).padStart(2, '0')} · ${best.reading.score}/100  |  Cần lưu ý: ${weekdayLabels[cautionIndex]} ${String(caution.date.day).padStart(2, '0')}/${String(caution.date.month).padStart(2, '0')} · ${caution.reading.score}/100`;
+        document.getElementById('ageWeekBars').innerHTML = weekDays.map(function (item, index) {
+            const dateValue = toDateValue(item.date);
+            const score = item.reading.score;
+            const tone = weekScoreTone(score);
+            const selected = dateValue === selectedValue;
+            const shortDate = `${String(item.date.day).padStart(2, '0')}/${String(item.date.month).padStart(2, '0')}`;
+            const weekdayClass = index === 5 ? ' weekday-saturday' : index === 6 ? ' weekday-sunday' : '';
+            return `<button class="age-week-bar${weekdayClass}${selected ? ' is-selected' : ''}" type="button" data-week-date="${dateValue}" aria-label="${weekdayNames[index]} ${shortDate}: ${score} trên 100, ${item.reading.level.label}"${selected ? ' aria-current="date"' : ''}><span class="age-week-score">${score}</span><span class="age-week-track"><i class="tone-${tone}" style="height:${Math.max(score, 6)}%"></i></span><strong>${weekdayLabels[index]}</strong><small>${shortDate}</small></button>`;
+        }).join('');
+    }
+
     function renderAgeReading() {
         const selector = document.getElementById('birthYearSelect');
         if (!selector) return;
@@ -590,16 +665,8 @@
             return;
         }
 
-        const lunarDate = solarToLunar(selectedDate.day, selectedDate.month, selectedDate.year, LUNAR_TIME_ZONE);
-        const age = yearProfile(year);
-        const readings = {
-            day: calculatePeriodReading('day', 'Ngày', dayProfile(selectedDate), age),
-            month: calculatePeriodReading('month', 'Tháng', monthProfile(lunarDate), age),
-            year: calculatePeriodReading('year', 'Năm', yearProfile(lunarDate.year), age)
-        };
-        const score = Math.round(readings.day.contribution + readings.month.contribution + readings.year.contribution);
-        const level = scoreLevel(score);
-        const summary = readingSummary(score);
+        const calculated = calculateAgeReadingForDate(selectedDate, year);
+        const { lunarDate, age, readings, score, level, summary } = calculated;
         const readingKey = `${toDateValue(selectedDate)}:${year}`;
         if (readingKey !== currentAgeReadingKey) {
             currentAgeReadingKey = readingKey;
@@ -607,7 +674,7 @@
             hideAgeRelationExplanation();
         }
 
-        currentAgeReading = { key: readingKey, selectedDate: { ...selectedDate }, lunarDate, age, readings, score, level, summary };
+        currentAgeReading = Object.assign({ key: readingKey }, calculated);
         document.getElementById('ageReadingDayLabel').textContent = `Đánh giá theo ngày ${readings.day.profile.name}, tháng ${readings.month.profile.name}, năm ${readings.year.profile.name}`;
         document.getElementById('ageReadingTitle').textContent = `Tuổi ${age.name}`;
         const agePolarity = napAmPolarityLabel(age);
@@ -615,6 +682,7 @@
         document.getElementById('ageReadingScore').textContent = `${score}/100`;
         document.getElementById('ageReadingLevel').textContent = level.label;
         document.getElementById('ageReadingScoreBox').className = `age-score ${level.className}`;
+        renderAgeWeekChart(year);
         renderPeriodReading('Day', readings.day);
         renderPeriodReading('Month', readings.month);
         renderPeriodReading('Year', readings.year);
@@ -1053,6 +1121,21 @@
 
     document.getElementById('ageReadingLoginButton').addEventListener('click', function () {
         App.requireUser(updateAgeReadingAuthUi);
+    });
+    document.getElementById('ageWeekPrevious').addEventListener('click', function () {
+        selectCalendarDate(shiftDate(selectedDate, -7));
+    });
+    document.getElementById('ageWeekCurrent').addEventListener('click', function () {
+        selectCalendarDate({ ...todayDate });
+    });
+    document.getElementById('ageWeekNext').addEventListener('click', function () {
+        selectCalendarDate(shiftDate(selectedDate, 7));
+    });
+    document.getElementById('ageWeekBars').addEventListener('click', function (event) {
+        const button = event.target.closest('[data-week-date]');
+        if (!button) return;
+        const date = fromDateValue(button.dataset.weekDate);
+        if (date) selectCalendarDate(date);
     });
     document.querySelectorAll('[data-age-relation]').forEach(function (button) {
         button.addEventListener('click', function () {
