@@ -274,7 +274,7 @@
             }
             return result;
         } catch (error) {
-            if (error?.name === 'AbortError') throw new Error('Đăng nhập mất quá nhiều thời gian. Vui lòng thử lại.');
+            if (error?.name === 'AbortError') throw new Error(options.timeoutMessage || 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.');
             throw error;
         } finally {
             if (timeoutId) clearTimeout(timeoutId);
