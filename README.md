@@ -1,4 +1,4 @@
-# E-GV v6.4 – Luận giải Gemini âm lịch có tác dụng thực tế
+# E-GV v6.5 – Luận giải đầy đủ, không mất chữ
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Sửa lỗi phần Địa chi bị cắt giữa chữ do giới hạn ký tự; tăng dung lượng cho cả 7 phần và chỉ rút gọn ở cuối câu hoàn chỉnh khi thật sự cần.
+- Bỏ thông báo kỹ thuật `Gemini bỏ sót một phần nội dung` khi E-GV đã tự bổ sung thành công.
+- Bỏ đoạn `Cách hiểu điểm` ở cuối khung luận giải vì lặp lại thông tin và không hỗ trợ quyết định.
 - Sửa lỗi toàn bộ 7 ô chỉ hiện câu dự phòng chung chung khi giao diện mới kết nối với Web App Apps Script cũ.
 - Thêm kiểm tra phiên bản luận giải giữa giao diện và máy chủ; nếu chưa đồng bộ, website báo rõ và tự tạo nội dung cụ thể từ đúng Can Chi, quan hệ và điểm số đang xem.
 - Buộc Gemini giải thích tác động thực tế của từng quan hệ, chỉ rõ yếu tố kéo điểm lên hoặc xuống và đưa ba nhóm lời khuyên: `Có thể làm`, `Cần thận trọng`, `Nếu vẫn tiến hành`.

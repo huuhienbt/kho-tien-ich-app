@@ -10,7 +10,7 @@ const REPAIR_HEADERS = ['id', 'date', 'task', 'location', 'cost', 'warranty', 's
 const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'created_at', 'last_login'];
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
 const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
-const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v4';
+const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v5';
 
 function doGet(e) {
   try {
@@ -525,7 +525,7 @@ function handleAgeReading(data, clientId) {
     JSON.stringify(facts),
     Utilities.Charset.UTF_8
   );
-  const cacheKey = 'age-reading-v6:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
+  const cacheKey = 'age-reading-v7:' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 42);
   try {
     const cached = cache.get(cacheKey);
     if (cached) return createResponse({ status: 'success', analysisVersion: AGE_ANALYSIS_VERSION, analysis: JSON.parse(cached), calculation: calculation, cached: true });
@@ -559,7 +559,7 @@ QUY TẮC ĐẦU RA JSON:
 2. Không dùng danh sách hoặc gạch đầu dòng trong giá trị. Không để trường nào rỗng, không dùng dấu gạch ngang hoặc câu quá ngắn để thay cho nội dung.
 3. Mỗi trường phải là một đoạn văn hoàn chỉnh, rõ ý và không lặp nguyên văn trường khác.
 4. Chỉ dùng đúng bảy trường sau:
-{"overview":"3 đến 4 câu kết luận trực tiếp, giải thích mức điểm và việc thường ngày có thể tiến hành hay không, tối đa 900 ký tự","nguHanh":"2 đến 4 câu nêu đủ quan hệ Ngũ hành ngày, tháng, năm cùng tác động thực tế và cách ứng xử, tối đa 700 ký tự","thienCan":"2 đến 4 câu nêu đủ quan hệ Thiên can ngày, tháng, năm cùng ảnh hưởng đến chủ động, phối hợp hoặc hao công, tối đa 700 ký tự","diaChi":"2 đến 4 câu nêu đủ quan hệ Địa chi ngày, tháng, năm cùng nguy cơ hoặc điểm hỗ trợ cụ thể, tối đa 700 ký tự","context":"2 đến 4 câu chỉ rõ phần nào kéo điểm lên hoặc xuống theo trọng số ngày 50%, tháng 30% và năm 20%, tối đa 700 ký tự","caution":"2 đến 3 câu nêu các ảnh hưởng có thể gặp và phần cần kiểm tra trước khi quyết định, tối đa 500 ký tự","recommendation":"Một đoạn có đủ ba cụm Có thể làm, Cần thận trọng và Nếu vẫn tiến hành, đưa lời khuyên cụ thể cho việc thường ngày, ký kết hoặc mua bán và xây sửa, tối đa 600 ký tự"}`;
+{"overview":"3 đến 4 câu kết luận trực tiếp, giải thích mức điểm và việc thường ngày có thể tiến hành hay không, tối đa 1200 ký tự","nguHanh":"3 đến 5 câu nêu đủ quan hệ Ngũ hành ngày, tháng, năm cùng tác động thực tế và cách ứng xử, tối đa 1100 ký tự","thienCan":"3 đến 5 câu nêu đủ quan hệ Thiên can ngày, tháng, năm cùng ảnh hưởng đến chủ động, phối hợp hoặc hao công, tối đa 1100 ký tự","diaChi":"3 đến 5 câu nêu đủ quan hệ Địa chi ngày, tháng, năm cùng nguy cơ hoặc điểm hỗ trợ cụ thể; phải viết trọn ý đến hết quan hệ của năm, tối đa 1100 ký tự","context":"2 đến 4 câu chỉ rõ phần nào kéo điểm lên hoặc xuống theo trọng số ngày 50%, tháng 30% và năm 20%, tối đa 900 ký tự","caution":"2 đến 4 câu nêu các ảnh hưởng có thể gặp và phần cần kiểm tra trước khi quyết định, tối đa 800 ký tự","recommendation":"Một đoạn có đủ ba cụm Có thể làm, Cần thận trọng và Nếu vẫn tiến hành, đưa lời khuyên cụ thể cho việc thường ngày, ký kết hoặc mua bán và xây sửa, tối đa 800 ký tự"}`;
 
   const analysis = callGeminiAgeReading(promptText, facts);
   try { cache.put(cacheKey, JSON.stringify(analysis), 21600); } catch (_) {}
@@ -789,6 +789,21 @@ function extractLooseGeminiField(source, names) {
   return '';
 }
 
+function cleanAgeAnalysisText(value, maxLength) {
+  const text = cleanText(value, 10000);
+  const limit = Number(maxLength || 1400);
+  if (text.length <= limit) return text;
+
+  const clipped = text.slice(0, limit + 1);
+  const sentenceEnds = [clipped.lastIndexOf('. '), clipped.lastIndexOf('! '), clipped.lastIndexOf('? ')];
+  const sentenceEnd = Math.max.apply(null, sentenceEnds);
+  if (sentenceEnd >= Math.floor(limit * 0.6)) return clipped.slice(0, sentenceEnd + 1).trim();
+
+  const wordEnd = clipped.lastIndexOf(' ');
+  const safeEnd = wordEnd > 0 ? wordEnd : limit;
+  return clipped.slice(0, safeEnd).replace(/[,:;\s]+$/g, '').trim() + '.';
+}
+
 function parseGeminiAgeResponse(text, facts) {
   const fallback = fallbackAgeAnalysis(facts);
   const cleaned = String(text || '')
@@ -843,13 +858,13 @@ function parseGeminiAgeResponse(text, facts) {
   });
 
   return {
-    overview: cleanText(normalized.overview, 900),
-    nguHanh: cleanText(normalized.nguHanh, 700),
-    thienCan: cleanText(normalized.thienCan, 700),
-    diaChi: cleanText(normalized.diaChi, 700),
-    context: cleanText(normalized.context, 700),
-    caution: cleanText(normalized.caution, 500),
-    recommendation: cleanText(normalized.recommendation, 600),
+    overview: cleanAgeAnalysisText(normalized.overview, 1500),
+    nguHanh: cleanAgeAnalysisText(normalized.nguHanh, 1400),
+    thienCan: cleanAgeAnalysisText(normalized.thienCan, 1400),
+    diaChi: cleanAgeAnalysisText(normalized.diaChi, 1400),
+    context: cleanAgeAnalysisText(normalized.context, 1200),
+    caution: cleanAgeAnalysisText(normalized.caution, 1000),
+    recommendation: cleanAgeAnalysisText(normalized.recommendation, 1000),
     _meta: {
       source: fallbackFields.length ? 'hybrid' : 'gemini',
       fallbackFields: fallbackFields
@@ -865,7 +880,7 @@ function callGeminiAgeReading(promptText, facts) {
     contents: [{ parts: [{ text: promptText }] }],
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 3000,
+      maxOutputTokens: 4500,
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',

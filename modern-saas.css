@@ -1457,13 +1457,6 @@ body.google-auth-busy { overflow: hidden; }
     line-height: 1.55;
 }
 
-.age-reading-disclaimer {
-    margin: 13px 0 0;
-    color: #8793a5;
-    font-size: .66rem;
-    line-height: 1.5;
-}
-
 .age-gemini-actions {
     margin-top: 15px;
     padding: 14px 15px;

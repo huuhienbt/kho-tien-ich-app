@@ -163,7 +163,7 @@
     const SELF_PUNISHMENT_BRANCHES = new Set([4, 6, 9, 11]);
     const BIRTH_YEAR_STORAGE_KEY = 'egv-calendar-birth-year';
     const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v2';
-    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v4';
+    const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v5';
     const AGE_READING_WEIGHTS = {
         day: { element: 0.20, stem: 0.12, branch: 0.18, total: 0.50 },
         month: { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 },
@@ -719,16 +719,10 @@
             document.getElementById('ageGeminiCaution').textContent = analysis.caution;
             document.getElementById('ageGeminiRecommendation').textContent = analysis.recommendation;
             resultBox.hidden = false;
-            const backendFallbackFields = response.analysis && response.analysis._meta && Array.isArray(response.analysis._meta.fallbackFields)
-                ? response.analysis._meta.fallbackFields : [];
             if (!versionMatches) {
                 status.hidden = false;
                 status.className = 'age-gemini-status is-warning';
                 status.textContent = 'Web App Apps Script đang dùng phiên bản luận giải cũ. E-GV đã hiển thị phần phân tích cụ thể từ dữ kiện đang xem; hãy cập nhật và triển khai Code.gs mới để nhận nội dung Gemini đầy đủ.';
-            } else if (analysis._fallbackFields.length || backendFallbackFields.length) {
-                status.hidden = false;
-                status.className = 'age-gemini-status is-warning';
-                status.textContent = 'Gemini bỏ sót một phần nội dung; E-GV đã tự bổ sung bằng dữ kiện Can Chi và điểm số đã tính để kết quả không bị chung chung.';
             } else {
                 status.hidden = true;
             }
