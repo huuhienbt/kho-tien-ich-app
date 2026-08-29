@@ -1417,6 +1417,33 @@ body.google-auth-busy { overflow: hidden; }
 .age-period-value.element-kim { color: #64748b; }
 .age-period-value.element-thuy { color: #2563eb; }
 
+.age-nap-am-value { font-weight: 800; }
+
+.age-period-value.element-moc.polarity-duong,
+.age-nap-am-value.element-moc.polarity-duong { color: #15803d; }
+.age-period-value.element-moc.polarity-am,
+.age-nap-am-value.element-moc.polarity-am { color: #22a65a; }
+
+.age-period-value.element-hoa.polarity-duong,
+.age-nap-am-value.element-hoa.polarity-duong { color: #b91c1c; }
+.age-period-value.element-hoa.polarity-am,
+.age-nap-am-value.element-hoa.polarity-am { color: #dc4b4b; }
+
+.age-period-value.element-tho.polarity-duong,
+.age-nap-am-value.element-tho.polarity-duong { color: #92400e; }
+.age-period-value.element-tho.polarity-am,
+.age-nap-am-value.element-tho.polarity-am { color: #b7791f; }
+
+.age-period-value.element-kim.polarity-duong,
+.age-nap-am-value.element-kim.polarity-duong { color: #475569; }
+.age-period-value.element-kim.polarity-am,
+.age-nap-am-value.element-kim.polarity-am { color: #7c8da3; }
+
+.age-period-value.element-thuy.polarity-duong,
+.age-nap-am-value.element-thuy.polarity-duong { color: #1d4ed8; }
+.age-period-value.element-thuy.polarity-am,
+.age-nap-am-value.element-thuy.polarity-am { color: #3b82f6; }
+
 .age-relation-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

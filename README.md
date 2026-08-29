@@ -1,4 +1,4 @@
-# E-GV v6.7 – Bổ sung dữ liệu Ngày, Tháng, Năm
+# E-GV v6.8 – Phân biệt màu nạp âm Dương và Âm
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Tự xác định âm – dương của nạp âm từ Thiên can: Giáp, Bính, Mậu, Canh, Nhâm là Dương; Ất, Đinh, Kỷ, Tân, Quý là Âm.
+- Nạp âm Dương dùng sắc độ đậm, nạp âm Âm dùng sắc độ nhạt cho cả năm hành Mộc, Hỏa, Thổ, Kim và Thủy; giao diện không thêm chữ `(Dương)` hoặc `(Âm)`.
+- Áp dụng màu nạp âm cho cả mệnh tuổi đang chọn và ba thẻ Ngày, Tháng, Năm; màu huy hiệu quan hệ vẫn độc lập để không nhầm ngũ hành với tốt – xấu.
 - Bổ sung cột dữ liệu vào từng thẻ Ngày, Tháng và Năm: nạp âm ở dòng Ngũ hành, tên Can ở dòng Thiên can và tên Chi ở dòng Địa chi.
 - Dữ liệu tự thay đổi theo ngày được chọn; nạp âm, Can và Chi được tô màu đúng ngũ hành trước khi hiển thị quan hệ với tuổi.
 - Chuyển mỗi dòng thành ba cột rõ ràng theo thứ tự `Yếu tố – Dữ liệu – Quan hệ`.
