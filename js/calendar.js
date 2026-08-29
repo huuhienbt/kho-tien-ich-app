@@ -167,6 +167,16 @@
         month: { element: 0.10, stem: 0.07, branch: 0.13, total: 0.30 },
         year: { element: 0.07, stem: 0.05, branch: 0.08, total: 0.20 }
     };
+    const RELATION_SCORES = {
+        harmony: 88,
+        support: 78,
+        same: 68,
+        neutral: 60,
+        effort: 52,
+        friction: 42,
+        harm: 38,
+        conflict: 32
+    };
     let currentAgeReading = null;
     let currentAgeReadingKey = '';
     let ageGeminiBusy = false;
@@ -265,27 +275,27 @@
         const contextElement = ELEMENT_LABELS[contextKey];
         const ageElement = ELEMENT_LABELS[ageKey];
         if (contextKey === ageKey) {
-            return makeRelation('Tỷ hòa', 'positive', 65, `${contextLabel} và mệnh tuổi cùng hành ${ageElement}, ở trạng thái tương hòa.`);
+            return makeRelation('Tỷ hòa', 'positive', RELATION_SCORES.same, `${contextLabel} và mệnh tuổi cùng hành ${ageElement}, ở trạng thái tương hòa.`);
         }
         if (ELEMENT_GENERATES[contextKey] === ageKey) {
-            return makeRelation('Tương sinh', 'positive', 80, `${contextLabel} hành ${contextElement} sinh mệnh ${ageElement}, tạo một phần hỗ trợ.`);
+            return makeRelation('Tương sinh', 'positive', RELATION_SCORES.support, `${contextLabel} hành ${contextElement} sinh mệnh ${ageElement}, tạo một phần hỗ trợ.`);
         }
         if (ELEMENT_GENERATES[ageKey] === contextKey) {
-            return makeRelation('Sinh xuất', 'caution', 35, `Mệnh ${ageElement} sinh hành ${contextElement} của ${contextLabel.toLowerCase()}, dễ hao tâm và tốn sức.`);
+            return makeRelation('Sinh xuất', 'caution', RELATION_SCORES.effort, `Mệnh ${ageElement} sinh hành ${contextElement} của ${contextLabel.toLowerCase()}, có thể phải bỏ thêm công sức nhưng không đồng nghĩa là xấu.`);
         }
         if (ELEMENT_CONTROLS[contextKey] === ageKey) {
-            return makeRelation('Tương khắc', 'negative', 10, `${contextLabel} hành ${contextElement} khắc mệnh ${ageElement}, tạo áp lực cho bản mệnh.`);
+            return makeRelation('Tương khắc', 'negative', RELATION_SCORES.conflict, `${contextLabel} hành ${contextElement} khắc mệnh ${ageElement}, là yếu tố cần lưu ý nhưng không quyết định toàn bộ kết quả.`);
         }
-        return makeRelation('Khắc xuất', 'caution', 35, `Mệnh ${ageElement} khắc hành ${contextElement} của ${contextLabel.toLowerCase()}, có thể chế ngự nhưng dễ tiêu hao sức lực.`);
+        return makeRelation('Khắc xuất', 'caution', RELATION_SCORES.effort, `Mệnh ${ageElement} khắc hành ${contextElement} của ${contextLabel.toLowerCase()}, chủ động được tình thế nhưng có thể tốn thêm công sức.`);
     }
 
     function compareStems(context, age, contextLabel) {
         const key = pairKey(context.stemIndex, age.stemIndex);
         if (context.stemIndex === age.stemIndex) {
-            return makeRelation('Tương hòa', 'positive', 65, `Can ${age.stem} của tuổi gặp can ${context.stem} của ${contextLabel.toLowerCase()}, hai can đồng hành.`);
+            return makeRelation('Tương hòa', 'positive', RELATION_SCORES.same, `Can ${age.stem} của tuổi gặp can ${context.stem} của ${contextLabel.toLowerCase()}, hai can đồng hành.`);
         }
         if (STEM_HARMONY_PAIRS.has(key)) {
-            return makeRelation('Tương hợp', 'positive', 95, `Can ${age.stem} gặp can ${context.stem} thuộc Ngũ hợp, thuận cho sự phối hợp.`);
+            return makeRelation('Tương hợp', 'positive', RELATION_SCORES.harmony, `Can ${age.stem} gặp can ${context.stem} thuộc Ngũ hợp, thuận cho sự phối hợp.`);
         }
         const relation = compareElements(STEM_ELEMENT_KEYS[context.stemIndex], STEM_ELEMENT_KEYS[age.stemIndex], contextLabel);
         if (relation.label === 'Tương sinh') relation.label = 'Sinh nhập';
@@ -297,18 +307,18 @@
     function compareBranches(context, age, contextLabel) {
         if (context.branchIndex === age.branchIndex) {
             if (SELF_PUNISHMENT_BRANCHES.has(context.branchIndex)) {
-                return makeRelation('Tự hình', 'caution', 25, `Chi ${age.branch} trùng chi ${context.branch}, tạo thế tự hình theo cách luận phổ biến.`);
+                return makeRelation('Tự hình', 'caution', RELATION_SCORES.friction, `Chi ${age.branch} trùng chi ${context.branch}, tạo thế tự hình theo cách luận phổ biến; chỉ nên xem là một điểm nhắc thận trọng.`);
             }
-            return makeRelation('Đồng chi', 'neutral', 50, `Chi ${age.branch} của tuổi trùng chi ${context.branch} của ${contextLabel.toLowerCase()}; không phải Lục hợp và tạm xét trung tính.`);
+            return makeRelation('Đồng chi', 'neutral', RELATION_SCORES.neutral, `Chi ${age.branch} của tuổi trùng chi ${context.branch} của ${contextLabel.toLowerCase()}; không phải Lục hợp và được xét ở mức cân bằng.`);
         }
 
         const key = pairKey(context.branchIndex, age.branchIndex);
         const specialRelations = [
-            ['harmony', 'Lục hợp', 'positive', 95, 'tạo thế Lục hợp, là một điểm hỗ trợ'],
-            ['clash', 'Tương xung', 'negative', 10, 'phạm tương xung, dễ phát sinh thay đổi hoặc bất đồng'],
-            ['harm', 'Tương hại', 'negative', 20, 'phạm tương hại, nên đề phòng hiểu lầm và việc phát sinh'],
-            ['punishment', 'Tương hình', 'caution', 25, 'phạm tương hình, dễ có va chạm hoặc áp lực'],
-            ['break', 'Tương phá', 'caution', 25, 'phạm tương phá, nên thận trọng với kế hoạch chưa chắc chắn']
+            ['harmony', 'Lục hợp', 'positive', RELATION_SCORES.harmony, 'tạo thế Lục hợp, là một điểm hỗ trợ'],
+            ['clash', 'Tương xung', 'negative', RELATION_SCORES.conflict, 'phạm tương xung, có thể phát sinh thay đổi hoặc bất đồng'],
+            ['harm', 'Tương hại', 'negative', RELATION_SCORES.harm, 'phạm tương hại, nên đề phòng hiểu lầm và việc phát sinh'],
+            ['punishment', 'Tương hình', 'caution', RELATION_SCORES.friction, 'phạm tương hình, có thể tạo va chạm hoặc áp lực'],
+            ['break', 'Tương phá', 'caution', RELATION_SCORES.friction, 'phạm tương phá, nên thận trọng với kế hoạch chưa chắc chắn']
         ];
         const matched = specialRelations.find(([type]) => BRANCH_RELATIONS[type].has(key));
         if (matched) {
@@ -341,42 +351,42 @@
     }
 
     function scoreLevel(score) {
-        if (score < 30) return { label: 'Không thuận', className: 'score-low' };
-        if (score < 45) return { label: 'Cần thận trọng', className: 'score-caution' };
-        if (score < 60) return { label: 'Trung bình', className: 'score-medium' };
-        if (score < 75) return { label: 'Khá thuận', className: 'score-good' };
-        if (score < 90) return { label: 'Tốt', className: 'score-good' };
-        return { label: 'Rất tốt', className: 'score-good' };
+        if (score < 40) return { label: 'Nên thận trọng', className: 'score-low' };
+        if (score < 50) return { label: 'Cần cân nhắc', className: 'score-caution' };
+        if (score < 65) return { label: 'Cân bằng', className: 'score-medium' };
+        if (score < 78) return { label: 'Khá thuận', className: 'score-good' };
+        if (score < 90) return { label: 'Thuận', className: 'score-good' };
+        return { label: 'Rất thuận', className: 'score-good' };
     }
 
     function readingSummary(score) {
-        if (score >= 75) {
+        if (score >= 78) {
             return {
                 impact: 'Ngày, tháng và năm tạo được nhiều điểm hỗ trợ cho tuổi đã chọn.',
                 note: 'Có thể ưu tiên công việc quan trọng nhưng vẫn cần chuẩn bị đầy đủ và kiểm tra chi tiết.'
             };
         }
-        if (score >= 60) {
+        if (score >= 65) {
             return {
                 impact: 'Tổng thể khá thuận, dù vẫn còn một vài yếu tố cần cân nhắc.',
                 note: 'Nên tận dụng các điểm hỗ trợ và chủ động xử lý phần chưa tương hợp.'
             };
         }
-        if (score >= 45) {
+        if (score >= 50) {
             return {
-                impact: 'Ngày có cả yếu tố thuận và nghịch, kết quả phụ thuộc nhiều vào sự chuẩn bị.',
-                note: 'Phù hợp với công việc thường ngày; nên thận trọng hơn nếu thực hiện việc quan trọng.'
+                impact: 'Các yếu tố hỗ trợ và cần lưu ý tương đối cân bằng; đây không phải dấu hiệu xấu.',
+                note: 'Có thể thực hiện công việc thường ngày; với việc quan trọng nên chuẩn bị kỹ và cân nhắc thêm điều kiện thực tế.'
             };
         }
-        if (score >= 30) {
+        if (score >= 40) {
             return {
-                impact: 'Các yếu tố bất lợi chiếm ưu thế, dễ hao tâm, tốn sức hoặc công việc tiến triển chậm.',
-                note: 'Nên chuẩn bị kỹ, kiểm tra giấy tờ và tránh quyết định việc lớn quá vội.'
+                impact: 'Một số quan hệ cho thấy công việc có thể cần thêm thời gian hoặc công sức để xử lý.',
+                note: 'Không cần lo lắng; nên kiểm tra kỹ thông tin, giữ phương án dự phòng và tránh quyết định vội.'
             };
         }
         return {
-            impact: 'Nhiều quan hệ chưa thuận với tuổi đã chọn và có thể tạo áp lực rõ rệt.',
-            note: 'Nếu có thể nên cân nhắc ngày khác; trường hợp vẫn tiến hành cần giữ bình tĩnh và dự phòng rủi ro.'
+            impact: 'Nhiều quan hệ đang nghiêng về phía cần thận trọng, nhưng không dự báo chắc chắn kết quả tốt hay xấu.',
+            note: 'Nếu là việc hệ trọng, có thể tham khảo thêm ngày khác; nếu vẫn tiến hành hãy ưu tiên chuẩn bị và phương án dự phòng.'
         };
     }
 
@@ -450,7 +460,7 @@
         document.getElementById('ageReadingDayLabel').textContent = `Đánh giá theo ngày ${readings.day.profile.name}, tháng ${readings.month.profile.name}, năm ${readings.year.profile.name}`;
         document.getElementById('ageReadingTitle').textContent = `Tuổi ${age.name}`;
         document.getElementById('ageReadingSubtitle').textContent = `Sinh năm ${year} – Mệnh ${age.napAm}`;
-        document.getElementById('ageReadingScore').textContent = `${score}%`;
+        document.getElementById('ageReadingScore').textContent = `${score}/100`;
         document.getElementById('ageReadingLevel').textContent = level.label;
         document.getElementById('ageReadingScoreBox').className = `age-score ${level.className}`;
         renderPeriodReading('Day', readings.day);
@@ -496,6 +506,65 @@
         };
     }
 
+    function extractLooseAnalysisField(source, names) {
+        const text = String(source || '');
+        for (const name of names) {
+            const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const match = new RegExp(`["']?${safeName}["']?\\s*:\\s*["']`, 'i').exec(text);
+            if (!match) continue;
+            const quote = match[0].slice(-1);
+            let value = '';
+            let escaped = false;
+            for (let index = match.index + match[0].length; index < text.length; index += 1) {
+                const character = text[index];
+                if (escaped) {
+                    value += character === 'n' ? '\n' : character;
+                    escaped = false;
+                } else if (character === '\\') {
+                    escaped = true;
+                } else if (character === quote) {
+                    break;
+                } else {
+                    value += character;
+                }
+            }
+            if (value.trim()) return value.trim();
+        }
+        return '';
+    }
+
+    function normalizeAgeGeminiAnalysis(input) {
+        let analysis = input;
+        let raw = typeof input === 'string' ? input : '';
+        if (analysis && typeof analysis === 'object' && typeof analysis.overview === 'string'
+            && /["']?overview["']?\s*:/i.test(analysis.overview)) {
+            raw = analysis.overview;
+        }
+        if (raw) {
+            const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+            try {
+                const parsed = JSON.parse(cleaned);
+                if (parsed && typeof parsed === 'object') analysis = parsed.analysis || parsed;
+            } catch (_) {
+                analysis = {
+                    overview: extractLooseAnalysisField(cleaned, ['overview', 'tongQuan', 'tổngQuan']),
+                    favorable: extractLooseAnalysisField(cleaned, ['favorable', 'support', 'diemThuan', 'điểmThuận']),
+                    influence: extractLooseAnalysisField(cleaned, ['influence', 'impact', 'anhHuong', 'ảnhHưởng']),
+                    caution: extractLooseAnalysisField(cleaned, ['caution', 'note', 'luuY', 'lưuÝ']),
+                    recommendation: extractLooseAnalysisField(cleaned, ['recommendation', 'advice', 'goiY', 'gợiÝ'])
+                };
+            }
+        }
+        if (!analysis || typeof analysis !== 'object') analysis = {};
+        return {
+            overview: String(analysis.overview || 'Gemini chưa trả về phần tổng quan.').trim(),
+            favorable: String(analysis.favorable || 'Các điểm hỗ trợ đã được thể hiện trong ba nhóm Ngũ hành, Thiên can và Địa chi ở phía trên.').trim(),
+            influence: String(analysis.influence || 'Cần xem đồng thời ảnh hưởng chính của ngày, bối cảnh tháng và ảnh hưởng nền của năm.').trim(),
+            caution: String(analysis.caution || 'Không nên xem một quan hệ riêng lẻ là kết luận chắc chắn tốt hoặc xấu.').trim(),
+            recommendation: String(analysis.recommendation || 'Hãy kết hợp kết quả tham khảo với tính chất công việc và điều kiện thực tế trước khi quyết định.').trim()
+        };
+    }
+
     async function requestAgeGeminiAnalysis() {
         if (ageGeminiBusy) return;
         if (!App.isAuthenticated()) {
@@ -527,10 +596,12 @@
                 timeoutMessage: 'Gemini phản hồi quá lâu. Vui lòng thử lại.'
             });
             if (requestedKey !== currentAgeReadingKey) return;
-            const analysis = response.analysis || {};
-            document.getElementById('ageGeminiOverview').textContent = analysis.overview || 'Gemini chưa trả về phần tổng quan.';
-            document.getElementById('ageGeminiInfluence').textContent = analysis.influence || 'Chưa có nội dung.';
-            document.getElementById('ageGeminiCaution').textContent = analysis.caution || 'Chưa có nội dung.';
+            const analysis = normalizeAgeGeminiAnalysis(response.analysis || {});
+            document.getElementById('ageGeminiOverview').textContent = analysis.overview;
+            document.getElementById('ageGeminiFavorable').textContent = analysis.favorable;
+            document.getElementById('ageGeminiInfluence').textContent = analysis.influence;
+            document.getElementById('ageGeminiCaution').textContent = analysis.caution;
+            document.getElementById('ageGeminiRecommendation').textContent = analysis.recommendation;
             resultBox.hidden = false;
             status.hidden = true;
         } catch (error) {
