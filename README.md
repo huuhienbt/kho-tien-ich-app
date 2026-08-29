@@ -1,4 +1,4 @@
-# E-GV v7.2 – Biểu đồ mức độ thuận lợi theo tháng
+# E-GV v7.4 – Tỷ trọng ngày 70%, tháng 20%, năm 10%
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Đổi tỷ trọng tính điểm thành ngày 70%, tháng 20% và năm 10% để ngày đang chọn quyết định rõ hơn kết quả so sánh trong tháng.
+- Đồng bộ công thức mới giữa giao diện, biểu đồ tháng, phần luận giải dự phòng và Apps Script; đổi phiên bản bộ nhớ tạm để không dùng lại kết quả của tỷ trọng cũ.
+- Điểm tổng được tính trực tiếp từ ba điểm thành phần đang hiển thị, nên người xem có thể kiểm tra lại đúng công thức `Ngày × 70% + Tháng × 20% + Năm × 10%`.
 - Thay biểu đồ tuần bằng biểu đồ cột toàn bộ 28–31 ngày của tháng đang xem, tính tự động theo năm sinh và cùng công thức với phần chi tiết.
 - Mỗi cột hiển thị điểm, ngày và thứ; màu cột phân biệt năm mức từ `Cần thận trọng` đến `Thuận`.
 - Ngày thường dùng màu chữ thông thường, Thứ Bảy màu xanh dương và Chủ nhật màu đỏ như tờ lịch chính.
@@ -46,7 +49,7 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 - Buộc Gemini giải thích tác động thực tế của từng quan hệ, chỉ rõ yếu tố kéo điểm lên hoặc xuống và đưa ba nhóm lời khuyên: `Có thể làm`, `Cần thận trọng`, `Nếu vẫn tiến hành`.
 - Mở rộng phần Gemini âm lịch thành 7 mục: Tổng quan, Ngũ hành, Thiên can, Địa chi, Bối cảnh ngày–tháng–năm, Điểm cần lưu ý và Gợi ý thực hiện.
 - Yêu cầu Gemini phân tích độc lập từng yếu tố theo đúng dữ kiện E-GV, không tự đổi điểm, thêm quan hệ Can Chi hoặc suy diễn Tam hợp, Tứ hành xung và quý nhân khi dữ liệu không có.
-- Bắt buộc giải thích vì sao điểm tổng đạt mức hiện tại theo trọng số ngày 50%, tháng 30% và năm 20%; mọi trường thiếu hoặc quá ngắn đều được thay bằng luận giải dự phòng đầy đủ.
+- Bắt buộc giải thích vì sao điểm tổng đạt mức hiện tại theo trọng số ngày 70%, tháng 20% và năm 10%; mọi trường thiếu hoặc quá ngắn đều được thay bằng luận giải dự phòng đầy đủ.
 - Đồng bộ một phiên bản công thức cho phần điểm phía trên và phần Gemini; máy chủ trả lại điểm tổng cùng điểm ngày, tháng, năm để giao diện đối chiếu ngay sau khi phân tích.
 - Thêm mã phiên bản vào CSS/JavaScript của trang lịch để trình duyệt không tiếp tục dùng `calendar.js` cũ sau khi triển khai.
 - Tự thay nội dung Gemini quá ngắn hoặc chỉ có dấu `–` bằng phần luận giải dự phòng đầy đủ.
@@ -60,7 +63,7 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 - Bộ đọc dự phòng nhận JSON hoàn chỉnh, JSON trong khối mã, tên trường tiếng Việt, JSON bị cắt và phản hồi thiếu trường.
 - Mục `Xem ngày theo tuổi` chỉ mở sau khi thành viên hoặc quản trị viên đăng nhập.
 - Chọn một năm sinh dạng `1992 – Nhâm Thân`; không cần tạo hoặc thêm tuổi thủ công.
-- Tự đánh giá Ngũ hành, Thiên can và Địa chi theo ba tầng: ngày 50%, tháng 30% và năm 20%.
+- Tự đánh giá Ngũ hành, Thiên can và Địa chi theo ba tầng: ngày 70%, tháng 20% và năm 10%.
 - Đổi phần trăm thành điểm tương hợp trên thang 100, lấy 50 làm mốc cân bằng; đây không phải xác suất may mắn.
 - Hiệu chỉnh thang điểm để Sinh xuất/Khắc xuất thể hiện sự hao công thay vì bị xem là quá xấu; các mức mới là Nên thận trọng, Cần cân nhắc, Cân bằng, Khá thuận, Thuận và Rất thuận.
 - Thêm nút `Phân tích bằng Gemini`; website tính dữ kiện trước, Gemini chỉ tổng hợp và diễn giải.
