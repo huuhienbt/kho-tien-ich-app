@@ -6,11 +6,11 @@
     <meta name="description" content="Âm lịch E-GV: xem ngày dương, ngày âm, Can Chi, ngũ hành và phân tích ngày theo năm sinh.">
     <meta name="theme-color" content="#2563eb">
     <title>Âm lịch – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=6.9.0">
-    <link rel="stylesheet" href="modern-saas.css?v=6.9.0">
-    <script src="js/config.js?v=6.9.0" defer></script>
-    <script src="js/app.js?v=6.9.0" defer></script>
-    <script src="js/calendar.js?v=6.9.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=7.0.0">
+    <link rel="stylesheet" href="modern-saas.css?v=7.0.0">
+    <script src="js/config.js?v=7.0.0" defer></script>
+    <script src="js/app.js?v=7.0.0" defer></script>
+    <script src="js/calendar.js?v=7.0.0" defer></script>
 </head>
 <body class="page-calendar">
     <div id="appShell"></div>
@@ -77,10 +77,22 @@
                         </div>
 
                         <div class="age-period-grid">
-                            <article class="age-period-card"><header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageDayElementValue">—</span><dd class="age-relation-badge" id="ageDayElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageDayStemValue">—</span><dd class="age-relation-badge" id="ageDayStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageDayBranchValue">—</span><dd class="age-relation-badge" id="ageDayBranch">—</dd></div></dl></article>
-                            <article class="age-period-card"><header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageMonthElementValue">—</span><dd class="age-relation-badge" id="ageMonthElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageMonthStemValue">—</span><dd class="age-relation-badge" id="ageMonthStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageMonthBranchValue">—</span><dd class="age-relation-badge" id="ageMonthBranch">—</dd></div></dl></article>
-                            <article class="age-period-card"><header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageYearElementValue">—</span><dd class="age-relation-badge" id="ageYearElement">—</dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageYearStemValue">—</span><dd class="age-relation-badge" id="ageYearStem">—</dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageYearBranchValue">—</span><dd class="age-relation-badge" id="ageYearBranch">—</dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Ảnh hưởng chính</span><h4 id="ageDayTitle">Ngày —</h4></div><strong id="ageDayScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageDayElementValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageDayElement" type="button" data-age-relation data-period="day" data-factor="element" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageDayStemValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageDayStem" type="button" data-age-relation data-period="day" data-factor="stem" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageDayBranchValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageDayBranch" type="button" data-age-relation data-period="day" data-factor="branch" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Bối cảnh tháng</span><h4 id="ageMonthTitle">Tháng —</h4></div><strong id="ageMonthScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageMonthElementValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageMonthElement" type="button" data-age-relation data-period="month" data-factor="element" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageMonthStemValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageMonthStem" type="button" data-age-relation data-period="month" data-factor="stem" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageMonthBranchValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageMonthBranch" type="button" data-age-relation data-period="month" data-factor="branch" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div></dl></article>
+                            <article class="age-period-card"><header><div><span>Ảnh hưởng nền</span><h4 id="ageYearTitle">Năm —</h4></div><strong id="ageYearScore">—/100</strong></header><dl><div><dt>Ngũ hành</dt><span class="age-period-value" id="ageYearElementValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageYearElement" type="button" data-age-relation data-period="year" data-factor="element" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Thiên can</dt><span class="age-period-value" id="ageYearStemValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageYearStem" type="button" data-age-relation data-period="year" data-factor="stem" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div><div><dt>Địa chi</dt><span class="age-period-value" id="ageYearBranchValue">—</span><dd><button class="age-relation-badge age-relation-trigger" id="ageYearBranch" type="button" data-age-relation data-period="year" data-factor="branch" aria-controls="ageRelationExplainer" aria-expanded="false">—</button></dd></div></dl></article>
                         </div>
+
+                        <section class="age-relation-explainer" id="ageRelationExplainer" aria-labelledby="ageRelationExplainerTitle" aria-live="polite" hidden>
+                            <header>
+                                <div><span>Giải thích quan hệ</span><h4 id="ageRelationExplainerTitle">—</h4></div>
+                                <button class="age-relation-close" id="ageRelationExplainerClose" type="button" aria-label="Đóng phần giải thích">×</button>
+                            </header>
+                            <div class="age-relation-explainer-grid">
+                                <article><span>Đối chiếu</span><p id="ageRelationComparison">—</p></article>
+                                <article><span>Cơ chế</span><p id="ageRelationMechanism">—</p></article>
+                                <article><span>Ảnh hưởng</span><p id="ageRelationImpact">—</p></article>
+                            </div>
+                        </section>
 
                         <div class="age-reading-summary"><div><span>Ảnh hưởng</span><p id="ageReadingImpact">—</p></div><div><span>Lưu ý</span><p id="ageReadingNote">—</p></div></div>
                         <div class="age-gemini-actions">
