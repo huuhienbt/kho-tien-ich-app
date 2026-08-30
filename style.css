@@ -197,6 +197,24 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .prompt-use-option small { margin-top: 2px; color: var(--text-light); font-size: .7rem; }
 .prompt-use-icon { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; border-radius: 12px; background: linear-gradient(145deg,#4f46e5,#7c3aed); font-size: 1.15rem; font-weight: 800; }
 .prompt-use-note { margin: 14px 0 0; padding: 11px 12px; color: #475569; border-radius: 11px; background: #f8fafc; font-size: .75rem; }
+.prompt-use-section-label { margin: 0 0 8px; color: #64748b; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.prompt-use-more { width: 100%; min-height: 48px; margin-top: 11px; padding: 9px 40px 9px 13px; display: flex; align-items: center; gap: 8px; position: relative; color: #334155; border: 1px solid #dbe3ee; border-radius: 12px; background: #f8fafc; cursor: pointer; font: inherit; text-align: left; }
+.prompt-use-more span { font-size: .78rem; font-weight: 800; }
+.prompt-use-more b { margin-left: auto; color: #64748b; font-size: .68rem; font-weight: 700; }
+.prompt-use-more i { position: absolute; right: 15px; color: #64748b; font-size: 1rem; font-style: normal; transition: transform 160ms ease; }
+.prompt-use-more.open i { transform: rotate(180deg); }
+.prompt-use-more:hover { color: #4338ca; border-color: #c7d2fe; background: #eef2ff; }
+.prompt-use-options.is-other { max-height: 314px; margin-top: 10px; padding-right: 3px; grid-template-columns: repeat(2,minmax(0,1fr)); overflow-y: auto; }
+.prompt-use-options.is-other .prompt-use-option { min-height: 58px; padding: 8px; grid-template-columns: 34px minmax(0,1fr) auto; gap: 8px; }
+.prompt-use-options.is-other .prompt-use-icon { width: 34px; height: 34px; border-radius: 10px; font-size: .9rem; }
+.prompt-use-options.is-other .prompt-use-option strong { font-size: .75rem; line-height: 1.25; }
+.prompt-use-options.is-other .prompt-use-option small { display: none; }
+.prompt-use-options[hidden] { display: none; }
+#usePromptModal .modal-sm { width: min(100%,480px); }
+
+@media (max-width: 480px) {
+    .prompt-use-options.is-other { grid-template-columns: 1fr; }
+}
 
 /* Repairs */
 .repair-summary { margin-bottom: 16px; }

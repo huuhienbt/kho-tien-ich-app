@@ -32,6 +32,9 @@
     const container = document.getElementById('promptContainer');
     const usePromptHelp = document.getElementById('usePromptHelp');
     const usePromptOptions = document.getElementById('usePromptOptions');
+    const useOtherPromptOptions = document.getElementById('useOtherPromptOptions');
+    const useOtherPlatformsButton = document.getElementById('useOtherPlatformsButton');
+    const useOtherPlatformsCount = document.getElementById('useOtherPlatformsCount');
     const categoryNames = { teaching: 'Giảng dạy', admin: 'Hành chính', coding: 'Lập trình', media: 'Media', diy: 'DIY' };
     const promptDestinations = Object.freeze({
         chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'] },
@@ -70,12 +73,6 @@
         return matches.length ? matches : ['chatgpt', 'gemini'];
     }
 
-    function isMobileDevice() {
-        if (navigator.userAgentData?.mobile) return true;
-        if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) return true;
-        return window.matchMedia?.('(max-width: 820px) and (pointer: coarse)').matches || false;
-    }
-
     async function copyText(text) {
         if (navigator.clipboard?.writeText && window.isSecureContext) {
             await navigator.clipboard.writeText(text);
@@ -93,15 +90,25 @@
         if (!copied) throw new Error('Trình duyệt không cho phép sao chép.');
     }
 
-    function showUsePromptChooser(item) {
-        pendingUseItem = item;
-        const title = readField(item, ['title', 'Title'], 'Prompt');
-        const keys = destinationKeys(item);
-        usePromptHelp.textContent = `Chọn nơi sử dụng “${title}”.`;
-        usePromptOptions.innerHTML = keys.map(key => {
+    function renderPromptDestinations(keys) {
+        return keys.map(key => {
             const destination = promptDestinations[key];
             return `<button class="prompt-use-option" type="button" data-prompt-destination="${key}"><span class="prompt-use-icon" aria-hidden="true">${destination.icon}</span><span><strong>Mở ${destination.label}</strong><small>Sao chép Prompt và mở nền tảng</small></span><span aria-hidden="true">→</span></button>`;
         }).join('');
+    }
+
+    function showUsePromptChooser(item) {
+        pendingUseItem = item;
+        const title = readField(item, ['title', 'Title'], 'Prompt');
+        const recommendedKeys = destinationKeys(item);
+        const otherKeys = Object.keys(promptDestinations).filter(key => !recommendedKeys.includes(key));
+        usePromptHelp.textContent = `Chọn nơi sử dụng “${title}”.`;
+        usePromptOptions.innerHTML = renderPromptDestinations(recommendedKeys);
+        useOtherPromptOptions.innerHTML = renderPromptDestinations(otherKeys);
+        useOtherPromptOptions.hidden = true;
+        useOtherPlatformsButton.classList.remove('open');
+        useOtherPlatformsButton.setAttribute('aria-expanded', 'false');
+        useOtherPlatformsCount.textContent = `${otherKeys.length} lựa chọn`;
         App.openModal('usePromptModal');
     }
 
@@ -128,23 +135,7 @@
     async function usePrompt(item) {
         const prompt = String(readField(item, ['content', 'Content']));
         if (!prompt) return App.toast('Prompt này chưa có nội dung.', 'error');
-
-        if (isMobileDevice() && typeof navigator.share === 'function') {
-            try {
-                await navigator.share({
-                    title: `Prompt: ${readField(item, ['title', 'Title'], 'E-GV')}`,
-                    text: prompt
-                });
-                App.toast('Đã chuyển Prompt đến ứng dụng thầy chọn.', 'success');
-                return;
-            } catch (error) {
-                if (error?.name === 'AbortError') return;
-            }
-        }
-
-        const keys = destinationKeys(item);
-        if (keys.length === 1) launchPrompt(item, keys[0]);
-        else showUsePromptChooser(item);
+        showUsePromptChooser(item);
     }
 
     function updateCounts() {
@@ -381,6 +372,17 @@
         if (actionButton.dataset.action === 'delete') App.requireAdmin(() => deletePrompt(id));
     });
     usePromptOptions.addEventListener('click', event => {
+        const button = event.target.closest('[data-prompt-destination]');
+        if (!button || !pendingUseItem) return;
+        launchPrompt(pendingUseItem, button.dataset.promptDestination);
+    });
+    useOtherPlatformsButton.addEventListener('click', () => {
+        const expanded = useOtherPromptOptions.hidden;
+        useOtherPromptOptions.hidden = !expanded;
+        useOtherPlatformsButton.classList.toggle('open', expanded);
+        useOtherPlatformsButton.setAttribute('aria-expanded', String(expanded));
+    });
+    useOtherPromptOptions.addEventListener('click', event => {
         const button = event.target.closest('[data-prompt-destination]');
         if (!button || !pendingUseItem) return;
         launchPrompt(pendingUseItem, button.dataset.promptDestination);

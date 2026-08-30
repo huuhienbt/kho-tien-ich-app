@@ -1,4 +1,4 @@
-# E-GV v7.9 – Bổ sung nền tảng Prompt phổ biến
+# E-GV v8.0 – Chọn mọi nền tảng khi sử dụng Prompt
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Thiết kế lại cửa sổ `Sử dụng Prompt`: nền tảng đã lưu cho Prompt được ưu tiên ở phía trên, các nền tảng còn lại nằm trong nút `Nền tảng khác`.
+- Cho phép mở rộng danh sách và sử dụng Prompt với toàn bộ nền tảng đã hỗ trợ; danh sách phụ hiển thị hai cột trên máy tính và một cột trên điện thoại.
+- Luôn mở cửa sổ chọn nền tảng khi bấm `Sử dụng`, kể cả khi Prompt chỉ được gán cho một nền tảng.
 - Bổ sung NotebookLM, Grok, Microsoft Copilot, DeepSeek, Canva, Perplexity và Gamma vào trường `Nền tảng` của Kho Prompt.
 - Sắp xếp danh sách thành hai nhóm `Trợ lý AI` và `Học tập và sáng tạo` để dễ chọn.
 - Nút `Sử dụng` nhận đúng từng nền tảng mới, tự sao chép Prompt rồi mở trang tương ứng.

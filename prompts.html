@@ -6,11 +6,11 @@
     <meta name="description" content="Kho lưu trữ và quản lý câu lệnh AI dành cho giáo viên.">
     <meta name="theme-color" content="#2563eb">
     <title>Kho Prompt – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=7.9.0">
-    <link rel="stylesheet" href="modern-saas.css?v=7.9.0">
-    <script src="js/config.js?v=7.9.0" defer></script>
-    <script src="js/app.js?v=7.9.0" defer></script>
-    <script src="js/prompts.js?v=7.9.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=8.0.0">
+    <link rel="stylesheet" href="modern-saas.css?v=8.0.0">
+    <script src="js/config.js?v=8.0.0" defer></script>
+    <script src="js/app.js?v=8.0.0" defer></script>
+    <script src="js/prompts.js?v=8.0.0" defer></script>
 </head>
 <body class="page-prompts">
     <div id="appShell"></div>
@@ -67,7 +67,10 @@
         <div class="modal-content modal-sm">
             <div class="modal-header"><h2 class="modal-title" id="usePromptModalTitle">Sử dụng Prompt</h2><button class="modal-close" type="button" data-close-modal="usePromptModal" aria-label="Đóng">×</button></div>
             <p class="modal-help" id="usePromptHelp">Chọn nền tảng AI muốn mở.</p>
+            <p class="prompt-use-section-label">Phù hợp với Prompt</p>
             <div class="prompt-use-options" id="usePromptOptions"></div>
+            <button class="prompt-use-more" id="useOtherPlatformsButton" type="button" aria-expanded="false" aria-controls="useOtherPromptOptions"><span>Nền tảng khác</span><b id="useOtherPlatformsCount">0 lựa chọn</b><i aria-hidden="true">⌄</i></button>
+            <div class="prompt-use-options is-other" id="useOtherPromptOptions" hidden></div>
             <p class="prompt-use-note">Prompt sẽ được sao chép trước khi mở nền tảng. Tại ô chat, thầy chỉ cần chọn <strong>Dán</strong> hoặc nhấn <strong>Ctrl + V</strong>.</p>
         </div>
     </div>
