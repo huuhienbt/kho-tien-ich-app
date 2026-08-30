@@ -15,7 +15,7 @@ const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
 function doGet(e) {
   try {
     const type = String((e && e.parameter && e.parameter.type) || 'prompts').toLowerCase();
-    if (type === 'repairs') return createResponse({ status: 'success', data: getSheetObjects('Repairs').reverse() });
+    if (type === 'repairs') return createResponse({ status: 'success', data: getPublicRepairItems(), restricted: true });
     if (type !== 'prompts') return createResponse({ status: 'error', message: 'Loại dữ liệu không hợp lệ.' });
 
     ensureSheet('Prompts', PROMPT_HEADERS);
@@ -30,6 +30,17 @@ function doGet(e) {
   } catch (error) {
     return createResponse({ status: 'error', message: safeError(error) });
   }
+}
+
+function getPublicRepairItems() {
+  ensureSheet('Repairs', REPAIR_HEADERS);
+  return getSheetObjects('Repairs').reverse().map(function (item) {
+    return {
+      id: String(readInsensitive(item, 'id') || ''),
+      task: String(readInsensitive(item, 'task') || ''),
+      status: String(readInsensitive(item, 'status') || '')
+    };
+  });
 }
 
 function doPost(e) {
@@ -58,6 +69,13 @@ function doPost(e) {
         data: getSheetObjects('Prompts').reverse(),
         favorites: getFavoritePromptIds(principal)
       });
+    }
+
+    if (action === 'get_repairs') {
+      const principal = resolvePrincipal(payload);
+      if (!principal) return createResponse({ status: 'error', message: 'Vui lòng đăng nhập để xem chi tiết nhật ký sửa chữa.' });
+      ensureSheet('Repairs', REPAIR_HEADERS);
+      return createResponse({ status: 'success', data: getSheetObjects('Repairs').reverse(), restricted: false });
     }
 
     if (action === 'toggle_favorite') return handleToggleFavorite(payload, data);

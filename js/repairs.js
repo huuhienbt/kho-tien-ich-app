@@ -3,8 +3,19 @@
 
     App.init('repairs');
 
-    const state = { items: [], query: '', status: 'all', editId: null };
+    const state = { items: [], query: '', status: 'all', editId: null, detailsVisible: false, loadSequence: 0 };
     const container = document.getElementById('repairContainer');
+    const detailsGate = document.getElementById('repairDetailsGate');
+    const searchInput = document.getElementById('repairSearch');
+    const PUBLIC_CACHE_KEY = 'cache_repairs_public_v1';
+
+    function publicRepairItem(item) {
+        return {
+            id: String(item?.id || ''),
+            task: String(item?.task || ''),
+            status: String(item?.status || '')
+        };
+    }
 
     function parseDateObject(value) {
         if (!value) return null;
@@ -69,13 +80,25 @@
         document.getElementById('repairTotal').textContent = state.items.length;
         document.getElementById('repairPending').textContent = state.items.filter(item => item.status !== 'Đã hoàn thành').length;
         document.getElementById('repairWatch').textContent = state.items.filter(item => item.status === 'Cần theo dõi').length;
-        document.getElementById('repairCost').textContent = formatMoney(state.items.reduce((total, item) => total + numberValue(item.cost), 0));
+        document.getElementById('repairCost').textContent = state.detailsVisible
+            ? formatMoney(state.items.reduce((total, item) => total + numberValue(item.cost), 0))
+            : '🔒';
+        document.getElementById('repairCostHint').textContent = state.detailsVisible ? 'Theo dữ liệu đang lưu' : 'Đăng nhập để xem';
+    }
+
+    function updateAccessUi() {
+        detailsGate.hidden = state.detailsVisible;
+        searchInput.placeholder = state.detailsVisible
+            ? 'Tìm công việc, lớp hoặc đơn vị sửa chữa…'
+            : 'Tìm theo công việc hoặc trạng thái…';
     }
 
     function filteredItems() {
         const query = state.query.toLocaleLowerCase('vi');
         return [...state.items].filter(item => {
-            const haystack = `${item.task || ''} ${item.location || ''} ${item.vendor || ''} ${item.reporter || ''} ${item.note || ''}`.toLocaleLowerCase('vi');
+            const haystack = state.detailsVisible
+                ? `${item.task || ''} ${item.location || ''} ${item.vendor || ''} ${item.reporter || ''} ${item.note || ''}`.toLocaleLowerCase('vi')
+                : `${item.task || ''} ${item.status || ''}`.toLocaleLowerCase('vi');
             return (state.status === 'all' || item.status === state.status) && (!query || haystack.includes(query));
         }).sort((a, b) => {
             const aDate = parseDateObject(a.date)?.getTime() || 0;
@@ -92,6 +115,15 @@
         }
         container.innerHTML = items.map(item => {
             const id = App.escapeHTML(item.id);
+            if (!state.detailsVisible) {
+                return `<article class="card repair-card repair-card-public" data-id="${id}">
+                    <div class="card-header">
+                        <h2 class="card-title">${App.escapeHTML(item.task || 'Chưa nhập công việc')}</h2>
+                        <span class="status-badge ${statusClass(item.status)}">${App.escapeHTML(item.status || 'Chưa rõ')}</span>
+                    </div>
+                    <div class="repair-private-placeholder"><span aria-hidden="true">🔒</span><p>Đăng nhập để xem ngày ghi nhận, lớp/phòng, chi phí, đơn vị sửa/mua, bảo hành và ghi chú.</p></div>
+                </article>`;
+            }
             const warranty = warrantyInfo(item.date, item.warranty);
             const imageUrl = App.safeUrl(item.image_url);
             return `<article class="card repair-card" data-id="${id}">
@@ -117,19 +149,58 @@
     }
 
     async function loadData() {
-        const cache = localStorage.getItem('cache_repairs');
-        if (cache) {
-            try { state.items = JSON.parse(cache); updateSummary(); render(); } catch (_) { localStorage.removeItem('cache_repairs'); }
+        const sequence = ++state.loadSequence;
+        const authenticated = App.isAuthenticated();
+        localStorage.removeItem('cache_repairs');
+
+        if (!authenticated) {
+            // Loại bỏ dữ liệu riêng tư khỏi bộ nhớ giao diện ngay khi đăng xuất.
+            state.detailsVisible = false;
+            state.items = state.items.map(publicRepairItem);
+            updateAccessUi();
+            updateSummary();
+            render();
+            const cache = localStorage.getItem(PUBLIC_CACHE_KEY);
+            if (cache) {
+                try {
+                    state.items = JSON.parse(cache).map(publicRepairItem);
+                    updateAccessUi();
+                    updateSummary();
+                    render();
+                } catch (_) {
+                    localStorage.removeItem(PUBLIC_CACHE_KEY);
+                }
+            }
         }
+
+        container.setAttribute('aria-busy', 'true');
         try {
-            const result = await App.apiGet('repairs');
-            state.items = Array.isArray(result.data) ? result.data : [];
-            localStorage.setItem('cache_repairs', JSON.stringify(state.items));
+            let detailsVisible = authenticated;
+            let result;
+            if (authenticated) {
+                try {
+                    result = await App.apiPost('get_repairs', {}, { userAuth: true });
+                } catch (error) {
+                    detailsVisible = false;
+                    result = await App.apiGet('repairs');
+                    App.toast('Chưa thể xác minh quyền xem chi tiết. Vui lòng cập nhật Code.gs mới.', 'error');
+                }
+            } else {
+                result = await App.apiGet('repairs');
+            }
+            if (sequence !== state.loadSequence) return;
+            const data = Array.isArray(result.data) ? result.data : [];
+            state.detailsVisible = detailsVisible;
+            state.items = detailsVisible ? data : data.map(publicRepairItem);
+            if (!detailsVisible) localStorage.setItem(PUBLIC_CACHE_KEY, JSON.stringify(state.items));
+            updateAccessUi();
             updateSummary();
             render();
         } catch (error) {
             if (!state.items.length) container.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>${App.escapeHTML(error.message)}</div>`;
             App.toast('Không thể cập nhật nhật ký mới.', 'error');
+        } finally {
+            if (sequence === state.loadSequence) container.removeAttribute('aria-busy');
         }
     }
 
@@ -175,6 +246,7 @@
             App.closeModal('repairModal');
             state.editId = null;
             localStorage.removeItem('cache_repairs');
+            localStorage.removeItem(PUBLIC_CACHE_KEY);
             App.toast('Đã lưu báo cáo.', 'success');
             await loadData();
         } catch (error) {
@@ -190,7 +262,8 @@
         try {
             await App.apiPost('delete', { id }, { auth: true, sheetType: 'repairs' });
             state.items = state.items.filter(item => String(item.id) !== String(id));
-            localStorage.setItem('cache_repairs', JSON.stringify(state.items));
+            localStorage.removeItem('cache_repairs');
+            localStorage.removeItem(PUBLIC_CACHE_KEY);
             updateSummary();
             render();
             App.toast('Đã xóa báo cáo.', 'success');
@@ -200,8 +273,9 @@
     }
 
     document.getElementById('addRepairButton').addEventListener('click', () => App.requireAdmin(() => openForm()));
+    document.getElementById('repairLoginButton').addEventListener('click', () => App.requireUser());
     document.getElementById('repairForm').addEventListener('submit', saveRepair);
-    document.getElementById('repairSearch').addEventListener('input', App.debounce(event => { state.query = event.target.value.trim(); render(); }));
+    searchInput.addEventListener('input', App.debounce(event => { state.query = event.target.value.trim(); render(); }));
     document.getElementById('repairStatus').addEventListener('change', event => { state.status = event.target.value; render(); });
     container.addEventListener('click', event => {
         const action = event.target.closest('[data-action]');
@@ -212,5 +286,6 @@
         if (action.dataset.action === 'delete') App.requireAdmin(() => deleteRepair(id));
     });
 
+    window.addEventListener('app:auth-change', loadData);
     loadData();
 })();

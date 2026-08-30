@@ -6,11 +6,11 @@
     <meta name="description" content="Nhật ký theo dõi sửa chữa, bảo hành và chi phí cơ sở vật chất.">
     <meta name="theme-color" content="#2563eb">
     <title>Nhật ký sửa chữa – E-GV</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="modern-saas.css">
-    <script src="js/config.js" defer></script>
-    <script src="js/app.js" defer></script>
-    <script src="js/repairs.js" defer></script>
+    <link rel="stylesheet" href="style.css?v=8.1.0">
+    <link rel="stylesheet" href="modern-saas.css?v=8.1.0">
+    <script src="js/config.js?v=8.1.0" defer></script>
+    <script src="js/app.js?v=8.1.0" defer></script>
+    <script src="js/repairs.js?v=8.1.0" defer></script>
 </head>
 <body class="page-repairs">
     <div id="appShell"></div>
@@ -25,7 +25,13 @@
                 <article class="stat-card"><span class="stat-label">Tổng hạng mục</span><strong class="stat-value" id="repairTotal">—</strong><div class="stat-hint">Tất cả báo cáo</div></article>
                 <article class="stat-card"><span class="stat-label">Đang chờ</span><strong class="stat-value" id="repairPending">—</strong><div class="stat-hint">Chưa hoàn thành</div></article>
                 <article class="stat-card"><span class="stat-label">Cần theo dõi</span><strong class="stat-value" id="repairWatch">—</strong><div class="stat-hint">Cần kiểm tra lại</div></article>
-                <article class="stat-card"><span class="stat-label">Tổng chi phí</span><strong class="stat-value" id="repairCost">—</strong><div class="stat-hint">Theo dữ liệu đang lưu</div></article>
+                <article class="stat-card"><span class="stat-label">Tổng chi phí</span><strong class="stat-value" id="repairCost">—</strong><div class="stat-hint" id="repairCostHint">Theo dữ liệu đang lưu</div></article>
+            </section>
+
+            <section class="repair-auth-gate" id="repairDetailsGate" aria-labelledby="repairDetailsGateTitle">
+                <span class="repair-auth-lock" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+                <div><strong id="repairDetailsGateTitle">Đăng nhập để xem thông tin chi tiết</strong><p>Ngày ghi nhận, lớp/phòng, chi phí, đơn vị sửa/mua, bảo hành, thời hạn bảo hành và ghi chú chỉ dành cho thành viên.</p></div>
+                <button class="btn btn-primary" id="repairLoginButton" type="button">Đăng nhập</button>
             </section>
 
             <section class="panel toolbar" aria-label="Tìm kiếm và lọc sửa chữa">

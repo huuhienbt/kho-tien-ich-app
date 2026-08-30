@@ -224,6 +224,21 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .repair-detail-label { display: block; margin-bottom: 3px; color: var(--text-light); font-size: .68rem; font-weight: 700; }
 .repair-detail-value { font-size: .82rem; font-weight: 650; overflow-wrap: anywhere; }
 .repair-note { margin: 12px 0 0; padding: 11px 13px; border-left: 3px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: .82rem; }
+.repair-auth-gate { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 14px; margin-bottom: 16px; padding: 16px 18px; border: 1px solid #dbeafe; border-radius: 16px; background: linear-gradient(135deg,#eff6ff,#f5f3ff); }
+.repair-auth-gate[hidden] { display: none; }
+.repair-auth-lock { width: 46px; height: 46px; display: grid; place-items: center; color: #2563eb; border-radius: 13px; background: #fff; box-shadow: 0 7px 18px rgba(37,99,235,.1); }
+.repair-auth-lock svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.repair-auth-gate strong { display: block; color: #1e293b; font-size: .88rem; }
+.repair-auth-gate p { margin: 4px 0 0; color: #64748b; font-size: .75rem; line-height: 1.5; }
+.repair-private-placeholder { min-height: 76px; display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 13px 14px; color: #64748b; border: 1px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; }
+.repair-private-placeholder > span { flex: 0 0 auto; font-size: 1rem; }
+.repair-private-placeholder p { margin: 0; font-size: .75rem; line-height: 1.5; }
+.repair-card-public { min-height: 0; }
+
+@media (max-width: 600px) {
+    .repair-auth-gate { grid-template-columns: auto minmax(0,1fr); padding: 14px; }
+    .repair-auth-gate .btn { grid-column: 1 / -1; width: 100%; }
+}
 .status-done { color: #047857; background: #d1fae5; }
 .status-waiting { color: #a16207; background: #fef3c7; }
 .status-watch { color: #b45309; background: #ffedd5; }

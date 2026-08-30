@@ -1,4 +1,4 @@
-# E-GV v8.0 – Chọn mọi nền tảng khi sử dụng Prompt
+# E-GV v8.1 – Bảo vệ chi tiết Nhật ký sửa chữa
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Người chưa đăng nhập chỉ nhận và xem tên công việc cùng trạng thái sửa chữa; máy chủ không trả về các trường chi tiết.
+- Sau khi đăng nhập thành viên hoặc quản trị viên, website gọi API có xác thực để tải ngày ghi nhận, lớp/phòng, chi phí, đơn vị sửa/mua, bảo hành, thời hạn bảo hành, người báo, ảnh và ghi chú.
+- Tổng chi phí được khóa khi chưa đăng nhập; bộ nhớ tạm cũ chứa dữ liệu đầy đủ được tự xóa và dữ liệu riêng tư không còn lưu lâu dài trên trình duyệt.
 - Thiết kế lại cửa sổ `Sử dụng Prompt`: nền tảng đã lưu cho Prompt được ưu tiên ở phía trên, các nền tảng còn lại nằm trong nút `Nền tảng khác`.
 - Cho phép mở rộng danh sách và sử dụng Prompt với toàn bộ nền tảng đã hỗ trợ; danh sách phụ hiển thị hai cột trên máy tính và một cột trên điện thoại.
 - Luôn mở cửa sổ chọn nền tảng khi bấm `Sử dụng`, kể cả khi Prompt chỉ được gán cho một nền tảng.
