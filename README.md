@@ -1,4 +1,4 @@
-# E-GV v8.1 – Bảo vệ chi tiết Nhật ký sửa chữa
+# E-GV v8.2 – Số tiết và thời lượng trong Trợ giảng AI
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Thêm hai trường `Số tiết` và `Thời lượng mỗi tiết (phút)` trong phần Thông tin bài học của Trợ giảng AI; mặc định 1 tiết, 35 phút.
+- Gửi chính xác hai giá trị đến Gemini, tính tổng thời lượng và yêu cầu AI phân bổ số phút hợp lý cho từng hoạt động; bài nhiều tiết được chia rõ theo từng tiết.
+- Chuẩn hóa lại phần đầu kết quả để số tiết và thời lượng luôn khớp với dữ liệu giáo viên đã chọn, kể cả khi Gemini tự trả về giá trị khác.
 - Người chưa đăng nhập chỉ nhận và xem tên công việc cùng trạng thái sửa chữa; máy chủ không trả về các trường chi tiết.
 - Sau khi đăng nhập thành viên hoặc quản trị viên, website gọi API có xác thực để tải ngày ghi nhận, lớp/phòng, chi phí, đơn vị sửa/mua, bảo hành, thời hạn bảo hành, người báo, ảnh và ghi chú.
 - Tổng chi phí được khóa khi chưa đăng nhập; bộ nhớ tạm cũ chứa dữ liệu đầy đủ được tự xóa và dữ liệu riêng tư không còn lưu lâu dài trên trình duyệt.

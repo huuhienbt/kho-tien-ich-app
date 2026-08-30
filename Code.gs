@@ -960,12 +960,37 @@ function callGeminiAgeReading(promptText, facts) {
   throw new Error('Gemini hiện chưa sẵn sàng. ' + lastMessage);
 }
 
+function enforceLessonPlanTiming(text, periods, durationText) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n').filter(function (line) {
+    const plain = String(line || '').replace(/\*\*/g, '').trim();
+    return !/^Số\s+tiết\s*:/i.test(plain) && !/^Thời\s+lượng\s*:/i.test(plain);
+  });
+  const periodLine = '**Số tiết:** ' + periods;
+  const durationLine = '**Thời lượng:** ' + durationText;
+
+  let insertAt = lines.findIndex(function (line) {
+    return /^\s*(?:\*\*)?Tên\s+bài(?:\*\*)?\s*:/i.test(String(line || ''));
+  });
+  if (insertAt < 0) {
+    insertAt = lines.findIndex(function (line) { return /KẾ\s+HOẠCH\s+BÀI\s+DẠY/i.test(String(line || '')); });
+  }
+  insertAt = insertAt < 0 ? 0 : insertAt + 1;
+  lines.splice(insertAt, 0, periodLine, durationLine);
+  return lines.join('\n').trim();
+}
+
 function handleLessonPlan(data) {
   const apiKeys = getGeminiApiKeys();
   const model = getSetting('GEMINI_MODEL', false, 'gemini-3.6-flash');
   const subject = cleanText(data.subject || '', 120);
   const grade = cleanText(data.grade || '', 30);
   const lesson = cleanText(data.lesson || '', 220);
+  const periods = Math.min(12, Math.max(1, Math.round(Number(data.periods) || 1)));
+  const minutesPerPeriod = Math.min(120, Math.max(20, Math.round(Number(data.minutesPerPeriod) || 35)));
+  const totalMinutes = periods * minutesPerPeriod;
+  const durationText = periods === 1
+    ? '1 tiết (' + minutesPerPeriod + ' phút)'
+    : periods + ' tiết (mỗi tiết ' + minutesPerPeriod + ' phút, tổng ' + totalMinutes + ' phút)';
   const integrated = cleanText(data.integrated || 'Không', 1200);
   const images = Array.isArray(data.images) ? data.images.slice(0, 12) : [];
 
@@ -976,6 +1001,9 @@ THÔNG TIN GỢI Ý (Nếu có):
 - Môn: ${subject || 'Tự động trích xuất từ ảnh'}
 - Lớp: ${grade || 'Tự động trích xuất từ ảnh'}
 - Tên bài: ${lesson || 'Tự động trích xuất từ ảnh'}
+- Số tiết: ${periods}
+- Thời lượng mỗi tiết: ${minutesPerPeriod} phút
+- Tổng thời lượng: ${totalMinutes} phút
 - Nội dung tích hợp: ${integrated || 'Không'}
 
 YÊU CẦU PHÂN TÍCH VÀ SOẠN BÀI CHUYÊN SÂU:
@@ -995,6 +1023,10 @@ YÊU CẦU PHÂN TÍCH VÀ SOẠN BÀI CHUYÊN SÂU:
    - Mỗi nội dung phải phù hợp tự nhiên với kiến thức và hoạt động của bài, không lồng ghép hình thức hoặc gượng ép.
    - Phải thể hiện bằng yêu cầu cần đạt, câu hỏi, tình huống hoặc việc làm cụ thể của HS trong hoạt động phù hợp; không chỉ liệt kê lại tên nội dung.
    - Nếu có nhiều lựa chọn, ưu tiên 1–2 nội dung liên quan trực tiếp nhất để bài học không bị quá tải.
+7. QUY TẮC THỜI LƯỢNG:
+   - Giữ chính xác ${periods} tiết, mỗi tiết ${minutesPerPeriod} phút; không tự thay đổi số tiết hoặc thời lượng.
+   - Phân bổ các hoạt động hợp lý trong tổng ${totalMinutes} phút và ghi số phút dự kiến ngay sau tên từng hoạt động.
+   - Nếu bài có từ 2 tiết trở lên, ghi rõ **TIẾT 1**, **TIẾT 2**... và phân chia nội dung tương ứng; không dồn toàn bộ hoạt động vào một tiết.
 
 CẤU TRÚC KẾ HOẠCH BÀI DẠY BẮT BUỘC (Trình bày y hệt như sau):
 
@@ -1002,7 +1034,8 @@ CẤU TRÚC KẾ HOẠCH BÀI DẠY BẮT BUỘC (Trình bày y hệt như sau):
 **Môn:** [Tìm trong hình điền vào]
 **Lớp:** [Tìm trong hình điền vào]
 **Tên bài:** [Tìm trong hình điền vào]
-**Thời lượng:** [Tự cân đối thời lượng trong bài, ví dụ: 1 tiết (35 phút)]
+**Số tiết:** ${periods}
+**Thời lượng:** ${durationText}
 
 I. YÊU CẦU CẦN ĐẠT
 1. Năng lực chung.
@@ -1091,7 +1124,7 @@ IV. ĐIỀU CHỈNH SAU BÀI DẠY (nếu có):
 
     if (responseCode >= 200 && responseCode < 300 && result.candidates && result.candidates.length) {
       const text = ((result.candidates[0].content && result.candidates[0].content.parts) || []).map(function (part) { return part.text || ''; }).join('\n').trim();
-      if (text) return createResponse({ status: 'success', result: text });
+      if (text) return createResponse({ status: 'success', result: enforceLessonPlanTiming(text, periods, durationText) });
       lastMessage = 'Gemini trả về nội dung rỗng.';
       break;
     }

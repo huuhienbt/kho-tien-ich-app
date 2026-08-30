@@ -157,6 +157,7 @@ body.admin-logged-in .admin-only { display: inline-flex !important; }
 .tab-count { margin-left: 4px; opacity: .78; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { color: #334155; font-size: .79rem; font-weight: 700; }
+.form-help { color: var(--text-light); font-size: .68rem; line-height: 1.4; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
 .full-width { grid-column: 1/-1; }
 textarea.form-control { resize: vertical; min-height: 112px; }

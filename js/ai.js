@@ -231,7 +231,15 @@
         const subject = document.getElementById('aiSubject').value.trim();
         const grade = document.getElementById('aiClass').value.trim();
         const lesson = document.getElementById('aiLesson').value.trim();
+        const periods = Number(document.getElementById('aiPeriods').value);
+        const minutesPerPeriod = Number(document.getElementById('aiMinutesPerPeriod').value);
         if (!subject && !lesson && !state.images.length) return App.toast('Nhập thông tin bài học hoặc cung cấp ít nhất một ảnh.', 'error');
+        if (!Number.isInteger(periods) || periods < 1 || periods > 12) return App.toast('Số tiết phải là số nguyên từ 1 đến 12.', 'error');
+        if (!Number.isInteger(minutesPerPeriod) || minutesPerPeriod < 20 || minutesPerPeriod > 120) return App.toast('Thời lượng mỗi tiết phải từ 20 đến 120 phút.', 'error');
+        const totalMinutes = periods * minutesPerPeriod;
+        const durationText = periods === 1
+            ? `1 tiết (${minutesPerPeriod} phút)`
+            : `${periods} tiết (mỗi tiết ${minutesPerPeriod} phút, tổng ${totalMinutes} phút)`;
         const original = generateButton.textContent;
         generateButton.disabled = true;
         document.getElementById('aiPlaceholder').hidden = false;
@@ -250,12 +258,14 @@
                 subject,
                 grade,
                 lesson,
+                periods,
+                minutesPerPeriod,
                 integrated: integrated.join(', '),
                 images
             }, { auth: true });
             state.rawText = normalizeAiText(result.result || '');
             if (!state.rawText.includes('KẾ HOẠCH BÀI DẠY')) {
-                state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Lớp:** ${grade || '…'}\n**Tên bài:** ${lesson || '…'}\n\n${state.rawText}`;
+                state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Lớp:** ${grade || '…'}\n**Tên bài:** ${lesson || '…'}\n**Số tiết:** ${periods}\n**Thời lượng:** ${durationText}\n\n${state.rawText}`;
             }
             content.innerHTML = parseMarkdown(state.rawText);
             syncPlanMetadataFields();
@@ -670,7 +680,7 @@
         App.requireAdmin(generatePlan);
     });
     content.addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; });
-    ['aiSubject', 'aiClass', 'aiLesson'].forEach(id => document.getElementById(id).addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; }));
+    ['aiSubject', 'aiClass', 'aiLesson', 'aiPeriods', 'aiMinutesPerPeriod'].forEach(id => document.getElementById(id).addEventListener('input', () => { state.docxBlob = null; state.docxName = ''; document.getElementById('driveWordLink').hidden = true; }));
     document.getElementById('editAiButton').addEventListener('click', toggleEditing);
     document.getElementById('copyAiButton').addEventListener('click', copyResult);
     document.getElementById('exportAiButton').addEventListener('click', exportWord);
