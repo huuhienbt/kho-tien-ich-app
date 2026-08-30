@@ -6,11 +6,11 @@
     <meta name="description" content="Âm lịch E-GV: xem ngày dương, ngày âm, Can Chi, ngũ hành và phân tích ngày theo năm sinh.">
     <meta name="theme-color" content="#2563eb">
     <title>Âm lịch – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=7.5.0">
-    <link rel="stylesheet" href="modern-saas.css?v=7.5.0">
-    <script src="js/config.js?v=7.5.0" defer></script>
-    <script src="js/app.js?v=7.5.0" defer></script>
-    <script src="js/calendar.js?v=7.5.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=7.7.0">
+    <link rel="stylesheet" href="modern-saas.css?v=7.7.0">
+    <script src="js/config.js?v=7.7.0" defer></script>
+    <script src="js/app.js?v=7.7.0" defer></script>
+    <script src="js/calendar.js?v=7.7.0" defer></script>
 </head>
 <body class="page-calendar">
     <div id="appShell"></div>
@@ -22,19 +22,25 @@
 
             <section class="calendar-page-layout" aria-label="Tra cứu âm lịch">
                 <article class="calendar-editorial" aria-label="Lịch dương và âm">
-                    <strong class="calendar-editorial-day" id="calendarDay">26</strong>
-                    <div class="calendar-editorial-details">
-                        <header class="calendar-editorial-header">
-                            <span class="calendar-editorial-weekday" id="calendarWeekday">Thứ Tư</span>
-                            <button class="calendar-editorial-label" id="calendarTodayButton" type="button" aria-label="Trở về ngày hôm nay" disabled>Hôm nay</button>
-                        </header>
-                        <p class="calendar-editorial-solar"><span id="calendarMonth">Tháng 08</span><i aria-hidden="true">·</i><span id="calendarYear">2026</span></p>
-                        <div class="calendar-editorial-lunar">
-                            <p class="hero-lunar-date" id="currentLunarDate">Âm lịch</p>
-                            <p class="hero-lunar-canchi" id="currentLunarCanChi"></p>
-                        </div>
-                        <p class="calendar-editorial-meta"><span>Hành <strong id="currentDayElement">—</strong><i aria-hidden="true">·</i>Sao <strong id="currentLunarMansion">—</strong><i aria-hidden="true">·</i>Trực <strong id="currentDayOfficer">—</strong></span></p>
+                    <header class="calendar-dual-toolbar">
+                        <div><span>Lịch Việt</span><strong>Dương lịch và Âm lịch</strong></div>
+                        <button class="calendar-editorial-label" id="calendarTodayButton" type="button" aria-label="Trở về ngày hôm nay" disabled>Hôm nay</button>
+                    </header>
+                    <div class="calendar-dual-grid">
+                        <section class="calendar-dual-pane calendar-solar-pane" aria-labelledby="solarCalendarTitle">
+                            <h2 id="solarCalendarTitle">Dương lịch</h2>
+                            <strong class="calendar-editorial-day" id="calendarDay">26</strong>
+                            <p class="calendar-editorial-weekday" id="calendarWeekday">Thứ Tư</p>
+                            <p class="calendar-editorial-solar"><span id="calendarMonth">Tháng 08</span><i aria-hidden="true">·</i>Năm <span id="calendarYear">2026</span></p>
+                        </section>
+                        <section class="calendar-dual-pane calendar-lunar-pane" aria-labelledby="lunarCalendarTitle">
+                            <h2 id="lunarCalendarTitle">Âm lịch</h2>
+                            <strong class="calendar-lunar-day" id="calendarLunarDay">13</strong>
+                            <p class="hero-lunar-date" id="currentLunarDate">Tháng âm lịch</p>
+                            <p class="hero-lunar-canchi" id="currentLunarCanChi">Ngày –<br>Tháng –</p>
+                        </section>
                     </div>
+                    <p class="calendar-editorial-meta"><span>Hành <strong id="currentDayElement">—</strong><i aria-hidden="true">·</i>Sao <strong id="currentLunarMansion">—</strong><i aria-hidden="true">·</i>Trực <strong id="currentDayOfficer">—</strong></span></p>
                     <div class="calendar-editorial-controls" aria-label="Điều hướng lịch">
                         <button class="calendar-nav-button" id="calendarPreviousButton" type="button" aria-label="Xem ngày hôm trước" title="Ngày hôm trước"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
                         <div class="calendar-date-picker">

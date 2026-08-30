@@ -2368,3 +2368,185 @@ body.google-auth-busy { overflow: hidden; }
     .page-calendar .calendar-editorial-details { padding: 16px 0 0; border-left: 0; border-top: 1px solid #dce5f2; }
     .page-calendar .calendar-editorial-day { font-size: 5rem; }
 }
+
+/* E-GV v7.7: tờ lịch Dương – Âm song song */
+.page-calendar .calendar-editorial {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.page-calendar .calendar-dual-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 17px 26px;
+    color: #fff;
+    background: linear-gradient(120deg, #1d4ed8, #2563eb 56%, #7c3aed);
+}
+
+.page-calendar .calendar-dual-toolbar > div { min-width: 0; }
+
+.page-calendar .calendar-dual-toolbar span,
+.page-calendar .calendar-dual-toolbar strong { display: block; }
+
+.page-calendar .calendar-dual-toolbar span {
+    color: #dbeafe;
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.page-calendar .calendar-dual-toolbar strong {
+    margin-top: 2px;
+    font-size: 1.05rem;
+}
+
+.page-calendar .calendar-dual-toolbar .calendar-editorial-label {
+    flex: 0 0 auto;
+    color: #fff;
+    border-color: rgba(255, 255, 255, .38);
+    background: rgba(255, 255, 255, .15);
+}
+
+.page-calendar .calendar-dual-toolbar .calendar-editorial-label:not(:disabled):hover {
+    color: #1d4ed8;
+    border-color: #fff;
+    background: #fff;
+}
+
+.page-calendar .calendar-dual-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 34px 30px 30px;
+}
+
+.page-calendar .calendar-dual-pane {
+    min-width: 0;
+    padding: 0 34px;
+    text-align: center;
+}
+
+.page-calendar .calendar-solar-pane { border-right: 1px solid #dfe7f2; }
+
+.page-calendar .calendar-dual-pane h2 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.page-calendar .calendar-editorial-day,
+.page-calendar .calendar-lunar-day {
+    display: block;
+    min-width: 0;
+    margin: 24px 0 20px;
+    font-size: clamp(6.5rem, 12vw, 9rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: .76;
+    letter-spacing: -.065em;
+    text-align: center;
+}
+
+.page-calendar .calendar-editorial-day { color: #2563eb; }
+.page-calendar .calendar-lunar-day { color: #7c3aed; }
+
+.page-calendar .calendar-editorial-weekday {
+    margin: 0 0 8px;
+    font-size: .9rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.page-calendar .calendar-editorial .calendar-editorial-solar,
+.page-calendar .calendar-editorial .hero-lunar-date {
+    min-height: 24px;
+    margin: 0 !important;
+    display: block;
+    color: #475569 !important;
+    font-size: .86rem;
+    font-weight: 700;
+    line-height: 1.55;
+    text-transform: none;
+}
+
+.page-calendar .calendar-editorial .calendar-editorial-solar i {
+    margin: 0 5px;
+    font-style: normal;
+}
+
+.page-calendar .calendar-editorial .hero-lunar-canchi {
+    min-height: 50px;
+    margin: 8px 0 0 !important;
+    color: #64748b !important;
+    font-size: .82rem;
+    font-weight: 650;
+    line-height: 1.65;
+}
+
+.page-calendar .calendar-editorial .calendar-editorial-meta {
+    margin: 0 30px !important;
+    padding: 19px 10px 0;
+    justify-content: center;
+    border-top: 1px solid #e5eaf1;
+    color: #64748b !important;
+    font-size: .82rem;
+}
+
+.page-calendar .calendar-editorial-meta > span {
+    flex-wrap: wrap;
+    justify-content: center;
+    white-space: normal !important;
+}
+
+.page-calendar .calendar-editorial-controls {
+    margin: 0 30px;
+    padding: 18px 0 25px;
+    border-top: 0;
+}
+
+@media (max-width: 640px) {
+    .page-calendar .calendar-dual-toolbar { padding: 14px 17px; }
+    .page-calendar .calendar-dual-toolbar strong { font-size: .92rem; }
+    .page-calendar .calendar-dual-toolbar .calendar-editorial-label { display: block; }
+    .page-calendar .calendar-dual-grid { padding: 24px 8px 22px; }
+    .page-calendar .calendar-dual-pane { padding: 0 10px; }
+    .page-calendar .calendar-dual-pane h2 { font-size: .87rem; }
+    .page-calendar .calendar-editorial-day,
+    .page-calendar .calendar-lunar-day {
+        margin: 19px 0 16px;
+        font-size: clamp(4.35rem, 21vw, 6rem);
+    }
+    .page-calendar .calendar-editorial-weekday {
+        margin-bottom: 7px;
+        font-size: .72rem;
+    }
+    .page-calendar .calendar-editorial .calendar-editorial-solar,
+    .page-calendar .calendar-editorial .hero-lunar-date { font-size: .7rem; }
+    .page-calendar .calendar-editorial .hero-lunar-canchi {
+        min-height: 48px;
+        font-size: .67rem;
+        line-height: 1.55;
+    }
+    .page-calendar .calendar-editorial .calendar-editorial-meta {
+        margin: 0 14px !important;
+        padding-top: 16px;
+        font-size: .72rem;
+    }
+    .page-calendar .calendar-editorial-controls {
+        margin: 0 14px;
+        padding: 15px 0 19px;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+    }
+}
+
+@media (max-width: 380px) {
+    .page-calendar .calendar-dual-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .page-calendar .calendar-editorial-day,
+    .page-calendar .calendar-lunar-day { font-size: 4.1rem; }
+}

@@ -1025,10 +1025,11 @@
         }).format(dateAtNoonUtc);
         weekdayElement.className = `calendar-editorial-weekday ${weekdayClass}`;
         document.getElementById('calendarDay').textContent = String(date.day).padStart(2, '0');
+        document.getElementById('calendarLunarDay').textContent = lunarDayText;
         document.getElementById('calendarMonth').textContent = `Tháng ${String(date.month).padStart(2, '0')}`;
         document.getElementById('calendarYear').textContent = date.year;
-        document.getElementById('currentLunarDate').textContent = `Âm lịch · ${lunarDayText}/${lunarMonthText}/${lunarDate.year}${lunarLeapText}`;
-        document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayNameHtml(julianDay)}<br>Tháng ${lunarMonthNameHtml(lunarDate.month, lunarDate.year)} · Năm ${lunarYearNameHtml(lunarDate.year)}`;
+        document.getElementById('currentLunarDate').innerHTML = `Tháng ${Number(lunarMonthText)}${lunarLeapText} · Năm ${lunarYearNameHtml(lunarDate.year)}`;
+        document.getElementById('currentLunarCanChi').innerHTML = `Ngày ${lunarDayNameHtml(julianDay)}<br>Tháng ${lunarMonthNameHtml(lunarDate.month, lunarDate.year)}`;
         currentElementNode.textContent = currentElement;
         currentElementNode.className = `calendar-element element-${ELEMENT_NAME_KEYS[currentElement]}`;
         document.getElementById('currentLunarMansion').textContent = lunarMansion(julianDay);
