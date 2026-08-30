@@ -6,11 +6,11 @@
     <meta name="description" content="Kho lưu trữ và quản lý câu lệnh AI dành cho giáo viên.">
     <meta name="theme-color" content="#2563eb">
     <title>Kho Prompt – E-GV</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="modern-saas.css">
-    <script src="js/config.js" defer></script>
-    <script src="js/app.js" defer></script>
-    <script src="js/prompts.js" defer></script>
+    <link rel="stylesheet" href="style.css?v=7.9.0">
+    <link rel="stylesheet" href="modern-saas.css?v=7.9.0">
+    <script src="js/config.js?v=7.9.0" defer></script>
+    <script src="js/app.js?v=7.9.0" defer></script>
+    <script src="js/prompts.js?v=7.9.0" defer></script>
 </head>
 <body class="page-prompts">
     <div id="appShell"></div>
@@ -54,7 +54,7 @@
                 <div class="form-grid">
                     <div class="form-group full-width"><label class="form-label" for="pTitle">Tiêu đề</label><input class="form-control" id="pTitle" required maxlength="180"></div>
                     <div class="form-group"><label class="form-label" for="pCategory">Danh mục</label><select class="form-control" id="pCategory"><option value="teaching">Giảng dạy</option><option value="admin">Hành chính</option><option value="coding">Lập trình</option><option value="media">Media</option><option value="diy">DIY</option></select></div>
-                    <div class="form-group"><label class="form-label" for="pPlatform">Nền tảng</label><select class="form-control" id="pPlatform"><option>ChatGPT / Gemini</option><option>ChatGPT</option><option>Gemini</option><option>Claude</option><option>Suno AI</option><option>Midjourney</option><option>Khác</option></select></div>
+                    <div class="form-group"><label class="form-label" for="pPlatform">Nền tảng</label><select class="form-control" id="pPlatform"><optgroup label="Trợ lý AI"><option>ChatGPT / Gemini</option><option>ChatGPT</option><option>Gemini</option><option>Claude</option><option>Grok</option><option>Microsoft Copilot</option><option>DeepSeek</option><option>Perplexity</option></optgroup><optgroup label="Học tập và sáng tạo"><option>NotebookLM</option><option>Canva</option><option>Gamma</option><option>Suno AI</option><option>Midjourney</option></optgroup><option>Khác</option></select></div>
                     <div class="form-group"><label class="form-label" for="pAccess">Quyền xem</label><select class="form-control" id="pAccess"><option value="normal">Prompt thường — mọi người đều xem</option><option value="vip">Prompt VIP — cần đăng nhập</option></select></div>
                     <div class="form-group full-width"><label class="form-label" for="pContent">Nội dung Prompt</label><textarea class="form-control" id="pContent" rows="8" required></textarea></div>
                 </div>

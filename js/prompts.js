@@ -37,6 +37,13 @@
         chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'] },
         gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'] },
         claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'] },
+        notebooklm: { label: 'NotebookLM', icon: 'N', url: 'https://notebooklm.google.com/', aliases: ['notebooklm', 'notebook lm'] },
+        grok: { label: 'Grok', icon: '𝕏', url: 'https://grok.com/', aliases: ['grok'] },
+        copilot: { label: 'Microsoft Copilot', icon: '◆', url: 'https://copilot.microsoft.com/', aliases: ['microsoft copilot', 'copilot'] },
+        deepseek: { label: 'DeepSeek', icon: '◌', url: 'https://chat.deepseek.com/', aliases: ['deepseek', 'deep seek'] },
+        canva: { label: 'Canva', icon: 'C', url: 'https://www.canva.com/ai-assistant/', aliases: ['canva'] },
+        perplexity: { label: 'Perplexity', icon: 'P', url: 'https://www.perplexity.ai/', aliases: ['perplexity'] },
+        gamma: { label: 'Gamma', icon: 'Γ', url: 'https://gamma.app/', aliases: ['gamma'] },
         suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'] },
         midjourney: { label: 'Midjourney', icon: '◇', url: 'https://www.midjourney.com/', aliases: ['midjourney'] }
     });

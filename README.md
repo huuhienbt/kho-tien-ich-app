@@ -1,4 +1,4 @@
-# E-GV v7.8 – Nhóm nội dung tích hợp thu gọn
+# E-GV v7.9 – Bổ sung nền tảng Prompt phổ biến
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Bổ sung NotebookLM, Grok, Microsoft Copilot, DeepSeek, Canva, Perplexity và Gamma vào trường `Nền tảng` của Kho Prompt.
+- Sắp xếp danh sách thành hai nhóm `Trợ lý AI` và `Học tập và sáng tạo` để dễ chọn.
+- Nút `Sử dụng` nhận đúng từng nền tảng mới, tự sao chép Prompt rồi mở trang tương ứng.
 - Thu gọn 19 nội dung tích hợp thành 6 nhóm mở/đóng: Văn hóa–địa phương, Công nghệ–STEM, Đạo đức–kỹ năng, Môi trường–khí hậu, An toàn–sức khỏe và Quốc phòng–an ninh.
 - Chỉ mở một nhóm tại một thời điểm; mỗi nhóm hiển thị số lựa chọn đã đánh dấu và các nội dung đang chọn được tổng hợp thành thẻ nhỏ có thể bấm để bỏ chọn.
 - Giữ nguyên đủ 19 giá trị chi tiết gửi đến Gemini, không gộp thành nhãn chung nên chất lượng tích hợp trong kế hoạch bài dạy không bị giảm.
