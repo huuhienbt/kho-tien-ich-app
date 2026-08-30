@@ -261,6 +261,14 @@ body {
     box-shadow: 0 24px 58px rgba(30, 64, 175, .2);
 }
 
+.hero.hero-copy-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.hero.hero-copy-only .hero-content {
+    max-width: 820px;
+}
+
 .hero::before {
     width: 360px;
     height: 360px;
