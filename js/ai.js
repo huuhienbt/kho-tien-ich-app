@@ -12,9 +12,27 @@
     const content = document.getElementById('aiContent');
     const integrationOptions = document.getElementById('integrationOptions');
     const integrationSelectionCount = document.getElementById('integrationSelectionCount');
+    const integrationSelectedSummary = document.getElementById('integrationSelectedSummary');
+    const integrationSelectedChips = document.getElementById('integrationSelectedChips');
 
     function updateIntegrationSelectionCount() {
-        integrationSelectionCount.textContent = String(integrationOptions.querySelectorAll('input:checked').length);
+        const checked = Array.from(integrationOptions.querySelectorAll('input:checked'));
+        integrationSelectionCount.textContent = String(checked.length);
+
+        integrationOptions.querySelectorAll('[data-integration-group]').forEach(group => {
+            const count = group.querySelectorAll('input:checked').length;
+            const badge = group.querySelector('[data-integration-group-count]');
+            badge.textContent = String(count);
+            badge.hidden = count === 0;
+            group.classList.toggle('has-selection', count > 0);
+        });
+
+        integrationSelectedSummary.hidden = checked.length === 0;
+        integrationSelectedChips.innerHTML = checked.map(input => {
+            const label = input.closest('.check-card').querySelector('span').textContent.trim();
+            const safeLabel = App.escapeHTML(label);
+            return `<button type="button" class="integration-selected-chip" data-integration-remove="${encodeURIComponent(input.value)}" title="Bỏ chọn ${safeLabel}" aria-label="Bỏ chọn ${safeLabel}"><span>${safeLabel}</span><b aria-hidden="true">×</b></button>`;
+        }).join('');
     }
 
     function addImages(files) {
@@ -614,7 +632,24 @@
     }
 
     document.getElementById('chooseAiImages').addEventListener('click', () => fileInput.click());
+    integrationOptions.querySelectorAll('[data-integration-group]').forEach(group => {
+        group.addEventListener('toggle', () => {
+            if (!group.open) return;
+            integrationOptions.querySelectorAll('[data-integration-group][open]').forEach(openedGroup => {
+                if (openedGroup !== group) openedGroup.open = false;
+            });
+        });
+    });
     integrationOptions.addEventListener('change', updateIntegrationSelectionCount);
+    integrationSelectedChips.addEventListener('click', event => {
+        const button = event.target.closest('[data-integration-remove]');
+        if (!button) return;
+        const value = decodeURIComponent(button.dataset.integrationRemove);
+        const input = Array.from(integrationOptions.querySelectorAll('input[type="checkbox"]')).find(option => option.value === value);
+        if (!input) return;
+        input.checked = false;
+        updateIntegrationSelectionCount();
+    });
     updateIntegrationSelectionCount();
     fileInput.addEventListener('change', () => { addImages(fileInput.files); fileInput.value = ''; });
     preview.addEventListener('click', event => {

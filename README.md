@@ -1,4 +1,4 @@
-# E-GV v7.7 – Tờ lịch Dương lịch và Âm lịch song song
+# E-GV v7.8 – Nhóm nội dung tích hợp thu gọn
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Thu gọn 19 nội dung tích hợp thành 6 nhóm mở/đóng: Văn hóa–địa phương, Công nghệ–STEM, Đạo đức–kỹ năng, Môi trường–khí hậu, An toàn–sức khỏe và Quốc phòng–an ninh.
+- Chỉ mở một nhóm tại một thời điểm; mỗi nhóm hiển thị số lựa chọn đã đánh dấu và các nội dung đang chọn được tổng hợp thành thẻ nhỏ có thể bấm để bỏ chọn.
+- Giữ nguyên đủ 19 giá trị chi tiết gửi đến Gemini, không gộp thành nhãn chung nên chất lượng tích hợp trong kế hoạch bài dạy không bị giảm.
 - Thiết kế lại tờ lịch thành hai nửa cân đối: Dương lịch bên trái và Âm lịch bên phải, mỗi bên có số ngày lớn.
 - Phần Dương lịch hiển thị thứ, tháng và năm; phần Âm lịch hiển thị ngày âm, tháng âm, năm Can Chi cùng Can Chi ngày và tháng.
 - Giữ bố cục hai cột trên điện thoại, có đường phân cách rõ ràng và tự giảm cỡ chữ để không mất nội dung.

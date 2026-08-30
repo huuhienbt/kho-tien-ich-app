@@ -6,11 +6,11 @@
     <meta name="description" content="Trợ giảng AI đọc ảnh sách giáo khoa và hỗ trợ thiết kế kế hoạch bài dạy.">
     <meta name="theme-color" content="#2563eb">
     <title>Trợ giảng AI – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=7.6.0">
-    <link rel="stylesheet" href="modern-saas.css?v=7.6.0">
-    <script src="js/config.js?v=7.6.0" defer></script>
-    <script src="js/app.js?v=7.6.0" defer></script>
-    <script src="js/ai.js?v=7.6.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=7.8.0">
+    <link rel="stylesheet" href="modern-saas.css?v=7.8.0">
+    <script src="js/config.js?v=7.8.0" defer></script>
+    <script src="js/app.js?v=7.8.0" defer></script>
+    <script src="js/ai.js?v=7.8.0" defer></script>
 </head>
 <body class="page-ai">
     <div id="appShell"></div>
@@ -42,26 +42,60 @@
                         <div class="form-section">
                             <h2 class="form-section-title">2. Nội dung cần tích hợp</h2>
                             <p class="integration-help">Chọn 1–2 nội dung thực sự phù hợp với bài học. Đã chọn: <strong id="integrationSelectionCount">0</strong>.</p>
-                            <div class="checkbox-grid" id="integrationOptions">
-                                <label class="check-card"><input type="checkbox" value="Giáo dục địa phương"><span>Giáo dục địa phương</span></label>
-                                <label class="check-card"><input type="checkbox" value="Giáo dục STEM"><span>Giáo dục STEM</span></label>
-                                <label class="check-card"><input type="checkbox" value="Năng lực số và công dân số"><span>Năng lực số, công dân số</span></label>
-                                <label class="check-card"><input type="checkbox" value="Học tập tư tưởng, đạo đức, phong cách Hồ Chí Minh"><span>Tư tưởng, đạo đức, phong cách Hồ Chí Minh</span></label>
-                                <label class="check-card"><input type="checkbox" value="Bảo vệ nguồn nước"><span>Bảo vệ nguồn nước</span></label>
-                                <label class="check-card"><input type="checkbox" value="An toàn giao thông (ATGT)"><span>An toàn giao thông</span></label>
-                                <label class="check-card"><input type="checkbox" value="Trí tuệ nhân tạo và sử dụng AI an toàn, có trách nhiệm"><span>AI an toàn, có trách nhiệm</span></label>
-                                <label class="check-card"><input type="checkbox" value="Phòng cháy, chữa cháy và kỹ năng thoát hiểm"><span>PCCC và kỹ năng thoát hiểm</span></label>
-                                <label class="check-card"><input type="checkbox" value="Bảo tồn đất ngập nước gắn với văn hóa địa phương"><span>Bảo tồn đất ngập nước</span></label>
-                                <label class="check-card"><input type="checkbox" value="Quyền và bổn phận của trẻ em"><span>Quyền và bổn phận trẻ em</span></label>
-                                <label class="check-card"><input type="checkbox" value="Giáo dục lý tưởng cách mạng, đạo đức, lối sống"><span>Lý tưởng, đạo đức, lối sống</span></label>
-                                <label class="check-card"><input type="checkbox" value="Kỹ năng sống (KNS)"><span>Kỹ năng sống</span></label>
-                                <label class="check-card"><input type="checkbox" value="An toàn không gian mạng"><span>An toàn không gian mạng</span></label>
-                                <label class="check-card"><input type="checkbox" value="Bảo vệ môi trường"><span>Bảo vệ môi trường</span></label>
-                                <label class="check-card"><input type="checkbox" value="Biến đổi khí hậu"><span>Biến đổi khí hậu</span></label>
-                                <label class="check-card"><input type="checkbox" value="Quốc phòng, an ninh và lòng yêu nước phù hợp lứa tuổi"><span>Quốc phòng, an ninh và lòng yêu nước</span></label>
-                                <label class="check-card"><input type="checkbox" value="Phòng chống ma túy và kỹ năng từ chối chất có hại"><span>Phòng chống ma túy, chất có hại</span></label>
-                                <label class="check-card"><input type="checkbox" value="Giáo dục các ngày lễ lớn và truyền thống lịch sử"><span>Ngày lễ lớn, truyền thống lịch sử</span></label>
-                                <label class="check-card"><input type="checkbox" value="Giáo dục sức khỏe học đường"><span>Sức khỏe học đường</span></label>
+                            <div class="integration-selected-summary" id="integrationSelectedSummary" aria-live="polite" hidden>
+                                <span>Đang chọn</span>
+                                <div class="integration-selected-chips" id="integrationSelectedChips"></div>
+                            </div>
+                            <div class="integration-groups" id="integrationOptions">
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>Văn hóa – địa phương</strong><small>2 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="Giáo dục địa phương"><span>Giáo dục địa phương</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Giáo dục các ngày lễ lớn và truyền thống lịch sử"><span>Ngày lễ lớn, truyền thống lịch sử</span></label>
+                                    </div>
+                                </details>
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>Công nghệ – STEM</strong><small>4 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="Giáo dục STEM"><span>Giáo dục STEM</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Năng lực số và công dân số"><span>Năng lực số, công dân số</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Trí tuệ nhân tạo và sử dụng AI an toàn, có trách nhiệm"><span>AI an toàn, có trách nhiệm</span></label>
+                                        <label class="check-card"><input type="checkbox" value="An toàn không gian mạng"><span>An toàn không gian mạng</span></label>
+                                    </div>
+                                </details>
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>Đạo đức – kỹ năng</strong><small>4 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="Học tập tư tưởng, đạo đức, phong cách Hồ Chí Minh"><span>Tư tưởng, đạo đức, phong cách Hồ Chí Minh</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Giáo dục lý tưởng cách mạng, đạo đức, lối sống"><span>Lý tưởng, đạo đức, lối sống</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Quyền và bổn phận của trẻ em"><span>Quyền và bổn phận trẻ em</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Kỹ năng sống (KNS)"><span>Kỹ năng sống</span></label>
+                                    </div>
+                                </details>
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>Môi trường – khí hậu</strong><small>4 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="Bảo vệ môi trường"><span>Bảo vệ môi trường</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Bảo vệ nguồn nước"><span>Bảo vệ nguồn nước</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Bảo tồn đất ngập nước gắn với văn hóa địa phương"><span>Bảo tồn đất ngập nước</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Biến đổi khí hậu"><span>Biến đổi khí hậu</span></label>
+                                    </div>
+                                </details>
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>An toàn – sức khỏe</strong><small>4 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="An toàn giao thông (ATGT)"><span>An toàn giao thông</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Phòng cháy, chữa cháy và kỹ năng thoát hiểm"><span>PCCC và kỹ năng thoát hiểm</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Giáo dục sức khỏe học đường"><span>Sức khỏe học đường</span></label>
+                                        <label class="check-card"><input type="checkbox" value="Phòng chống ma túy và kỹ năng từ chối chất có hại"><span>Phòng chống ma túy, chất có hại</span></label>
+                                    </div>
+                                </details>
+                                <details class="integration-group" data-integration-group>
+                                    <summary><span><strong>Quốc phòng – an ninh</strong><small>1 nội dung</small></span><b data-integration-group-count hidden>0</b></summary>
+                                    <div class="integration-group-options">
+                                        <label class="check-card"><input type="checkbox" value="Quốc phòng, an ninh và lòng yêu nước phù hợp lứa tuổi"><span>Quốc phòng, an ninh và lòng yêu nước</span></label>
+                                    </div>
+                                </details>
                             </div>
                             <div class="form-group" style="margin-top:10px"><label class="form-label" for="aiIntegratedOther">Nội dung khác</label><input class="form-control" id="aiIntegratedOther" placeholder="Nhập nội dung tích hợp bổ sung…"></div>
                         </div>
