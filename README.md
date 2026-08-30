@@ -1,4 +1,4 @@
-# E-GV v8.2 – Số tiết và thời lượng trong Trợ giảng AI
+# E-GV v8.3 – Nội dung gọn và lời chào theo tài khoản
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,9 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Trang chủ hiển thị đúng tên thành viên đang đăng nhập; chỉ phiên quản trị viên mới được chào là `thầy Hiển`, còn khi chưa đăng nhập chỉ hiển thị lời chào theo buổi.
+- Đổi tên trang và mục điều hướng `Âm lịch` thành `Lịch Việt`, đồng thời lược bỏ các câu hướng dẫn dài theo yêu cầu.
+- Rút gọn mô tả Trợ giảng AI, ô chờ kết quả và thông báo khóa chi tiết Nhật ký sửa chữa.
 - Thêm hai trường `Số tiết` và `Thời lượng mỗi tiết (phút)` trong phần Thông tin bài học của Trợ giảng AI; mặc định 1 tiết, 35 phút.
 - Gửi chính xác hai giá trị đến Gemini, tính tổng thời lượng và yêu cầu AI phân bổ số phút hợp lý cho từng hoạt động; bài nhiều tiết được chia rõ theo từng tiết.
 - Chuẩn hóa lại phần đầu kết quả để số tiết và thời lượng luôn khớp với dữ liệu giáo viên đã chọn, kể cả khi Gemini tự trả về giá trị khác.

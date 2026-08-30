@@ -49,7 +49,7 @@
             ['prompts', 'prompts.html', 'Kho Prompt', 'book'],
             ['upload', 'upload.html', 'Kho tệp Drive', 'upload'],
             ['ai', 'ai.html', 'Trợ giảng AI', 'sparkle'],
-            ['calendar', 'calendar.html', 'Âm lịch', 'calendar'],
+            ['calendar', 'calendar.html', 'Lịch Việt', 'calendar'],
             ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench']
         ];
         return items.map(([key, href, label, iconName]) =>
@@ -63,7 +63,7 @@
             ['prompts', 'prompts.html', 'Prompt', 'book'],
             ['upload', 'upload.html', 'Drive', 'upload'],
             ['ai', 'ai.html', 'Trợ giảng', 'sparkle'],
-            ['calendar', 'calendar.html', 'Âm lịch', 'calendar'],
+            ['calendar', 'calendar.html', 'Lịch Việt', 'calendar'],
             ['repairs', 'repairs.html', 'Nhật ký', 'wrench']
         ];
         return items.map(([key, href, label, iconName]) =>

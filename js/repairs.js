@@ -121,7 +121,7 @@
                         <h2 class="card-title">${App.escapeHTML(item.task || 'Chưa nhập công việc')}</h2>
                         <span class="status-badge ${statusClass(item.status)}">${App.escapeHTML(item.status || 'Chưa rõ')}</span>
                     </div>
-                    <div class="repair-private-placeholder"><span aria-hidden="true">🔒</span><p>Đăng nhập để xem ngày ghi nhận, lớp/phòng, chi phí, đơn vị sửa/mua, bảo hành và ghi chú.</p></div>
+                    <div class="repair-private-placeholder"><span aria-hidden="true">🔒</span><p>Đăng nhập để xem thông tin chi tiết.</p></div>
                 </article>`;
             }
             const warranty = warrantyInfo(item.date, item.warranty);

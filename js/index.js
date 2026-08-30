@@ -9,7 +9,19 @@
         hourCycle: 'h23'
     }).formatToParts(new Date()).filter(part => part.type !== 'literal').map(part => [part.type, Number(part.value)]));
     const greeting = parts.hour < 11 ? 'Chào buổi sáng' : parts.hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-    document.getElementById('heroTitle').innerHTML = `${greeting},<br>thầy Hiển!`;
+
+    function renderGreeting() {
+        const user = App.getUser();
+        const accountName = App.isAdmin()
+            ? 'thầy Hiển'
+            : (App.isAuthenticated() ? String(user?.name || user?.email || 'Thành viên').trim() : '');
+        document.getElementById('heroTitle').innerHTML = accountName
+            ? `${App.escapeHTML(greeting)},<br>${App.escapeHTML(accountName)}!`
+            : `${App.escapeHTML(greeting)}!`;
+    }
+
+    renderGreeting();
+    window.addEventListener('app:auth-change', renderGreeting);
 
     async function loadOverview() {
         try {

@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="modern-saas.css">
     <script src="js/config.js" defer></script>
-    <script src="js/app.js" defer></script>
-    <script src="js/index.js" defer></script>
+    <script src="js/app.js?v=8.3.0" defer></script>
+    <script src="js/index.js?v=8.3.0" defer></script>
 </head>
 <body class="page-home">
     <div id="appShell"></div>
@@ -19,7 +19,7 @@
             <section class="hero" aria-labelledby="heroTitle">
                 <div class="hero-content">
                     <span class="hero-kicker"><span class="status-dot"></span> Không gian làm việc dành cho giáo viên</span>
-                    <h1 id="heroTitle">Chào buổi sáng,<br>thầy Hiển!</h1>
+                    <h1 id="heroTitle">Xin chào!</h1>
                     <p>Quản lý câu lệnh AI, sửa chữa thiết bị, tài liệu Drive và kế hoạch bài dạy trong một không gian thống nhất.</p>
                     <div class="hero-actions">
                         <a class="btn btn-light" href="ai.html">✨ Soạn kế hoạch bài dạy</a>
@@ -27,13 +27,13 @@
                     </div>
                 </div>
                 <div class="hero-visual">
-                    <a class="calendar-shortcut" href="calendar.html" aria-label="Mở trang Âm lịch">
+                    <a class="calendar-shortcut" href="calendar.html" aria-label="Mở trang Lịch Việt">
                         <span class="calendar-shortcut-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
                         </span>
                         <span class="calendar-shortcut-copy">
                             <small>Tiện ích mới</small>
-                            <strong>Âm lịch &amp; xem ngày theo tuổi</strong>
+                            <strong>Lịch Việt &amp; xem ngày theo tuổi</strong>
                             <span>Xem ngày trước, ngày sau, chọn ngày bất kỳ và nhận luận giải Gemini.</span>
                         </span>
                         <span class="calendar-shortcut-arrow" aria-hidden="true">→</span>
@@ -54,7 +54,7 @@
                 <a href="prompts.html" class="dash-card dash-prompt"><div class="dash-card-top"><div class="dash-icon-wrap tone-prompt"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></div><span class="dash-badge">Thư viện</span></div><div class="dash-title">Kho Prompt</div><div class="dash-desc">Prompt thường dùng công khai; Prompt VIP dành cho thành viên đăng nhập.</div><div class="dash-link">Mở công cụ <span>→</span></div></a>
                 <a href="upload.html" class="dash-card dash-upload"><div class="dash-card-top"><div class="dash-icon-wrap tone-upload"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m12-7-3-3-3 3m3-3v12"/></svg></div><span class="dash-badge">Không cần đăng nhập</span></div><div class="dash-title">Kho tệp Drive</div><div class="dash-desc">Tải nhiều tệp lên Drive không cần đăng nhập và theo dõi tiến trình.</div><div class="dash-link">Tải tệp lên <span>→</span></div></a>
                 <a href="ai.html" class="dash-card dash-ai"><div class="dash-card-top"><div class="dash-icon-wrap tone-ai"><svg viewBox="0 0 24 24"><path d="m12 3-1.6 4.4L6 9l4.4 1.6L12 15l1.6-4.4L18 9l-4.4-1.6ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8ZM19 14l-.8 2.2L16 17l2.2.8L19 20l.8-2.2L22 17l-2.2-.8Z"/></svg></div><span class="dash-badge">Gemini AI</span></div><div class="dash-title">Trợ giảng AI</div><div class="dash-desc">Soạn kế hoạch bài dạy, xuất Word .docx và lưu trực tiếp lên Drive.</div><div class="dash-link">Bắt đầu soạn <span>→</span></div></a>
-                <a href="calendar.html" class="dash-card dash-calendar"><div class="dash-card-top"><div class="dash-icon-wrap tone-calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div><span class="dash-badge">Lịch Việt</span></div><div class="dash-title">Âm lịch</div><div class="dash-desc">Xem Can Chi, ngũ hành, Sao – Trực và phân tích ngày theo năm sinh.</div><div class="dash-link">Mở lịch <span>→</span></div></a>
+                <a href="calendar.html" class="dash-card dash-calendar"><div class="dash-card-top"><div class="dash-icon-wrap tone-calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div><span class="dash-badge">Lịch Việt</span></div><div class="dash-title">Lịch Việt</div><div class="dash-desc">Xem Can Chi, ngũ hành, Sao – Trực và phân tích ngày theo năm sinh.</div><div class="dash-link">Mở lịch <span>→</span></div></a>
                 <a href="repairs.html" class="dash-card dash-repair"><div class="dash-card-top"><div class="dash-icon-wrap tone-repair"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-3.4 3.4-2.2-2.2a4 4 0 0 0 5 5l6.7 6.7a2.1 2.1 0 1 0 3-3Z"/><path d="m6.5 12.5-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8"/></svg></div><span class="dash-badge">Theo dõi</span></div><div class="dash-title">Nhật ký sửa chữa</div><div class="dash-desc">Theo dõi sự cố, tiến độ xử lý, chi phí và thời hạn bảo hành.</div><div class="dash-link">Xem nhật ký <span>→</span></div></a>
             </section>
         </div>
