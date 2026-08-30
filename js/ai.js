@@ -10,6 +10,12 @@
     const dropZone = document.getElementById('aiDropZone');
     const generateButton = document.getElementById('generateAiButton');
     const content = document.getElementById('aiContent');
+    const integrationOptions = document.getElementById('integrationOptions');
+    const integrationSelectionCount = document.getElementById('integrationSelectionCount');
+
+    function updateIntegrationSelectionCount() {
+        integrationSelectionCount.textContent = String(integrationOptions.querySelectorAll('input:checked').length);
+    }
 
     function addImages(files) {
         Array.from(files).forEach(file => {
@@ -608,6 +614,8 @@
     }
 
     document.getElementById('chooseAiImages').addEventListener('click', () => fileInput.click());
+    integrationOptions.addEventListener('change', updateIntegrationSelectionCount);
+    updateIntegrationSelectionCount();
     fileInput.addEventListener('change', () => { addImages(fileInput.files); fileInput.value = ''; });
     preview.addEventListener('click', event => {
         const button = event.target.closest('[data-remove-image]');

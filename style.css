@@ -254,6 +254,8 @@ textarea.form-control { resize: vertical; min-height: 112px; }
 .ai-form-container { padding: 20px; }
 .form-section + .form-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
 .form-section-title { margin: 0 0 13px; font-size: .91rem; }
+.integration-help { margin: -5px 0 12px; color: var(--text-light); font-size: .78rem; line-height: 1.55; }
+.integration-help strong { color: var(--ai); }
 .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .check-card { display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: #475569; font-size: .75rem; }
 .check-card:has(input:checked) { color: var(--ai); border-color: #c4b5fd; background: #faf5ff; }

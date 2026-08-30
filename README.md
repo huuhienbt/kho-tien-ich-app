@@ -1,4 +1,4 @@
-# E-GV v7.5 – Tỷ trọng ngày 80%, tháng 15%, năm 5%
+# E-GV v7.6 – Nội dung tích hợp dành cho tiểu học
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
 
@@ -16,6 +16,10 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Mở rộng mục `Nội dung cần tích hợp` của Trợ giảng AI thành 19 lựa chọn phù hợp với học sinh tiểu học.
+- Cho phép chọn nhiều nội dung, hiển thị số lượng đã chọn và vẫn giữ ô nhập nội dung khác.
+- Gộp hai mục AI trùng nhau thành `Trí tuệ nhân tạo và sử dụng AI an toàn, có trách nhiệm`.
+- Bổ sung quy tắc để Gemini chỉ lồng ghép nội dung đã chọn vào yêu cầu cần đạt hoặc hoạt động cụ thể, ưu tiên 1–2 nội dung liên quan trực tiếp và tránh tích hợp hình thức.
 - Đổi tỷ trọng tính điểm thành ngày 80%, tháng 15% và năm 5% để điểm phản ánh gần hơn chất lượng riêng của ngày đang chọn.
 - Đồng bộ công thức mới giữa giao diện, biểu đồ tháng, phần luận giải dự phòng và Apps Script; đổi phiên bản bộ nhớ tạm để không dùng lại kết quả của tỷ trọng cũ.
 - Điểm tổng được tính trực tiếp từ ba điểm thành phần đang hiển thị, nên người xem có thể kiểm tra lại đúng công thức `Ngày × 80% + Tháng × 15% + Năm × 5%`.

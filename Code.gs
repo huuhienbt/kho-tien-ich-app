@@ -948,7 +948,7 @@ function handleLessonPlan(data) {
   const subject = cleanText(data.subject || '', 120);
   const grade = cleanText(data.grade || '', 30);
   const lesson = cleanText(data.lesson || '', 220);
-  const integrated = cleanText(data.integrated || 'Không', 500);
+  const integrated = cleanText(data.integrated || 'Không', 1200);
   const images = Array.isArray(data.images) ? data.images.slice(0, 12) : [];
 
   const promptText = `Bạn là một giáo viên Tiểu học có nhiều năm kinh nghiệm.
@@ -972,6 +972,11 @@ YÊU CẦU PHÂN TÍCH VÀ SOẠN BÀI CHUYÊN SÂU:
    - Mỗi hàng Markdown phải nằm trọn trên một dòng, bắt đầu bằng dấu |, có đúng hai ô ngăn cách bằng dấu | và kết thúc bằng dấu |.
    - Mỗi cặp hoạt động GV và HS tương ứng trình bày trên cùng một hàng. Nếu một bên chưa có nội dung thì để ô đó trống nhưng vẫn giữ đủ dấu |.
    - Chỉ dùng dấu gạch đầu dòng (-), không dùng dấu chấm tròn (•).
+6. QUY TẮC TÍCH HỢP:
+   - Chỉ sử dụng những nội dung tích hợp người dùng đã chọn; không tự thêm chủ đề khác.
+   - Mỗi nội dung phải phù hợp tự nhiên với kiến thức và hoạt động của bài, không lồng ghép hình thức hoặc gượng ép.
+   - Phải thể hiện bằng yêu cầu cần đạt, câu hỏi, tình huống hoặc việc làm cụ thể của HS trong hoạt động phù hợp; không chỉ liệt kê lại tên nội dung.
+   - Nếu có nhiều lựa chọn, ưu tiên 1–2 nội dung liên quan trực tiếp nhất để bài học không bị quá tải.
 
 CẤU TRÚC KẾ HOẠCH BÀI DẠY BẮT BUỘC (Trình bày y hệt như sau):
 
