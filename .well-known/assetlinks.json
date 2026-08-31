@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "vn.egv.app",
+      "sha256_cert_fingerprints": [
+        "98:53:BE:75:0B:1A:D5:B0:96:3F:75:9C:22:E4:5A:9B:2E:3F:68:3F:42:E9:55:85:97:F8:DF:DD:E5:16:A7:B0"
+      ]
+    }
+  }
+]
