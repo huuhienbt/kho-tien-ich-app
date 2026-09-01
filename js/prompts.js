@@ -37,17 +37,17 @@
     const useOtherPlatformsCount = document.getElementById('useOtherPlatformsCount');
     const categoryNames = { teaching: 'Giảng dạy', admin: 'Hành chính', coding: 'Lập trình', media: 'Media', diy: 'DIY' };
     const promptDestinations = Object.freeze({
-        chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'], appScheme: 'chatgpt', androidPackage: 'com.openai.chatgpt' },
-        gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'], appScheme: 'gemini', androidPackage: 'com.google.android.apps.bard' },
-        claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'], appScheme: 'claude', androidPackage: 'com.anthropic.claude' },
-        notebooklm: { label: 'NotebookLM', icon: 'N', url: 'https://notebooklm.google.com/', aliases: ['notebooklm', 'notebook lm'], appScheme: 'notebooklm', androidPackage: 'com.google.android.apps.labs.language.tailwind' },
-        grok: { label: 'Grok', icon: '𝕏', url: 'https://grok.com/', aliases: ['grok'], appScheme: 'grok', androidPackage: 'ai.x.grok' },
-        copilot: { label: 'Microsoft Copilot', icon: '◆', url: 'https://copilot.microsoft.com/', aliases: ['microsoft copilot', 'copilot'], appScheme: 'ms-copilot', androidPackage: 'com.microsoft.copilot' },
-        deepseek: { label: 'DeepSeek', icon: '◌', url: 'https://chat.deepseek.com/', aliases: ['deepseek', 'deep seek'], appScheme: 'deepseek', androidPackage: 'com.deepseek.chat' },
-        canva: { label: 'Canva', icon: 'C', url: 'https://www.canva.com/ai-assistant/', aliases: ['canva'], appScheme: 'canva', androidPackage: 'com.canva.editor' },
-        perplexity: { label: 'Perplexity', icon: 'P', url: 'https://www.perplexity.ai/', aliases: ['perplexity'], appScheme: 'perplexity', androidPackage: 'ai.perplexity.app.android' },
+        chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'], appScheme: 'chatgpt', androidScheme: 'com.openai.chat', androidPackage: 'com.openai.chatgpt' },
+        gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'], appScheme: 'gemini', androidScheme: 'gemini', androidPackage: 'com.google.android.apps.bard' },
+        claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'], appScheme: 'claude', androidScheme: 'claude', androidPackage: 'com.anthropic.claude' },
+        notebooklm: { label: 'NotebookLM', icon: 'N', url: 'https://notebooklm.google.com/', aliases: ['notebooklm', 'notebook lm'], appScheme: 'notebooklm', androidScheme: 'notebooklm', androidPackage: 'com.google.android.apps.labs.language.tailwind' },
+        grok: { label: 'Grok', icon: '𝕏', url: 'https://grok.com/', aliases: ['grok'], appScheme: 'grok', androidScheme: 'grok', androidPackage: 'ai.x.grok' },
+        copilot: { label: 'Microsoft Copilot', icon: '◆', url: 'https://copilot.microsoft.com/', aliases: ['microsoft copilot', 'copilot'], appScheme: 'ms-copilot', androidScheme: 'ms-copilot', androidPackage: 'com.microsoft.copilot' },
+        deepseek: { label: 'DeepSeek', icon: '◌', url: 'https://chat.deepseek.com/', aliases: ['deepseek', 'deep seek'], appScheme: 'deepseek', androidScheme: 'deepseek', androidPackage: 'com.deepseek.chat' },
+        canva: { label: 'Canva', icon: 'C', url: 'https://www.canva.com/ai-assistant/', aliases: ['canva'], appScheme: 'canva', androidScheme: 'canva', androidPackage: 'com.canva.editor' },
+        perplexity: { label: 'Perplexity', icon: 'P', url: 'https://www.perplexity.ai/', aliases: ['perplexity'], appScheme: 'perplexity', androidScheme: 'perplexity', androidPackage: 'ai.perplexity.app.android' },
         gamma: { label: 'Gamma', icon: 'Γ', url: 'https://gamma.app/', aliases: ['gamma'] },
-        suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'], appScheme: 'suno', androidPackage: 'com.suno.android' },
+        suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'], appScheme: 'suno', androidScheme: 'suno', androidPackage: 'com.suno.android' },
         midjourney: { label: 'Midjourney', icon: '◇', url: 'https://www.midjourney.com/', aliases: ['midjourney'] }
     });
     let pendingUseItem = null;
@@ -122,9 +122,8 @@
 
     function androidIntentUrl(destination) {
         const fallback = encodeURIComponent(destination.url);
-        const webUrl = new URL(destination.url);
-        const intentTarget = `${webUrl.host}${webUrl.pathname}${webUrl.search}`;
-        return `intent://${intentTarget}#Intent;scheme=https;action=android.intent.action.VIEW;package=${encodeURIComponent(destination.androidPackage)};S.browser_fallback_url=${fallback};end`;
+        const scheme = destination.androidScheme || destination.appScheme;
+        return `intent://#Intent;scheme=${encodeURIComponent(scheme)};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=${encodeURIComponent(destination.androidPackage)};S.browser_fallback_url=${fallback};end`;
     }
 
     function openIosAppWithFallback(destination) {
@@ -154,7 +153,7 @@
     }
 
     function openMobileDestination(destination, operatingSystem) {
-        if (operatingSystem === 'android' && destination.appScheme && destination.androidPackage) {
+        if (operatingSystem === 'android' && (destination.androidScheme || destination.appScheme) && destination.androidPackage) {
             window.location.assign(androidIntentUrl(destination));
             return;
         }
