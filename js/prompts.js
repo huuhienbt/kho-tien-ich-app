@@ -37,17 +37,17 @@
     const useOtherPlatformsCount = document.getElementById('useOtherPlatformsCount');
     const categoryNames = { teaching: 'Giảng dạy', admin: 'Hành chính', coding: 'Lập trình', media: 'Media', diy: 'DIY' };
     const promptDestinations = Object.freeze({
-        chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'] },
-        gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'] },
-        claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'] },
-        notebooklm: { label: 'NotebookLM', icon: 'N', url: 'https://notebooklm.google.com/', aliases: ['notebooklm', 'notebook lm'] },
-        grok: { label: 'Grok', icon: '𝕏', url: 'https://grok.com/', aliases: ['grok'] },
-        copilot: { label: 'Microsoft Copilot', icon: '◆', url: 'https://copilot.microsoft.com/', aliases: ['microsoft copilot', 'copilot'] },
-        deepseek: { label: 'DeepSeek', icon: '◌', url: 'https://chat.deepseek.com/', aliases: ['deepseek', 'deep seek'] },
-        canva: { label: 'Canva', icon: 'C', url: 'https://www.canva.com/ai-assistant/', aliases: ['canva'] },
-        perplexity: { label: 'Perplexity', icon: 'P', url: 'https://www.perplexity.ai/', aliases: ['perplexity'] },
+        chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'], appScheme: 'chatgpt', androidPackage: 'com.openai.chatgpt' },
+        gemini: { label: 'Gemini', icon: '✦', url: 'https://gemini.google.com/app', aliases: ['gemini'], appScheme: 'gemini', androidPackage: 'com.google.android.apps.bard' },
+        claude: { label: 'Claude', icon: '✺', url: 'https://claude.ai/new', aliases: ['claude'], appScheme: 'claude', androidPackage: 'com.anthropic.claude' },
+        notebooklm: { label: 'NotebookLM', icon: 'N', url: 'https://notebooklm.google.com/', aliases: ['notebooklm', 'notebook lm'], appScheme: 'notebooklm', androidPackage: 'com.google.android.apps.labs.language.tailwind' },
+        grok: { label: 'Grok', icon: '𝕏', url: 'https://grok.com/', aliases: ['grok'], appScheme: 'grok', androidPackage: 'ai.x.grok' },
+        copilot: { label: 'Microsoft Copilot', icon: '◆', url: 'https://copilot.microsoft.com/', aliases: ['microsoft copilot', 'copilot'], appScheme: 'ms-copilot', androidPackage: 'com.microsoft.copilot' },
+        deepseek: { label: 'DeepSeek', icon: '◌', url: 'https://chat.deepseek.com/', aliases: ['deepseek', 'deep seek'], appScheme: 'deepseek', androidPackage: 'com.deepseek.chat' },
+        canva: { label: 'Canva', icon: 'C', url: 'https://www.canva.com/ai-assistant/', aliases: ['canva'], appScheme: 'canva', androidPackage: 'com.canva.editor' },
+        perplexity: { label: 'Perplexity', icon: 'P', url: 'https://www.perplexity.ai/', aliases: ['perplexity'], appScheme: 'perplexity', androidPackage: 'ai.perplexity.app.android' },
         gamma: { label: 'Gamma', icon: 'Γ', url: 'https://gamma.app/', aliases: ['gamma'] },
-        suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'] },
+        suno: { label: 'Suno AI', icon: '♫', url: 'https://suno.com/create', aliases: ['suno'], appScheme: 'suno', androidPackage: 'com.suno.android' },
         midjourney: { label: 'Midjourney', icon: '◇', url: 'https://www.midjourney.com/', aliases: ['midjourney'] }
     });
     let pendingUseItem = null;
@@ -73,27 +73,104 @@
         return matches.length ? matches : ['chatgpt', 'gemini'];
     }
 
-    async function copyText(text) {
-        if (navigator.clipboard?.writeText && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-            return;
-        }
+    function copyTextImmediately(text) {
         const textarea = document.createElement('textarea');
-        textarea.value = text;
+        textarea.value = String(text || '');
         textarea.setAttribute('readonly', '');
         textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.width = '1px';
+        textarea.style.height = '1px';
+        textarea.style.padding = '0';
+        textarea.style.border = '0';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
         document.body.appendChild(textarea);
+        try {
+            textarea.focus({ preventScroll: true });
+        } catch (_) {
+            textarea.focus();
+        }
         textarea.select();
-        const copied = document.execCommand('copy');
+        textarea.setSelectionRange(0, textarea.value.length);
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } catch (_) {
+            copied = false;
+        }
         textarea.remove();
-        if (!copied) throw new Error('Trình duyệt không cho phép sao chép.');
+        return copied;
+    }
+
+    async function copyText(text) {
+        if (copyTextImmediately(text)) return;
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+            await navigator.clipboard.writeText(String(text || ''));
+            return;
+        }
+        throw new Error('Trình duyệt không cho phép sao chép.');
+    }
+
+    function mobileOperatingSystem() {
+        const userAgent = String(navigator.userAgent || navigator.vendor || '');
+        if (/android/i.test(userAgent)) return 'android';
+        if (/iPad|iPhone|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1)) return 'ios';
+        return '';
+    }
+
+    function androidIntentUrl(destination) {
+        const fallback = encodeURIComponent(destination.url);
+        const webUrl = new URL(destination.url);
+        const intentTarget = `${webUrl.host}${webUrl.pathname}${webUrl.search}`;
+        return `intent://${intentTarget}#Intent;scheme=https;action=android.intent.action.VIEW;package=${encodeURIComponent(destination.androidPackage)};S.browser_fallback_url=${fallback};end`;
+    }
+
+    function openIosAppWithFallback(destination) {
+        let leftPage = false;
+        let fallbackTimer = 0;
+        const markAsOpened = () => { leftPage = true; cleanup(); };
+        const cleanup = () => {
+            if (fallbackTimer) window.clearTimeout(fallbackTimer);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('pagehide', markAsOpened);
+        };
+        const handleVisibility = () => { if (document.hidden) markAsOpened(); };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('pagehide', markAsOpened, { once: true });
+        fallbackTimer = window.setTimeout(() => {
+            cleanup();
+            if (!leftPage && !document.hidden) window.location.assign(destination.url);
+        }, 1500);
+
+        try {
+            window.location.assign(`${destination.appScheme}://`);
+        } catch (_) {
+            cleanup();
+            window.location.assign(destination.url);
+        }
+    }
+
+    function openMobileDestination(destination, operatingSystem) {
+        if (operatingSystem === 'android' && destination.appScheme && destination.androidPackage) {
+            window.location.assign(androidIntentUrl(destination));
+            return;
+        }
+        if (operatingSystem === 'ios' && destination.appScheme) {
+            openIosAppWithFallback(destination);
+            return;
+        }
+        window.location.assign(destination.url);
     }
 
     function renderPromptDestinations(keys) {
+        const onMobile = Boolean(mobileOperatingSystem());
         return keys.map(key => {
             const destination = promptDestinations[key];
-            return `<button class="prompt-use-option" type="button" data-prompt-destination="${key}"><span class="prompt-use-icon" aria-hidden="true">${destination.icon}</span><span><strong>Mở ${destination.label}</strong><small>Sao chép Prompt và mở nền tảng</small></span><span aria-hidden="true">→</span></button>`;
+            const actionText = onMobile && destination.appScheme ? 'Sao chép và ưu tiên mở ứng dụng' : 'Sao chép Prompt và mở nền tảng';
+            return `<button class="prompt-use-option" type="button" data-prompt-destination="${key}"><span class="prompt-use-icon" aria-hidden="true">${destination.icon}</span><span><strong>Mở ${destination.label}</strong><small>${actionText}</small></span><span aria-hidden="true">→</span></button>`;
         }).join('');
     }
 
@@ -112,24 +189,24 @@
         App.openModal('usePromptModal');
     }
 
-    async function launchPrompt(item, destinationKey) {
+    function launchPrompt(item, destinationKey) {
         const destination = promptDestinations[destinationKey];
         if (!destination) return;
         const prompt = String(readField(item, ['content', 'Content']));
-        const targetWindow = window.open('', '_blank');
+        const operatingSystem = mobileOperatingSystem();
+        const targetWindow = operatingSystem ? null : window.open('', '_blank');
         if (targetWindow) targetWindow.opener = null;
-        let copied = true;
-        try {
-            await copyText(prompt);
-        } catch (_) {
-            copied = false;
+        const copied = copyTextImmediately(prompt);
+        if (!copied && navigator.clipboard?.writeText && window.isSecureContext) {
+            navigator.clipboard.writeText(prompt).catch(() => {});
         }
         App.closeModal('usePromptModal');
-        if (targetWindow) targetWindow.location.replace(destination.url);
-        else window.location.assign(destination.url);
         App.toast(copied
-            ? `Đã sao chép Prompt và mở ${destination.label}. Hãy dán vào ô chat.`
-            : `Đã mở ${destination.label}, nhưng trình duyệt chưa cho phép sao chép.`, copied ? 'success' : 'error');
+            ? `Đã sao chép Prompt. Đang mở ${destination.label}; tại ô chat hãy chọn Dán.`
+            : `Đang mở ${destination.label}. Nếu chưa dán được, quay lại và bấm Sao chép.`, copied ? 'success' : 'info');
+        if (operatingSystem) openMobileDestination(destination, operatingSystem);
+        else if (targetWindow) targetWindow.location.replace(destination.url);
+        else window.location.assign(destination.url);
     }
 
     async function usePrompt(item) {
