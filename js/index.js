@@ -30,10 +30,10 @@
                 App.apiGet('repairs')
             ]);
             const prompts = Array.isArray(promptResult.data) ? promptResult.data : [];
-            const repairs = Array.isArray(repairResult.data) ? repairResult.data : [];
+            const repairSummary = repairResult && repairResult.summary ? repairResult.summary : {};
             document.getElementById('statPrompts').textContent = prompts.length;
-            document.getElementById('statPending').textContent = repairs.filter(item => item.status !== 'Đã hoàn thành').length;
-            document.getElementById('statWatch').textContent = repairs.filter(item => item.status === 'Cần theo dõi').length;
+            document.getElementById('statPending').textContent = Number.isFinite(Number(repairSummary.pending)) ? Number(repairSummary.pending) : '—';
+            document.getElementById('statWatch').textContent = Number.isFinite(Number(repairSummary.watch)) ? Number(repairSummary.watch) : '—';
         } catch (_) {
             ['statPrompts', 'statPending', 'statWatch'].forEach(id => {
                 const node = document.getElementById(id);

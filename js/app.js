@@ -100,11 +100,11 @@
                     <div class="modal-content modal-sm auth-modal">
                         <div class="modal-header"><h2 class="modal-title" id="loginTitle">Đăng nhập</h2><button class="modal-close" type="button" data-close-modal="loginModal" aria-label="Đóng">×</button></div>
                         <div class="auth-tabs" role="tablist" aria-label="Loại tài khoản">
-                            <button class="auth-tab active" type="button" data-auth-tab="user">Khách thành viên</button>
+                            <button class="auth-tab active" type="button" data-auth-tab="user">Thành viên</button>
                             <button class="auth-tab" type="button" data-auth-tab="admin">Quản trị viên</button>
                         </div>
                         <section id="userAuthPanel">
-                            <p class="modal-help" id="guestAuthHelp">Đăng nhập để mở Prompt VIP và lưu các tiện ích cá nhân.</p>
+                            <p class="modal-help" id="guestAuthHelp">Đăng nhập để sử dụng Prompt và lưu các tiện ích cá nhân. Prompt VIP cần tài khoản VIP.</p>
                             <form id="guestAuthForm">
                                 <div class="form-group" id="guestNameGroup" hidden><label class="form-label" for="guestName">Họ và tên</label><input class="form-control" id="guestName" autocomplete="name"></div>
                                 <div class="form-group"><label class="form-label" for="guestEmail">Email</label><input class="form-control" type="email" id="guestEmail" autocomplete="email" required></div>
@@ -153,8 +153,10 @@
     function syncAuthUi() {
         const admin = Boolean(state.adminToken);
         const user = Boolean(state.userToken);
+        const membership = String(state.user?.membership || 'regular').toLowerCase() === 'vip' ? 'vip' : 'regular';
         document.body.classList.toggle('admin-logged-in', admin);
         document.body.classList.toggle('user-logged-in', user);
+        document.body.classList.toggle('vip-member', user && membership === 'vip');
         document.body.classList.toggle('authenticated', admin || user);
         const name = admin ? config.OWNER_NAME : (state.user?.name || state.user?.email || 'Thành viên');
         const display = document.getElementById('userDisplayName');
@@ -164,7 +166,7 @@
             display.title = name;
         }
         if (avatar) avatar.textContent = initials(name);
-        window.dispatchEvent(new CustomEvent('app:auth-change', { detail: { admin, user, authenticated: admin || user } }));
+        window.dispatchEvent(new CustomEvent('app:auth-change', { detail: { admin, user, membership, authenticated: admin || user } }));
     }
 
     function openModal(id) {
@@ -275,6 +277,14 @@
                 if (/phiên (đăng nhập|quản trị)|userToken|token.*hết hạn/i.test(message)) logout();
                 throw new Error(message);
             }
+            if (!state.adminToken && state.user && ['regular', 'vip'].includes(String(result.membership || '').toLowerCase())) {
+                const membership = String(result.membership).toLowerCase();
+                if (state.user.membership !== membership) {
+                    state.user = Object.assign({}, state.user, { membership });
+                    localStorage.setItem(config.USER_PROFILE_KEY, JSON.stringify(state.user));
+                    syncAuthUi();
+                }
+            }
             return result;
         } catch (error) {
             if (error?.name === 'AbortError') throw new Error(options.timeoutMessage || 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.');
@@ -316,7 +326,9 @@
         document.getElementById('guestPassword').autocomplete = registering ? 'new-password' : 'current-password';
         document.getElementById('guestAuthSubmit').textContent = registering ? 'Đăng ký tài khoản' : 'Đăng nhập';
         document.getElementById('toggleGuestAuth').textContent = registering ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký';
-        document.getElementById('guestAuthHelp').textContent = registering ? 'Tạo tài khoản để sử dụng Prompt VIP.' : 'Đăng nhập để mở Prompt VIP và lưu các tiện ích cá nhân.';
+        document.getElementById('guestAuthHelp').textContent = registering
+            ? 'Tạo tài khoản thường để sử dụng Prompt; quản trị có thể cấp quyền VIP sau.'
+            : 'Đăng nhập để sử dụng Prompt và lưu tiện ích. Prompt VIP cần tài khoản VIP.';
     }
 
     function setGoogleAuthProgress(visible) {
@@ -493,6 +505,7 @@
         isAuthenticated,
         isAdmin: () => Boolean(state.adminToken),
         isGuest: () => Boolean(state.userToken),
+        isVipMember: () => Boolean(state.adminToken || (state.userToken && String(state.user?.membership || '').toLowerCase() === 'vip')),
         getAdminToken: () => state.adminToken,
         getUserToken: () => state.userToken,
         getUser: () => state.user,

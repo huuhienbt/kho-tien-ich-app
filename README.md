@@ -1,8 +1,8 @@
-# E-GV v8.8 – Mở ứng dụng AI tương ứng trên Android
+# E-GV v9.0 – Phân quyền tài khoản và cầu nối native Android
 
-- Tách riêng giao thức Android và iOS để mỗi hệ điều hành gọi đúng ứng dụng.
-- Áp dụng Android Intent riêng cho ChatGPT, Gemini, Claude, NotebookLM, Grok, Copilot, DeepSeek, Canva, Perplexity và Suno.
-- Mỗi lựa chọn dùng giao thức ứng dụng kèm đúng package Android; website chỉ là đường dự phòng khi máy chưa cài app hoặc phiên bản app không nhận giao thức.
+- Android không còn phụ thuộc vào URL scheme của từng nền tảng.
+- Website gọi giao thức riêng `egv://open-ai` để APK E-GV v1.1 mở trực tiếp package ChatGPT, Gemini, Claude, NotebookLM, Grok, Copilot, DeepSeek, Canva, Perplexity hoặc Suno.
+- Website chỉ là đường dự phòng khi APK E-GV v1.1 hoặc ứng dụng đích chưa được cài.
 - Tiếp tục sao chép Prompt đồng bộ trước khi chuyển sang ứng dụng đã chọn.
 
 Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google Apps Script để quản lý Prompt, nhật ký sửa chữa, tải tệp Drive và soạn kế hoạch bài dạy bằng Gemini.
@@ -21,8 +21,13 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Thêm bốn mức truy cập rõ ràng: Khách, Thành viên Thường, Thành viên VIP và Quản trị.
+- Khách chỉ có nút `Sao chép` trên Prompt thường; nút `Sử dụng` chỉ xuất hiện sau khi đăng nhập.
+- Prompt VIP chỉ gửi nội dung cho tài khoản VIP hoặc quản trị; tài khoản thường vẫn thấy thẻ nhưng nội dung bị khóa.
+- Nhật ký sửa chữa chỉ trả số liệu tổng hợp cho khách, chỉ trả tên công việc và trạng thái cho thành viên, và chỉ trả đầy đủ dữ liệu cho quản trị.
+- Quản trị có cửa sổ `Quản lý tài khoản` tại Kho Prompt để tìm người dùng, nhận biết đăng nhập Google/email và chuyển quyền Thường/VIP.
 - Sửa lỗi APK/TWA báo trình duyệt không cho phép sao chép: E-GV dùng cách sao chép đồng bộ ngay trong thao tác chạm và chỉ dùng Clipboard API làm dự phòng.
-- Chuẩn hóa Android Intent cho toàn bộ ứng dụng AI trong danh sách; ChatGPT dùng riêng `com.openai.chat://`, các nền tảng còn lại dùng giao thức tương ứng và đúng package Android.
+- Chuyển Android Intent sang cầu nối native của APK E-GV để mở trực tiếp ứng dụng theo package, không còn phụ thuộc giao thức do ứng dụng đích đăng ký.
 - Không chờ lời hứa Clipboard trước khi mở ứng dụng, nhờ đó giữ nguyên quyền kích hoạt từ thao tác chạm và tránh Android tự chuyển sang trình duyệt.
 - Khi sử dụng Prompt trên máy tính, E-GV sao chép nội dung rồi mở trang web của nền tảng trong thẻ mới.
 - Trên Android và iOS, E-GV sao chép Prompt rồi ưu tiên mở ứng dụng tương ứng; nếu ứng dụng không có hoặc nền tảng không hỗ trợ liên kết ứng dụng, hệ thống chuyển sang trang web.

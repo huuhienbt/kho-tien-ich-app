@@ -7,7 +7,7 @@
 const APP_ORIGIN = 'https://e-gv.vercel.app';
 const PROMPT_HEADERS = ['id', 'title', 'category', 'content', 'platform', 'access', 'created_at'];
 const REPAIR_HEADERS = ['id', 'date', 'task', 'location', 'cost', 'warranty', 'status', 'vendor', 'reporter', 'asset_id', 'image_url', 'note'];
-const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'created_at', 'last_login'];
+const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider', 'google_sub', 'status', 'membership', 'created_at', 'last_login'];
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
 const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v5';
 const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
@@ -15,31 +15,65 @@ const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
 function doGet(e) {
   try {
     const type = String((e && e.parameter && e.parameter.type) || 'prompts').toLowerCase();
-    if (type === 'repairs') return createResponse({ status: 'success', data: getPublicRepairItems(), restricted: true });
+    if (type === 'repairs') {
+      const repairItems = getRepairItems();
+      return createResponse({
+        status: 'success',
+        data: [],
+        summary: getRepairSummary(repairItems, false),
+        accessLevel: 'public',
+        restricted: true
+      });
+    }
     if (type !== 'prompts') return createResponse({ status: 'error', message: 'Loại dữ liệu không hợp lệ.' });
 
     ensureSheet('Prompts', PROMPT_HEADERS);
-    const prompts = getSheetObjects('Prompts').reverse().map(function (item) {
-      if (!isVipPrompt(item)) return item;
-      const safeItem = Object.assign({}, item);
-      setInsensitive(safeItem, 'content', '');
-      safeItem.locked = true;
-      return safeItem;
-    });
+    const prompts = maskPromptItems(getSheetObjects('Prompts').reverse(), null);
     return createResponse({ status: 'success', data: prompts });
   } catch (error) {
     return createResponse({ status: 'error', message: safeError(error) });
   }
 }
 
-function getPublicRepairItems() {
+function getRepairItems() {
   ensureSheet('Repairs', REPAIR_HEADERS);
-  return getSheetObjects('Repairs').reverse().map(function (item) {
+  return getSheetObjects('Repairs').reverse();
+}
+
+function getMemberRepairItems(items) {
+  return items.map(function (item) {
     return {
       id: String(readInsensitive(item, 'id') || ''),
       task: String(readInsensitive(item, 'task') || ''),
       status: String(readInsensitive(item, 'status') || '')
     };
+  });
+}
+
+function getRepairSummary(items, includeCost) {
+  const list = Array.isArray(items) ? items : [];
+  const summary = {
+    total: list.length,
+    pending: list.filter(function (item) { return String(readInsensitive(item, 'status') || '') !== 'Đã hoàn thành'; }).length,
+    watch: list.filter(function (item) { return String(readInsensitive(item, 'status') || '') === 'Cần theo dõi'; }).length
+  };
+  if (includeCost) {
+    summary.cost = list.reduce(function (total, item) {
+      const number = Number(String(readInsensitive(item, 'cost') || '').replace(/[^0-9-]/g, ''));
+      return total + (isFinite(number) ? number : 0);
+    }, 0);
+  }
+  return summary;
+}
+
+function maskPromptItems(items, principal) {
+  const canReadVip = isVipPrincipal(principal);
+  return (Array.isArray(items) ? items : []).map(function (item) {
+    if (!isVipPrompt(item) || canReadVip) return item;
+    const safeItem = Object.assign({}, item);
+    setInsensitive(safeItem, 'content', '');
+    safeItem.locked = true;
+    return safeItem;
   });
 }
 
@@ -66,20 +100,37 @@ function doPost(e) {
       ensureSheet('Prompts', PROMPT_HEADERS);
       return createResponse({
         status: 'success',
-        data: getSheetObjects('Prompts').reverse(),
-        favorites: getFavoritePromptIds(principal)
+        data: maskPromptItems(getSheetObjects('Prompts').reverse(), principal),
+        favorites: getFavoritePromptIds(principal),
+        membership: principal.role === 'admin' ? 'admin' : normalizeMembership(principal.membership)
       });
     }
 
     if (action === 'get_repairs') {
       const principal = resolvePrincipal(payload);
       if (!principal) return createResponse({ status: 'error', message: 'Vui lòng đăng nhập để xem chi tiết nhật ký sửa chữa.' });
-      ensureSheet('Repairs', REPAIR_HEADERS);
-      return createResponse({ status: 'success', data: getSheetObjects('Repairs').reverse(), restricted: false });
+      const repairItems = getRepairItems();
+      const admin = principal.role === 'admin';
+      return createResponse({
+        status: 'success',
+        data: admin ? repairItems : getMemberRepairItems(repairItems),
+        summary: getRepairSummary(repairItems, admin),
+        accessLevel: admin ? 'admin' : 'member',
+        restricted: !admin
+      });
     }
 
     if (action === 'toggle_favorite') return handleToggleFavorite(payload, data);
     if (action === 'sync_favorites') return handleSyncFavorites(payload, data);
+
+    if (action === 'admin_get_users') {
+      if (!isAdminPrincipal(payload)) return createResponse({ status: 'error', message: 'Phiên quản trị không hợp lệ hoặc đã hết hạn.' });
+      return handleAdminGetUsers();
+    }
+    if (action === 'admin_set_membership') {
+      if (!isAdminPrincipal(payload)) return createResponse({ status: 'error', message: 'Phiên quản trị không hợp lệ hoặc đã hết hạn.' });
+      return handleAdminSetMembership(data);
+    }
 
     if (action === 'upload') return handlePublicUpload(data, payload.clientId);
     if (action === 'getResumableUrl') return handleResumableUrl(data, payload.clientId);
@@ -174,7 +225,7 @@ function handleUserRegister(data, clientId) {
     const user = {
       id: 'USR-' + Date.now(), name: name, email: email,
       password_hash: hashPassword(password, salt), salt: salt,
-      provider: 'password', google_sub: '', status: 'active',
+      provider: 'password', google_sub: '', status: 'active', membership: 'regular',
       created_at: new Date().toISOString(), last_login: new Date().toISOString()
     };
     appendRecord(sheet, user);
@@ -245,7 +296,7 @@ function handleGoogleLogin(data, clientId) {
     const user = {
       id: 'USR-' + Date.now(), name: googleUser.name || googleUser.email,
       email: googleUser.email, password_hash: '', salt: '', provider: 'google',
-      google_sub: googleUser.sub, status: 'active', created_at: now, last_login: now
+      google_sub: googleUser.sub, status: 'active', membership: 'regular', created_at: now, last_login: now
     };
     appendRecord(sheet, user);
     putCachedGoogleUser(user);
@@ -307,6 +358,7 @@ function putCachedGoogleUser(user) {
       email: normalizeEmail(readInsensitive(user, 'email')),
       google_sub: String(readInsensitive(user, 'google_sub') || ''),
       status: String(readInsensitive(user, 'status') || 'active'),
+      membership: normalizeMembership(readInsensitive(user, 'membership')),
       last_login: String(readInsensitive(user, 'last_login') || '')
     };
     if (safeUser.id && safeUser.email) {
@@ -354,9 +406,17 @@ function userSessionResponse(user) {
   const profile = {
     id: String(readInsensitive(user, 'id') || ''),
     name: String(readInsensitive(user, 'name') || ''),
-    email: normalizeEmail(readInsensitive(user, 'email'))
+    email: normalizeEmail(readInsensitive(user, 'email')),
+    provider: normalizeProvider(readInsensitive(user, 'provider')),
+    membership: normalizeMembership(readInsensitive(user, 'membership'))
   };
-  const token = issueToken({ sub: profile.id, role: 'member', name: profile.name, email: profile.email }, 7 * 24 * 60 * 60);
+  const token = issueToken({
+    sub: profile.id,
+    role: 'member',
+    name: profile.name,
+    email: profile.email,
+    membership: profile.membership
+  }, 7 * 24 * 60 * 60);
   return createResponse({ status: 'success', userToken: token, user: profile });
 }
 
@@ -365,12 +425,83 @@ function resolvePrincipal(payload) {
     const admin = verifyToken(payload.adminToken, 'admin');
     if (admin) return admin;
   }
-  if (payload.userToken) return verifyToken(payload.userToken, 'member');
+  if (payload.userToken) {
+    const member = verifyToken(payload.userToken, 'member');
+    return member ? hydrateMemberPrincipal(member) : null;
+  }
   return null;
+}
+
+function hydrateMemberPrincipal(principal) {
+  const found = findUserById(principal && principal.sub);
+  if (!found) return null;
+  const status = String(readInsensitive(found.data, 'status') || 'active').toLowerCase();
+  if (status !== 'active') return null;
+  return Object.assign({}, principal, {
+    name: String(readInsensitive(found.data, 'name') || principal.name || ''),
+    email: normalizeEmail(readInsensitive(found.data, 'email') || principal.email),
+    membership: normalizeMembership(readInsensitive(found.data, 'membership'))
+  });
+}
+
+function isVipPrincipal(principal) {
+  return Boolean(principal && (principal.role === 'admin' || normalizeMembership(principal.membership) === 'vip'));
 }
 
 function isAdminPrincipal(payload) {
   return Boolean(payload && payload.adminToken && verifyToken(payload.adminToken, 'admin'));
+}
+
+function handleAdminGetUsers() {
+  ensureSheet('Users', USER_HEADERS);
+  const users = getSheetObjects('Users').map(safeAdminUser).sort(function (left, right) {
+    return String(right.created_at || '').localeCompare(String(left.created_at || ''));
+  });
+  return createResponse({ status: 'success', data: users });
+}
+
+function handleAdminSetMembership(data) {
+  const userId = cleanText(data && data.userId, 120);
+  const membership = normalizeMembership(data && data.membership);
+  if (!userId) return createResponse({ status: 'error', message: 'Thiếu mã tài khoản.' });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const found = findUserById(userId);
+    if (!found) return createResponse({ status: 'error', message: 'Không tìm thấy tài khoản.' });
+    updateRecordAtRow(found.sheet, found.row, { membership: membership });
+    const updated = Object.assign({}, found.data, { membership: membership });
+    clearCachedGoogleUser(readInsensitive(updated, 'email'));
+    return createResponse({
+      status: 'success',
+      user: safeAdminUser(updated),
+      message: membership === 'vip' ? 'Đã cấp quyền VIP.' : 'Đã chuyển về tài khoản thường.'
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function safeAdminUser(user) {
+  return {
+    id: String(readInsensitive(user, 'id') || ''),
+    name: String(readInsensitive(user, 'name') || ''),
+    email: normalizeEmail(readInsensitive(user, 'email')),
+    provider: normalizeProvider(readInsensitive(user, 'provider')),
+    membership: normalizeMembership(readInsensitive(user, 'membership')),
+    status: String(readInsensitive(user, 'status') || 'active').toLowerCase(),
+    created_at: String(readInsensitive(user, 'created_at') || ''),
+    last_login: String(readInsensitive(user, 'last_login') || '')
+  };
+}
+
+function clearCachedGoogleUser(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return;
+  try {
+    CacheService.getScriptCache().remove(googleCacheKey('google-user:', normalized));
+  } catch (_) {}
 }
 
 function issueToken(claims, ttlSeconds) {
@@ -1341,6 +1472,25 @@ function findUserByEmail(email) {
   return null;
 }
 
+function findUserById(id) {
+  const wantedId = String(id || '');
+  if (!wantedId) return null;
+  const sheet = ensureSheet('Users', USER_HEADERS);
+  if (sheet.getLastRow() <= 1) return null;
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0].map(function (header) { return String(header).trim(); });
+  const idIndex = headers.map(normalizeHeader).indexOf('id');
+  if (idIndex === -1) return null;
+  for (let index = 1; index < values.length; index++) {
+    if (String(values[index][idIndex]) === wantedId) {
+      const data = {};
+      headers.forEach(function (header, column) { data[header] = values[index][column]; });
+      return { sheet: sheet, row: index + 1, data: data };
+    }
+  }
+  return null;
+}
+
 /* ========================= TIỆN ÍCH ========================= */
 
 function readInsensitive(object, key) {
@@ -1363,6 +1513,14 @@ function isVipPrompt(item) {
 
 function normalizePromptAccess(value) {
   return String(value || '').toLowerCase() === 'vip' ? 'vip' : 'normal';
+}
+
+function normalizeMembership(value) {
+  return String(value || '').trim().toLowerCase() === 'vip' ? 'vip' : 'regular';
+}
+
+function normalizeProvider(value) {
+  return String(value || '').trim().toLowerCase() === 'google' ? 'google' : 'password';
 }
 
 function normalizeHeader(value) {

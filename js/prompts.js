@@ -26,7 +26,11 @@
         sort: 'newest',
         editId: null,
         favorites: readLocalFavorites(),
-        favoriteBusy: new Set()
+        favoriteBusy: new Set(),
+        membership: 'public',
+        accounts: [],
+        accountQuery: '',
+        accountBusy: new Set()
     };
 
     const container = document.getElementById('promptContainer');
@@ -35,6 +39,7 @@
     const useOtherPromptOptions = document.getElementById('useOtherPromptOptions');
     const useOtherPlatformsButton = document.getElementById('useOtherPlatformsButton');
     const useOtherPlatformsCount = document.getElementById('useOtherPlatformsCount');
+    const accountList = document.getElementById('accountList');
     const categoryNames = { teaching: 'Giảng dạy', admin: 'Hành chính', coding: 'Lập trình', media: 'Media', diy: 'DIY' };
     const promptDestinations = Object.freeze({
         chatgpt: { label: 'ChatGPT', icon: '◉', url: 'https://chatgpt.com/', aliases: ['chatgpt', 'gpt'], appScheme: 'chatgpt', androidPackage: 'com.openai.chatgpt' },
@@ -250,6 +255,7 @@
 
     function render() {
         const items = filteredItems();
+        const authenticated = App.isAuthenticated();
         if (!items.length) {
             container.innerHTML = state.category === 'favorites'
                 ? '<div class="empty-state"><span class="empty-icon">☆</span>Chưa có Prompt yêu thích. Nhấn ngôi sao trên Prompt để thêm vào mục này.</div>'
@@ -267,21 +273,24 @@
             const favorite = state.favorites.has(String(readField(item, ['id', 'ID'])));
             const favoriteBusy = state.favoriteBusy.has(String(readField(item, ['id', 'ID'])));
             const vip = isVip(item);
-            const locked = vip && !App.isAuthenticated();
+            const locked = Boolean(item.locked) || (vip && !App.isVipMember());
+            const lockedMessage = authenticated
+                ? '<span>Tài khoản hiện tại là tài khoản thường. Liên hệ quản trị để được cấp quyền VIP.</span>'
+                : '<span>Đăng nhập bằng tài khoản VIP để xem nội dung Prompt này.</span><button class="btn btn-primary btn-sm" type="button" data-action="unlock">Đăng nhập để xem</button>';
             const body = locked
-                ? `<div class="vip-lock"><span class="vip-lock-icon">🔒</span><strong>Nội dung dành cho thành viên VIP</strong><span>Đăng nhập hoặc đăng ký miễn phí để xem Prompt này.</span><button class="btn btn-primary btn-sm" type="button" data-action="unlock">Đăng nhập để xem</button></div>`
+                ? `<div class="vip-lock"><span class="vip-lock-icon">🔒</span><strong>Nội dung dành cho tài khoản VIP</strong>${lockedMessage}</div>`
                 : `<div class="prompt-box" id="prompt-content-${id}">${content}</div>`;
             return `<article class="card prompt-card${vip ? ' prompt-vip' : ''}" data-id="${id}">
                 <div class="card-header">
                     <div><h2 class="card-title">${title}</h2><div class="prompt-meta" style="margin-top:8px"><span class="tag tag-${category}">${App.escapeHTML(categoryNames[rawCategory] || rawCategory || 'Khác')}</span><span class="tag ${vip ? 'tag-vip' : 'tag-normal'}">${vip ? '👑 VIP' : 'Thường'}</span><span class="platform-label">${platform}</span></div></div>
-                    <button class="btn btn-ghost btn-icon favorite-btn${favorite ? ' active' : ''}" type="button" data-action="favorite" aria-label="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích" title="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích"${favoriteBusy ? ' disabled' : ''}>★</button>
+                    ${authenticated ? `<button class="btn btn-ghost btn-icon favorite-btn${favorite ? ' active' : ''}" type="button" data-action="favorite" aria-label="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích" title="${favorite ? 'Bỏ khỏi' : 'Thêm vào'} Prompt yêu thích"${favoriteBusy ? ' disabled' : ''}>★</button>` : ''}
                 </div>
                 ${body}
                 <div class="card-footer">
-                    <div>${locked ? '<span class="vip-note">Cần tài khoản thành viên</span>' : '<button class="btn btn-ghost btn-sm" type="button" data-action="expand">Xem đầy đủ ↓</button>'}</div>
+                    <div>${locked ? '<span class="vip-note">Cần tài khoản VIP</span>' : '<button class="btn btn-ghost btn-sm" type="button" data-action="expand">Xem đầy đủ ↓</button>'}</div>
                     <div class="prompt-action-group">
                         ${locked ? '' : '<button class="btn btn-secondary btn-sm" type="button" data-action="copy">📋 Sao chép</button>'}
-                        ${locked ? '' : '<button class="btn btn-use btn-sm" type="button" data-action="use">↗ Sử dụng</button>'}
+                        ${locked || !authenticated ? '' : '<button class="btn btn-use btn-sm" type="button" data-action="use">↗ Sử dụng</button>'}
                         <button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit">✏️ Sửa</button>
                         <button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete">🗑️ Xóa</button>
                     </div>
@@ -296,6 +305,7 @@
             const authenticated = App.isAuthenticated();
             const result = authenticated ? await App.apiPost('get_prompts') : await App.apiGet('prompts');
             state.items = Array.isArray(result.data) ? result.data : [];
+            state.membership = authenticated ? String(result.membership || (App.isAdmin() ? 'admin' : 'regular')) : 'public';
             if (authenticated) {
                 state.favorites = new Set(Array.isArray(result.favorites) ? result.favorites.map(String) : []);
                 const localFavorites = readLocalFavorites();
@@ -411,7 +421,88 @@
         }
     }
 
+    function formatAccountDate(value) {
+        const date = new Date(String(value || ''));
+        if (Number.isNaN(date.getTime())) return 'Chưa có';
+        return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+    }
+
+    function filteredAccounts() {
+        const query = state.accountQuery.toLocaleLowerCase('vi');
+        return state.accounts.filter(account => {
+            const haystack = `${account.name || ''} ${account.email || ''}`.toLocaleLowerCase('vi');
+            return !query || haystack.includes(query);
+        });
+    }
+
+    function updateAccountSummary() {
+        const vipCount = state.accounts.filter(account => account.membership === 'vip').length;
+        document.getElementById('accountTotal').textContent = state.accounts.length;
+        document.getElementById('accountVipTotal').textContent = vipCount;
+        document.getElementById('accountRegularTotal').textContent = state.accounts.length - vipCount;
+    }
+
+    function renderAccounts() {
+        updateAccountSummary();
+        const accounts = filteredAccounts();
+        if (!accounts.length) {
+            accountList.innerHTML = '<div class="empty-state"><span class="empty-icon">👥</span>Không tìm thấy tài khoản phù hợp.</div>';
+            return;
+        }
+        accountList.innerHTML = accounts.map(account => {
+            const id = App.escapeHTML(account.id || '');
+            const vip = account.membership === 'vip';
+            const busy = state.accountBusy.has(String(account.id));
+            const provider = account.provider === 'google' ? 'Google' : 'Email và mật khẩu';
+            const status = account.status === 'active' ? 'Đang hoạt động' : 'Đã khóa';
+            return `<article class="account-item" data-user-id="${id}">
+                <div class="account-avatar" aria-hidden="true">${App.escapeHTML(String(account.name || account.email || 'TV').trim().charAt(0).toLocaleUpperCase('vi') || 'T')}</div>
+                <div class="account-identity"><strong>${App.escapeHTML(account.name || 'Chưa có tên')}</strong><span>${App.escapeHTML(account.email || '—')}</span><small>${App.escapeHTML(provider)} · ${App.escapeHTML(status)} · Đăng nhập gần nhất: ${App.escapeHTML(formatAccountDate(account.last_login))}</small></div>
+                <span class="account-level ${vip ? 'is-vip' : 'is-regular'}">${vip ? 'VIP' : 'Thường'}</span>
+                <button class="btn ${vip ? 'btn-secondary' : 'btn-primary'} btn-sm" type="button" data-account-membership="${vip ? 'regular' : 'vip'}"${busy ? ' disabled' : ''}>${busy ? 'Đang lưu…' : (vip ? 'Chuyển về Thường' : 'Cấp quyền VIP')}</button>
+            </article>`;
+        }).join('');
+    }
+
+    async function loadAccounts() {
+        accountList.setAttribute('aria-busy', 'true');
+        accountList.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+        try {
+            const result = await App.apiPost('admin_get_users', {}, { auth: true });
+            state.accounts = Array.isArray(result.data) ? result.data : [];
+            renderAccounts();
+        } catch (error) {
+            accountList.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>${App.escapeHTML(error.message)}</div>`;
+        } finally {
+            accountList.removeAttribute('aria-busy');
+        }
+    }
+
+    async function setAccountMembership(userId, membership) {
+        const id = String(userId || '');
+        if (!id || state.accountBusy.has(id)) return;
+        state.accountBusy.add(id);
+        renderAccounts();
+        try {
+            const result = await App.apiPost('admin_set_membership', { userId: id, membership }, { auth: true });
+            const updated = result.user || {};
+            state.accounts = state.accounts.map(account => String(account.id) === id ? Object.assign({}, account, updated) : account);
+            App.toast(result.message || 'Đã cập nhật quyền tài khoản.', 'success');
+        } catch (error) {
+            App.toast(error.message || 'Không thể cập nhật quyền.', 'error');
+        } finally {
+            state.accountBusy.delete(id);
+            renderAccounts();
+        }
+    }
+
     document.getElementById('addPromptButton').addEventListener('click', () => App.requireAdmin(() => openForm()));
+    document.getElementById('manageAccountsButton').addEventListener('click', () => App.requireAdmin(() => {
+        state.accountQuery = '';
+        document.getElementById('accountSearch').value = '';
+        App.openModal('accountManagementModal');
+        loadAccounts();
+    }));
     document.getElementById('promptForm').addEventListener('submit', savePrompt);
     document.getElementById('promptSearch').addEventListener('input', App.debounce(event => { state.query = event.target.value.trim(); render(); }));
     document.getElementById('promptAccessFilter').addEventListener('change', event => { state.access = event.target.value; render(); });
@@ -462,6 +553,16 @@
         const button = event.target.closest('[data-prompt-destination]');
         if (!button || !pendingUseItem) return;
         launchPrompt(pendingUseItem, button.dataset.promptDestination);
+    });
+    document.getElementById('accountSearch').addEventListener('input', App.debounce(event => {
+        state.accountQuery = event.target.value.trim();
+        renderAccounts();
+    }));
+    accountList.addEventListener('click', event => {
+        const button = event.target.closest('[data-account-membership]');
+        const item = event.target.closest('[data-user-id]');
+        if (!button || !item) return;
+        setAccountMembership(item.dataset.userId, button.dataset.accountMembership);
     });
 
     window.addEventListener('app:auth-change', loadData);

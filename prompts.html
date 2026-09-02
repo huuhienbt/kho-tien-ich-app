@@ -6,11 +6,11 @@
     <meta name="description" content="Kho lưu trữ và quản lý câu lệnh AI dành cho giáo viên.">
     <meta name="theme-color" content="#2563eb">
     <title>Kho Prompt – E-GV</title>
-    <link rel="stylesheet" href="style.css?v=8.0.0">
-    <link rel="stylesheet" href="modern-saas.css?v=8.0.0">
-    <script src="js/config.js?v=8.0.0" defer></script>
-    <script src="js/app.js?v=8.3.0" defer></script>
-    <script src="js/prompts.js?v=8.9.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=9.0.0">
+    <link rel="stylesheet" href="modern-saas.css?v=9.0.0">
+    <script src="js/config.js?v=9.0.0" defer></script>
+    <script src="js/app.js?v=9.0.0" defer></script>
+    <script src="js/prompts.js?v=9.0.0" defer></script>
 </head>
 <body class="page-prompts">
     <div id="appShell"></div>
@@ -18,7 +18,7 @@
         <div class="container">
             <header class="page-heading">
                 <div><p class="page-eyebrow">Thư viện cá nhân</p><h1 class="page-title">Kho Prompt</h1><p class="page-description">Tìm nhanh, sao chép, sử dụng trực tiếp và quản lý các câu lệnh AI phục vụ giảng dạy, hành chính và công việc sáng tạo.</p></div>
-                <div class="page-actions"><button class="btn btn-primary admin-only" id="addPromptButton" type="button">＋ Thêm Prompt</button></div>
+                <div class="page-actions"><button class="btn btn-secondary admin-only" id="manageAccountsButton" type="button">👥 Quản lý tài khoản</button><button class="btn btn-primary admin-only" id="addPromptButton" type="button">＋ Thêm Prompt</button></div>
             </header>
 
             <section class="panel toolbar" aria-label="Tìm kiếm và sắp xếp">
@@ -55,7 +55,7 @@
                     <div class="form-group full-width"><label class="form-label" for="pTitle">Tiêu đề</label><input class="form-control" id="pTitle" required maxlength="180"></div>
                     <div class="form-group"><label class="form-label" for="pCategory">Danh mục</label><select class="form-control" id="pCategory"><option value="teaching">Giảng dạy</option><option value="admin">Hành chính</option><option value="coding">Lập trình</option><option value="media">Media</option><option value="diy">DIY</option></select></div>
                     <div class="form-group"><label class="form-label" for="pPlatform">Nền tảng</label><select class="form-control" id="pPlatform"><optgroup label="Trợ lý AI"><option>ChatGPT / Gemini</option><option>ChatGPT</option><option>Gemini</option><option>Claude</option><option>Grok</option><option>Microsoft Copilot</option><option>DeepSeek</option><option>Perplexity</option></optgroup><optgroup label="Học tập và sáng tạo"><option>NotebookLM</option><option>Canva</option><option>Gamma</option><option>Suno AI</option><option>Midjourney</option></optgroup><option>Khác</option></select></div>
-                    <div class="form-group"><label class="form-label" for="pAccess">Quyền xem</label><select class="form-control" id="pAccess"><option value="normal">Prompt thường — mọi người đều xem</option><option value="vip">Prompt VIP — cần đăng nhập</option></select></div>
+                    <div class="form-group"><label class="form-label" for="pAccess">Quyền xem</label><select class="form-control" id="pAccess"><option value="normal">Prompt thường — mọi người đều xem</option><option value="vip">Prompt VIP — cần tài khoản VIP</option></select></div>
                     <div class="form-group full-width"><label class="form-label" for="pContent">Nội dung Prompt</label><textarea class="form-control" id="pContent" rows="8" required></textarea></div>
                 </div>
                 <div class="form-actions"><button class="btn btn-secondary" type="button" data-close-modal="promptModal">Hủy</button><button class="btn btn-primary" id="savePromptButton" type="submit">Lưu Prompt</button></div>
@@ -72,6 +72,15 @@
             <button class="prompt-use-more" id="useOtherPlatformsButton" type="button" aria-expanded="false" aria-controls="useOtherPromptOptions"><span>Nền tảng khác</span><b id="useOtherPlatformsCount">0 lựa chọn</b><i aria-hidden="true">⌄</i></button>
             <div class="prompt-use-options is-other" id="useOtherPromptOptions" hidden></div>
             <p class="prompt-use-note">Máy tính mở trang web; điện thoại ưu tiên mở ứng dụng và tự chuyển sang trang web nếu không có ứng dụng. Prompt được sao chép trước khi chuyển trang; tại ô chat, chọn <strong>Dán</strong> hoặc nhấn <strong>Ctrl + V</strong>.</p>
+        </div>
+    </div>
+
+    <div class="modal" id="accountManagementModal" role="dialog" aria-modal="true" aria-labelledby="accountManagementTitle">
+        <div class="modal-content account-management-modal">
+            <div class="modal-header"><div><h2 class="modal-title" id="accountManagementTitle">Quản lý tài khoản</h2><p class="modal-help">Phân biệt tài khoản thường, VIP và hình thức đăng nhập.</p></div><button class="modal-close" type="button" data-close-modal="accountManagementModal" aria-label="Đóng">×</button></div>
+            <div class="account-summary" aria-label="Thống kê tài khoản"><span>Tổng <strong id="accountTotal">0</strong></span><span class="account-summary-vip">VIP <strong id="accountVipTotal">0</strong></span><span>Thường <strong id="accountRegularTotal">0</strong></span></div>
+            <div class="search-wrap account-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><label class="sr-only" for="accountSearch">Tìm tài khoản</label><input class="search-input" id="accountSearch" type="search" placeholder="Tìm theo tên hoặc email…"></div>
+            <div class="account-list" id="accountList" aria-live="polite"><div class="skeleton"></div></div>
         </div>
     </div>
 </body>
