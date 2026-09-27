@@ -82,26 +82,61 @@
     function normalizeAiText(value) {
         return String(value || '')
             .replace(/\r\n?/g, '\n')
-            .replace(/&lt;br\s*\/?&gt;/gi, '\n')
-            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/&lt;br\s*\/?&gt;/gi, '<br>')
+            .replace(/<br\s*\/?>/gi, '<br>')
             .replace(/\u00a0/g, ' ')
             .replace(/\n{3,}/g, '\n\n')
             .trim();
     }
 
     function inlineMarkdown(value) {
-        return App.escapeHTML(value)
+        // Keep explicit cell line breaks until after table columns are identified.
+        return String(value || '').split(/<br\s*\/?>/i).map(part => App.escapeHTML(part.replace(/\\\|/g, '|'))
             .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/__(.+?)__/g, '<strong>$1</strong>')
-            .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+            .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')).join('<br>');
+    }
+
+    function tableLineParts(line) {
+        const value = String(line || '').trim();
+        const cells = [''];
+        let codeTicks = 0;
+        let leading = false;
+        let trailing = false;
+        let delimiters = 0;
+        for (let i = 0; i < value.length; i += 1) {
+            const character = value[i];
+            if (character === '\\' && i + 1 < value.length) {
+                cells[cells.length - 1] += character + value[++i];
+                continue;
+            }
+            if (character === '`') {
+                let end = i + 1;
+                while (value[end] === '`') end += 1;
+                const width = end - i;
+                if (codeTicks === 0) codeTicks = width;
+                else if (codeTicks === width) codeTicks = 0;
+                cells[cells.length - 1] += value.slice(i, end);
+                i = end - 1;
+                continue;
+            }
+            if (character === '|' && codeTicks === 0) {
+                leading = leading || i === 0;
+                trailing = i === value.length - 1;
+                delimiters += 1;
+                cells.push('');
+            } else {
+                cells[cells.length - 1] += character;
+            }
+        }
+        if (leading) cells.shift();
+        if (trailing) cells.pop();
+        return { cells: cells.map(cell => cell.trim()), leading, trailing, delimiters };
     }
 
     function splitTableRow(line) {
-        let value = String(line || '').trim();
-        if (value.startsWith('|')) value = value.slice(1);
-        if (value.endsWith('|')) value = value.slice(0, -1);
-        return value.split('|').map(cell => cell.trim());
+        return tableLineParts(line).cells;
     }
 
     function isTableSeparator(line) {
@@ -110,26 +145,106 @@
     }
 
     function isActivityTableBoundary(line) {
+        if (/^\s*\|/.test(line)) return false;
         const value = plainPlanLine(line);
-        return /^#{1,3}\s+/.test(String(line || '').trim())
-            || /^[IVXLCDM]+\.\s+/i.test(value)
+        return /^[IVXLCDM]+[.)]\s+/i.test(value)
             || /^TIẾT\s+\d+/i.test(value)
-            || /^\d+[.)]\s+/.test(value)
-            || /^[a-z]\)\s+(?:Mục\s+tiêu|Cách\s+tổ\s+chức)/i.test(value)
+            || /^(?:\d+[.)]\s*|HĐ\s*\d+\s*[:.–-]?\s*)(?:Hoạt\s+động|Hình\s+thành|Luyện\s+tập|Thực\s+hành|Vận\s+dụng|Khởi\s+động|Khám\s+phá|Mở\s+đầu|Củng\s+cố)/i.test(value)
+            || /^[a-z][).]\s*(?:Mục\s+tiêu|Cách\s+tổ\s+chức)/i.test(value)
+            || /^(?:Mục\s+tiêu|Cách\s+tổ\s+chức\s+dạy\s+học)\s*:/i.test(value)
             || /^```/.test(value);
     }
 
     function activityColumnIndex(value, columnCount) {
-        const text = String(value || '').trim().replace(/^\|+|\|+$/g, '').trim().replace(/^[-•]\s*/, '');
-        if (/^GV\b/i.test(text)) return 0;
-        if (/^HS\b/i.test(text)) return Math.min(1, Math.max(0, columnCount - 1));
+        const text = plainPlanLine(value).replace(/^\|+|\|+$/g, '').trim()
+            .replace(/^[-+•*]\s*/, '').replace(/^\d+[.)]\s*/, '');
+        if (/^(?:GV|Giáo\s+viên)\b/i.test(text)) return 0;
+        if (/^(?:\d+(?:\s*[-–]\s*\d+)?\s+)?(?:HS|Học\s+sinh)\b/i.test(text)) return Math.min(1, columnCount - 1);
         return -1;
     }
 
     function normalizeActivityItem(value) {
         const text = String(value || '').trim().replace(/^•\s*/, '- ');
-        if (/^(?:GV|HS)\b/i.test(text)) return `- ${text}`;
+        if (/^(?:GV|HS)\b/i.test(plainPlanLine(text))) return `- ${text}`;
         return text;
+    }
+
+    function readMarkdownTable(lines, start) {
+        const headers = splitTableRow(lines[start]);
+        const width = headers.length;
+        const activityTable = width === 2 && /\bGV\b|giáo\s+viên/i.test(plainPlanLine(headers[0]))
+            && /\bHS\b|học\s+sinh/i.test(plainPlanLine(headers[1]));
+        const rows = [];
+        let row = headers.map(() => []);
+        let column = 0;
+        let index = start + 2;
+        const occupied = () => row.some(cell => cell.length > 0);
+        const flush = () => {
+            if (occupied()) rows.push(row);
+            row = headers.map(() => []);
+            column = 0;
+        };
+        const append = (value, target) => {
+            const text = normalizeActivityItem(value);
+            if (text) row[Math.min(width - 1, target)].push(text);
+        };
+
+        while (index < lines.length) {
+            const line = String(lines[index] || '').trim();
+            if (!line) {
+                if (!activityTable) break;
+                index += 1;
+                continue;
+            }
+            if (isActivityTableBoundary(line)) break;
+            // A new table has its own header; never absorb it as lesson text.
+            if (line.includes('|') && isTableSeparator(lines[index + 1] || '')) break;
+            if (/^(?:-{3,}|_{3,}|\*{3,})$/.test(line)) break;
+            const parts = tableLineParts(line);
+            if (!activityTable) {
+                if (!parts.delimiters || parts.cells.length < width) break;
+                flush();
+                headers.forEach((_, cellIndex) => append(cellIndex === width - 1 ? parts.cells.slice(cellIndex).join(' | ') : parts.cells[cellIndex], cellIndex));
+                flush();
+                index += 1;
+                continue;
+            }
+
+            if (parts.cells.length >= width) {
+                if (parts.leading) flush();
+                const startColumn = parts.leading ? 0 : column;
+                parts.cells.forEach((cell, offset) => {
+                    // Preserve unexpected extra cell text instead of discarding it.
+                    append(cell, startColumn + offset);
+                });
+                column = Math.min(width - 1, startColumn + parts.cells.length - 1);
+                if (parts.trailing) flush();
+            } else if (parts.cells.length === 0) {
+                // A standalone pipe can separate two cells in a wrapped row.
+                if (column < width - 1) column += 1;
+                else flush();
+            } else {
+                const value = parts.cells[0];
+                const role = activityColumnIndex(value, width);
+                const exerciseHeading = /^(?:Bài\s*(?:tập\s*)?\d+|Câu\s*\d+)/i.test(plainPlanLine(value));
+                if (exerciseHeading || (role === 0 && column === 1 && row[1].length)) flush();
+                // Opening a new wrapped row, e.g. "| **Bài 1 (trang 12):**".
+                if (parts.leading && occupied() && role !== 1) flush();
+                if (role >= 0) column = role;
+                else if (parts.leading && occupied()) column = Math.min(width - 1, column + 1);
+                // A label or subanswer without GV/HS belongs to the open cell.
+                append(value, column);
+                if (parts.trailing) {
+                    if (column === width - 1) flush();
+                    else column += 1;
+                }
+            }
+            index += 1;
+        }
+        flush();
+        const renderedRows = rows.map(cells => `<tr>${cells.map(items => `<td>${items.map(inlineMarkdown).join('<br>')}</td>`).join('')}</tr>`).join('');
+        const html = `<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody>${renderedRows}</tbody></table>`;
+        return { html, next: index };
     }
 
     function startsBlock(lines, index) {
@@ -174,6 +289,10 @@
                 }
                 if (/^(?:II|III|IV)[.)]\s|^TIẾT\s+\d+/i.test(plain)) inVinhLongObjectives = false;
                 if (inVinhLongObjectives) {
+                    if (/<br\s*\/?>/i.test(line)) {
+                        lines.splice(index, 1, ...line.split(/<br\s*\/?>/i));
+                        continue;
+                    }
                     blocks.push(vinhLongObjectiveHtml(line));
                     index += 1;
                     continue;
@@ -181,48 +300,9 @@
             }
 
             if (line.includes('|') && isTableSeparator(lines[index + 1] || '')) {
-                const headers = splitTableRow(line);
-                index += 2;
-                const cellItems = headers.map(() => []);
-                let activeColumn = 0;
-                let hasActivityContent = false;
-
-                while (index < lines.length) {
-                    const activityLine = String(lines[index] || '').trim();
-                    if (!activityLine) {
-                        index += 1;
-                        continue;
-                    }
-                    if (isActivityTableBoundary(activityLine)) break;
-
-                    if (activityLine.includes('|')) {
-                        const cells = splitTableRow(activityLine);
-                        if (cells.length > 1) {
-                            headers.forEach((_, cellIndex) => {
-                                const cellValue = normalizeActivityItem(cells[cellIndex] || '');
-                                if (!cellValue) return;
-                                cellItems[cellIndex].push(cellValue);
-                                activeColumn = cellIndex;
-                                hasActivityContent = true;
-                            });
-                            index += 1;
-                            continue;
-                        }
-                    }
-
-                    const detectedColumn = activityColumnIndex(activityLine, headers.length);
-                    if (detectedColumn >= 0) activeColumn = detectedColumn;
-                    else if (!hasActivityContent) break;
-
-                    const item = normalizeActivityItem(activityLine);
-                    if (item) {
-                        cellItems[activeColumn].push(item);
-                        hasActivityContent = true;
-                    }
-                    index += 1;
-                }
-
-                blocks.push(`<table><thead><tr>${headers.map(cell => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody><tr>${headers.map((_, cellIndex) => `<td>${cellItems[cellIndex].map(inlineMarkdown).join('<br>')}</td>`).join('')}</tr></tbody></table>`);
+                const table = readMarkdownTable(lines, index);
+                blocks.push(table.html);
+                index = table.next;
                 continue;
             }
 
@@ -494,9 +574,10 @@
                 const columnWidth = columnWidths[Math.min(cellIndex, columnWidths.length - 1)];
                 const verticalAlign = heading ? 'center' : 'top';
                 const textAlign = heading ? 'center' : 'left';
-                return `<w:tc><w:tcPr><w:tcW w:w="${columnWidth}" w:type="dxa"/>${shading}<w:vAlign w:val="${verticalAlign}"/></w:tcPr>${splitParagraphXml(cell, { bold: heading, size: 26, align: textAlign })}</w:tc>`;
+                return `<w:tc><w:tcPr><w:tcW w:w="${columnWidth}" w:type="dxa"/>${shading}<w:vAlign w:val="${verticalAlign}"/></w:tcPr>${splitParagraphXml(cell, { bold: heading, size: 26, align: textAlign, keepNext: heading })}</w:tc>`;
             }).join('');
-            return `<w:tr>${cells}</w:tr>`;
+            const rowProperties = Array.from(row.cells).every(cell => cell.tagName.toLowerCase() === 'th') ? '<w:trPr><w:tblHeader/></w:trPr>' : '';
+            return `<w:tr>${rowProperties}${cells}</w:tr>`;
         }).join('');
         return `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="6" w:color="94A3B8"/><w:insideV w:val="single" w:sz="6" w:color="94A3B8"/></w:tblBorders><w:tblCellMar><w:top w:w="100" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${rows}</w:tbl>`;
     }

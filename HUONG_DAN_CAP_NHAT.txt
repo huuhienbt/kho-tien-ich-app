@@ -1,0 +1,25 @@
+E-GV v9.2.1 — Sửa nội dung hoạt động dạy học rơi ngoài bảng
+
+Dành cho website đã cập nhật E-GV v9.2.
+
+CẬP NHẬT
+1. Giải nén gói này.
+2. Thay ai.html ở thư mục gốc và js/ai.js trong thư mục js trên GitHub.
+3. Chờ website cập nhật, tải lại trang Trợ giảng AI (Ctrl + F5 trên máy tính).
+4. Tạo kế hoạch bài dạy và xuất Word lại.
+
+Không cần thay Code.gs, thay khóa API hoặc triển khai lại Apps Script.
+File Word đã tải trước đó không tự thay đổi khi cập nhật website.
+
+ĐÃ SỬA
+- Đọc được hàng bảng bị Gemini xuống nhiều dòng, kể cả hàng bắt đầu bằng “Bài 1”, “Bài 2”, “Bài 3”.
+- Giữ tiêu đề bài tập, câu hỏi, lời GV và câu trả lời HS trong bảng, theo đúng cột và cặp hàng.
+- Nhận diện các dòng “1 HS”, “2 HS”, “2–3 HS” để đưa vào cột học sinh khi khôi phục hàng bị xuống dòng.
+- Giữ xuống dòng trong ô, xử lý dấu | phân cột và dấu | được escape trong nội dung.
+- Không nhầm đáp án đánh số 1., 2. với tiêu đề hoạt động tiếp theo.
+- Tiêu đề cột lặp lại khi bảng Word sang trang; giữ tỷ lệ GV–HS 60:40.
+- Áp dụng cho mẫu mặc định và mẫu Vĩnh Long; giữ màu chữ mục I của mẫu Vĩnh Long.
+
+KIỂM TRA
+Đã tái hiện lỗi bảng trống bằng văn bản mô phỏng tình huống trong ảnh, kiểm tra vị trí từng nội dung trong DOM và XML của Word, và xem hai trang Word xuất thử.
+Không có file Word gốc đính kèm nên đây là bản sửa bộ tạo/xuất KHBD, không phải bản chỉnh trực tiếp giáo án đã tải xuống.
