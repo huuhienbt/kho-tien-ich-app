@@ -2713,3 +2713,29 @@ body.google-auth-busy { overflow: hidden; }
     .integration-group-options { grid-template-columns: 1fr; }
     .integration-group summary { min-height: 58px; }
 }
+
+/* v9.2 — opt-in Vinh Long lesson-plan template */
+.page-ai .lesson-template-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    background: #f8fafc;
+    cursor: pointer;
+}
+.page-ai .lesson-template-option:has(input:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.page-ai .lesson-template-option:focus-within { outline: 2px solid #2563eb; outline-offset: 3px; }
+.page-ai .lesson-template-option input { flex: 0 0 auto; width: 19px; height: 19px; margin: 2px 0 0; accent-color: #2563eb; }
+.page-ai .lesson-template-option strong { display: block; font-size: .92rem; color: #172033; }
+.page-ai .lesson-template-option small { display: block; margin-top: 5px; font-size: .8rem; line-height: 1.5; color: #475569; }
+#aiContent .vl-objective-heading { margin-top: 14px; margin-bottom: 6px; }
+#aiContent .vl-red-heading { color: #ff0000; font-weight: 700; }
+#aiContent .vl-blue-label { color: #0000ff; font-weight: 700; }
+#aiContent .vl-black-text { color: #000; font-weight: 400; font-style: normal; }
+#aiContent .vl-objective-item { margin: 4px 0; padding-left: 14px; text-indent: -14px; }
+#aiContent .vl-integration { margin: 8px 0; }

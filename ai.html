@@ -7,10 +7,10 @@
     <meta name="theme-color" content="#2563eb">
     <title>Trợ giảng AI – E-GV</title>
     <link rel="stylesheet" href="style.css?v=8.2.0">
-    <link rel="stylesheet" href="modern-saas.css?v=8.2.0">
+    <link rel="stylesheet" href="modern-saas.css?v=9.2.0">
     <script src="js/config.js?v=8.2.0" defer></script>
-    <script src="js/app.js?v=9.0.0" defer></script>
-    <script src="js/ai.js?v=8.3.0" defer></script>
+    <script src="js/app.js?v=9.1.0" defer></script>
+    <script src="js/ai.js?v=9.2.0" defer></script>
 </head>
 <body class="page-ai">
     <div id="appShell"></div>
@@ -38,6 +38,12 @@
                                 <div class="form-group"><label class="form-label" for="aiPeriods">Số tiết</label><input class="form-control" id="aiPeriods" type="number" inputmode="numeric" min="1" max="12" step="1" value="1" required><small class="form-help">Từ 1 đến 12 tiết.</small></div>
                                 <div class="form-group"><label class="form-label" for="aiMinutesPerPeriod">Thời lượng mỗi tiết (phút)</label><input class="form-control" id="aiMinutesPerPeriod" type="number" inputmode="numeric" min="20" max="120" step="5" value="35" required><small class="form-help">Tiểu học thường dùng 35 phút.</small></div>
                                 <div class="form-group full-width"><label class="form-label" for="aiLesson">Tên bài dạy</label><input class="form-control" id="aiLesson" placeholder="Ví dụ: Phân số"></div>
+                                <div class="form-group full-width">
+                                    <label class="lesson-template-option" for="aiVinhLongTemplate">
+                                        <input id="aiVinhLongTemplate" type="checkbox" aria-describedby="aiVinhLongHelp">
+                                        <span><strong>KHBD mẫu Vĩnh Long</strong><small id="aiVinhLongHelp">Mục I gồm 4 nhóm cho từng tiết; câu dẫn đỏ đậm, nhãn tích hợp xanh đậm khi xuất Word.</small></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -99,7 +105,7 @@
                                     </div>
                                 </details>
                             </div>
-                            <div class="form-group" style="margin-top:10px"><label class="form-label" for="aiIntegratedOther">Nội dung khác</label><input class="form-control" id="aiIntegratedOther" placeholder="Nhập nội dung tích hợp bổ sung…"></div>
+                            <div class="form-group" style="margin-top:10px"><label class="form-label" for="aiIntegratedOther">Nội dung khác / mã tích hợp</label><input class="form-control" id="aiIntegratedOther" placeholder="Ví dụ: AI (mã đã xác định) – yêu cầu cụ thể…"><small class="form-help">Nếu có mã tích hợp, nhập kèm tên nội dung và mã. Chưa có mã thì chỉ cần chọn nội dung phía trên.</small></div>
                         </div>
 
                         <div class="form-section">

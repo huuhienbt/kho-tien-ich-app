@@ -16,6 +16,24 @@
         return value;
     }
 
+    function readTokenPayload(token) {
+        try {
+            const encoded = String(token || '').split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+            const padded = encoded + '='.repeat((4 - encoded.length % 4) % 4);
+            const binary = window.atob(padded);
+            const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+            const json = typeof TextDecoder !== 'undefined' ? new TextDecoder().decode(bytes) : binary;
+            return JSON.parse(json);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function isLocallyValidToken(token, role) {
+        const payload = readTokenPayload(token);
+        return Boolean(payload && payload.role === role && Number(payload.exp || 0) > Math.floor(Date.now() / 1000));
+    }
+
     const state = {
         adminToken: sessionStorage.getItem(config.SESSION_KEY) || '',
         userToken: localStorage.getItem(config.USER_TOKEN_KEY) || '',
@@ -26,6 +44,17 @@
         googleInitialized: false,
         googleSigningIn: false
     };
+
+    if (state.adminToken && !isLocallyValidToken(state.adminToken, 'admin')) {
+        state.adminToken = '';
+        sessionStorage.removeItem(config.SESSION_KEY);
+    }
+    if (state.userToken && !isLocallyValidToken(state.userToken, 'member')) {
+        state.userToken = '';
+        state.user = null;
+        localStorage.removeItem(config.USER_TOKEN_KEY);
+        localStorage.removeItem(config.USER_PROFILE_KEY);
+    }
 
     const iconPaths = {
         home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/>',
@@ -129,13 +158,13 @@
         if (!document.getElementById('toastRegion')) {
             document.body.insertAdjacentHTML('beforeend', '<div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>');
         }
-        if (!document.getElementById('googleAuthProgress')) {
+        if (!document.getElementById('authProgress')) {
             document.body.insertAdjacentHTML('beforeend', `
-                <div class="google-auth-progress" id="googleAuthProgress" role="status" aria-live="assertive" aria-busy="true" hidden>
+                <div class="google-auth-progress auth-progress" id="authProgress" role="status" aria-live="assertive" aria-busy="true" hidden>
                     <div class="google-auth-progress-card">
                         <span class="google-auth-spinner" aria-hidden="true"></span>
-                        <strong>Đang xác minh tài khoản Google</strong>
-                        <span>Vui lòng chờ trong giây lát…</span>
+                        <strong id="authProgressTitle">Đang đăng nhập</strong>
+                        <span id="authProgressMessage">Vui lòng chờ trong giây lát…</span>
                     </div>
                 </div>`);
         }
@@ -190,6 +219,7 @@
     }
 
     function openLogin(tab = 'user') {
+        warmUpServer();
         setAuthTab(tab);
         openModal('loginModal');
     }
@@ -213,26 +243,26 @@
         const original = button.textContent;
         button.disabled = true;
         button.textContent = 'Đang kiểm tra…';
+        setAuthProgress(true, 'Đang đăng nhập quản trị');
         try {
-            const response = await fetch(config.API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'verify', adminPassword: password, clientId: state.clientId })
+            await waitForInterfacePaint();
+            const result = await apiPost('verify', { adminPassword: password }, {
+                timeoutMs: 20000,
+                timeoutMessage: 'Máy chủ đăng nhập phản hồi quá lâu. Vui lòng thử lại.'
             });
-            const result = await response.json();
-            if (result.status !== 'success') throw new Error(result.message || 'Sai mật khẩu');
             if (!result.adminToken) throw new Error('Máy chủ chưa trả về token quản trị. Hãy triển khai Code.gs phiên bản mới.');
             state.adminToken = result.adminToken;
             sessionStorage.setItem(config.SESSION_KEY, result.adminToken);
             input.value = '';
-            syncAuthUi();
             closeModal('loginModal');
+            syncAuthUi();
             toast('Đăng nhập quản trị thành công.', 'success');
             runPendingAction();
         } catch (error) {
             input.value = '';
             toast(error.message || 'Không thể đăng nhập.', 'error');
         } finally {
+            setAuthProgress(false);
             button.disabled = false;
             button.textContent = original;
         }
@@ -246,8 +276,8 @@
         state.user = user || { name: result.name || '', email: result.email || '' };
         localStorage.setItem(config.USER_TOKEN_KEY, token);
         localStorage.setItem(config.USER_PROFILE_KEY, JSON.stringify(state.user));
-        syncAuthUi();
         closeModal('loginModal');
+        syncAuthUi();
         toast('Đăng nhập thành viên thành công.', 'success');
         runPendingAction();
     }
@@ -273,7 +303,7 @@
             const result = await response.json();
             if (result.status !== 'success') {
                 const message = result.message || 'Thao tác không thành công.';
-                if (/mật khẩu quản trị/i.test(message)) logout();
+                if (action !== 'verify' && /mật khẩu quản trị/i.test(message)) logout();
                 if (/phiên (đăng nhập|quản trị)|userToken|token.*hết hạn/i.test(message)) logout();
                 throw new Error(message);
             }
@@ -306,13 +336,19 @@
         const original = button.textContent;
         button.disabled = true;
         button.textContent = state.authMode === 'register' ? 'Đang đăng ký…' : 'Đang đăng nhập…';
+        setAuthProgress(true, state.authMode === 'register' ? 'Đang tạo tài khoản' : 'Đang đăng nhập thành viên');
         try {
-            const result = await apiPost(state.authMode === 'register' ? 'user_register' : 'user_login', data);
+            await waitForInterfacePaint();
+            const result = await apiPost(state.authMode === 'register' ? 'user_register' : 'user_login', data, {
+                timeoutMs: 20000,
+                timeoutMessage: 'Máy chủ đăng nhập phản hồi quá lâu. Vui lòng thử lại.'
+            });
             saveUserSession(result);
             event.currentTarget.reset();
         } catch (error) {
             toast(error.message || 'Không thể xác thực tài khoản.', 'error');
         } finally {
+            setAuthProgress(false);
             button.disabled = false;
             button.textContent = original;
         }
@@ -331,12 +367,27 @@
             : 'Đăng nhập để sử dụng Prompt và lưu tiện ích. Prompt VIP cần tài khoản VIP.';
     }
 
-    function setGoogleAuthProgress(visible) {
-        const overlay = document.getElementById('googleAuthProgress');
+    let authProgressSlowTimer = 0;
+
+    function setAuthProgress(visible, title = 'Đang đăng nhập') {
+        const overlay = document.getElementById('authProgress');
         const buttonWrap = document.getElementById('googleSignInButton');
+        const titleElement = document.getElementById('authProgressTitle');
+        const messageElement = document.getElementById('authProgressMessage');
+        window.clearTimeout(authProgressSlowTimer);
+        authProgressSlowTimer = 0;
         if (overlay) overlay.hidden = !visible;
         if (buttonWrap) buttonWrap.classList.toggle('is-busy', visible);
         document.body.classList.toggle('google-auth-busy', visible);
+        document.body.classList.toggle('auth-busy', visible);
+        if (!visible) return;
+        if (titleElement) titleElement.textContent = title;
+        if (messageElement) messageElement.textContent = 'Vui lòng chờ trong giây lát…';
+        authProgressSlowTimer = window.setTimeout(() => {
+            if (messageElement && overlay && !overlay.hidden) {
+                messageElement.textContent = 'Máy chủ đang khởi động, thao tác có thể mất thêm vài giây…';
+            }
+        }, 1600);
     }
 
     function waitForInterfacePaint() {
@@ -348,7 +399,7 @@
         if (!response?.credential) return toast('Google không trả về thông tin đăng nhập.', 'error');
         if (state.googleSigningIn) return;
         state.googleSigningIn = true;
-        setGoogleAuthProgress(true);
+        setAuthProgress(true, 'Đang xác minh tài khoản Google');
         try {
             await waitForInterfacePaint();
             const result = await apiPost('google_login', {
@@ -360,8 +411,36 @@
             toast(error.message || 'Không thể đăng nhập bằng Google.', 'error');
         } finally {
             state.googleSigningIn = false;
-            setGoogleAuthProgress(false);
+            setAuthProgress(false);
         }
+    }
+
+    function warmUpServer() {
+        if (!config.API_URL) return;
+        const storageKey = 'egv_server_warm_at';
+        const lastWarmAt = Number(localStorage.getItem(storageKey) || 0);
+        if (Date.now() - lastWarmAt < 4 * 60 * 1000) return;
+        localStorage.setItem(storageKey, String(Date.now()));
+
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? window.setTimeout(() => controller.abort(), 10000) : 0;
+        try {
+            const url = new URL(config.API_URL);
+            url.searchParams.set('type', 'health');
+            url.searchParams.set('_', String(Math.floor(Date.now() / 240000)));
+            fetch(url.href, { cache: 'no-store', signal: controller?.signal })
+                .catch(() => localStorage.removeItem(storageKey))
+                .finally(() => { if (timer) window.clearTimeout(timer); });
+        } catch (_) {
+            if (timer) window.clearTimeout(timer);
+            localStorage.removeItem(storageKey);
+        }
+    }
+
+    function scheduleServerWarmUp() {
+        const start = () => window.setTimeout(warmUpServer, 350);
+        if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(start, { timeout: 1200 });
+        else start();
     }
 
     function initializeGoogleButton() {
@@ -496,6 +575,7 @@
         bindGlobalEvents();
         setupGoogleSignIn();
         syncAuthUi();
+        scheduleServerWarmUp();
     }
 
     window.App = Object.freeze({

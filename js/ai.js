@@ -4,7 +4,13 @@
     App.init('ai');
 
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    const state = { images: [], rawText: '', editing: false, docxBlob: null, docxName: '' };
+    const state = { images: [], rawText: '', editing: false, docxBlob: null, docxName: '', lessonTemplate: 'standard' };
+    const vinhLongHeadings = [
+        'Qua bài học, học sinh thực hiện được:',
+        'Học sinh vận dụng bài học trong thực tế cuộc sống:',
+        'Giúp các em hình thành và phát triển phẩm chất:',
+        'Giúp các em hình thành và phát triển năng lực:'
+    ];
     const fileInput = document.getElementById('aiImage');
     const preview = document.getElementById('aiImageTags');
     const dropZone = document.getElementById('aiDropZone');
@@ -104,9 +110,10 @@
     }
 
     function isActivityTableBoundary(line) {
-        const value = String(line || '').trim();
-        return /^#{1,3}\s+/.test(value)
+        const value = plainPlanLine(line);
+        return /^#{1,3}\s+/.test(String(line || '').trim())
             || /^[IVXLCDM]+\.\s+/i.test(value)
+            || /^TIẾT\s+\d+/i.test(value)
             || /^\d+[.)]\s+/.test(value)
             || /^[a-z]\)\s+(?:Mục\s+tiêu|Cách\s+tổ\s+chức)/i.test(value)
             || /^```/.test(value);
@@ -127,16 +134,51 @@
 
     function startsBlock(lines, index) {
         const line = lines[index] || '';
-        return /^#{1,3}\s+/.test(line) || /^[IVXLCDM]+\.\s+/i.test(line) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
+        const plain = plainPlanLine(line);
+        return /^#{1,3}\s+/.test(line) || /^[IVXLCDM]+\.\s+/i.test(plain) || /^TIẾT\s+\d+/i.test(plain) || /^[-•]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || (line.includes('|') && isTableSeparator(lines[index + 1] || ''));
     }
 
-    function parseMarkdown(value) {
+    function plainPlanLine(value) {
+        return String(value || '').replace(/^\s*#{1,6}\s*/, '').replace(/\\([*_])/g, '$1').replace(/\*\*|__/g, '').trim();
+    }
+
+    function vinhLongObjectiveHtml(line) {
+        const plain = plainPlanLine(line);
+        const heading = plain.replace(/^(?:[-•]|\d+[.)])\s*/, '');
+        if (vinhLongHeadings.includes(heading)) {
+            return `<p class="vl-objective-heading"><strong class="vl-red-heading">${App.escapeHTML(heading)}</strong></p>`;
+        }
+        const integration = plain.match(/^(?:[-*•]\s*)?Tích hợp\s+([^:]+):\s*(.*)$/i);
+        if (integration) {
+            return `<p class="vl-integration"><strong class="vl-blue-label">* Tích hợp ${App.escapeHTML(integration[1].trim())}:</strong> <span class="vl-black-text">${App.escapeHTML(integration[2])}</span></p>`;
+        }
+        const text = plain.replace(/^[-•]\s*/, '');
+        return `<p class="vl-objective-item"><span class="vl-black-text">- ${App.escapeHTML(text)}</span></p>`;
+    }
+
+    function parseMarkdown(value, lessonTemplate = 'standard') {
         const lines = normalizeAiText(value).split('\n');
         const blocks = [];
         let index = 0;
+        let inVinhLongObjectives = false;
         while (index < lines.length) {
             const line = lines[index];
             if (!line.trim()) { index += 1; continue; }
+            const plain = plainPlanLine(line);
+            if (lessonTemplate === 'vinh-long') {
+                if (/^I[.)]\s*YÊU CẦU CẦN ĐẠT/i.test(plain)) {
+                    inVinhLongObjectives = true;
+                    blocks.push(`<p><strong>${App.escapeHTML(plain)}</strong></p>`);
+                    index += 1;
+                    continue;
+                }
+                if (/^(?:II|III|IV)[.)]\s|^TIẾT\s+\d+/i.test(plain)) inVinhLongObjectives = false;
+                if (inVinhLongObjectives) {
+                    blocks.push(vinhLongObjectiveHtml(line));
+                    index += 1;
+                    continue;
+                }
+            }
 
             if (line.includes('|') && isTableSeparator(lines[index + 1] || '')) {
                 const headers = splitTableRow(line);
@@ -233,6 +275,7 @@
         const lesson = document.getElementById('aiLesson').value.trim();
         const periods = Number(document.getElementById('aiPeriods').value);
         const minutesPerPeriod = Number(document.getElementById('aiMinutesPerPeriod').value);
+        const lessonTemplate = document.getElementById('aiVinhLongTemplate').checked ? 'vinh-long' : 'standard';
         if (!subject && !lesson && !state.images.length) return App.toast('Nhập thông tin bài học hoặc cung cấp ít nhất một ảnh.', 'error');
         if (!Number.isInteger(periods) || periods < 1 || periods > 12) return App.toast('Số tiết phải là số nguyên từ 1 đến 12.', 'error');
         if (!Number.isInteger(minutesPerPeriod) || minutesPerPeriod < 20 || minutesPerPeriod > 120) return App.toast('Thời lượng mỗi tiết phải từ 20 đến 120 phút.', 'error');
@@ -260,6 +303,7 @@
                 lesson,
                 periods,
                 minutesPerPeriod,
+                lessonTemplate,
                 integrated: integrated.join(', '),
                 images
             }, { auth: true });
@@ -267,7 +311,12 @@
             if (!state.rawText.includes('KẾ HOẠCH BÀI DẠY')) {
                 state.rawText = `**KẾ HOẠCH BÀI DẠY**\n\n**Môn:** ${subject || '…'}\n**Lớp:** ${grade || '…'}\n**Tên bài:** ${lesson || '…'}\n**Số tiết:** ${periods}\n**Thời lượng:** ${durationText}\n\n${state.rawText}`;
             }
-            content.innerHTML = parseMarkdown(state.rawText);
+            if (lessonTemplate === 'vinh-long' && result.lessonTemplate !== 'vinh-long') {
+                throw new Error('Máy chủ chưa hỗ trợ mẫu Vĩnh Long. Cần cập nhật Code.gs và triển khai phiên bản Apps Script mới.');
+            }
+            state.lessonTemplate = lessonTemplate;
+            content.innerHTML = parseMarkdown(state.rawText, state.lessonTemplate);
+            content.dataset.lessonTemplate = state.lessonTemplate;
             syncPlanMetadataFields();
             content.contentEditable = 'false';
             state.editing = false;
@@ -363,7 +412,8 @@
 
     function textRunXml(value, format = {}) {
         const parts = String(value ?? '').replace(/\r\n?/g, '\n').split('\n');
-        const properties = `${format.bold ? '<w:b/>' : ''}${format.italic ? '<w:i/>' : ''}${format.size ? `<w:sz w:val="${format.size}"/><w:szCs w:val="${format.size}"/>` : ''}`;
+        const color = /^[0-9a-f]{6}$/i.test(format.color || '') ? `<w:color w:val="${format.color}"/>` : '';
+        const properties = `${format.bold ? '<w:b/>' : ''}${format.italic ? '<w:i/>' : ''}${color}${format.size ? `<w:sz w:val="${format.size}"/><w:szCs w:val="${format.size}"/>` : ''}`;
         return parts.map((part, index) => {
             const breakXml = index ? '<w:br/>' : '';
             const textXml = part ? `<w:t xml:space="preserve">${xmlEscape(part)}</w:t>` : '';
@@ -379,8 +429,12 @@
         const next = {
             bold: format.bold || ['strong', 'b'].includes(tag),
             italic: format.italic || ['em', 'i'].includes(tag),
-            size: format.size
+            size: format.size,
+            color: format.color
         };
+        if (node.classList.contains('vl-red-heading')) Object.assign(next, { color: 'FF0000', bold: true, italic: false });
+        if (node.classList.contains('vl-blue-label')) Object.assign(next, { color: '0000FF', bold: true, italic: false });
+        if (node.classList.contains('vl-black-text')) Object.assign(next, { color: '000000', bold: false, italic: false });
         return Array.from(node.childNodes).map(child => nodeRunsXml(child, next)).join('');
     }
 
@@ -391,7 +445,8 @@
             : textRunXml(options.text || '', { bold: options.bold, size });
         const align = options.align ? `<w:jc w:val="${options.align}"/>` : '<w:jc w:val="both"/>';
         const indent = options.indent ? '<w:ind w:left="420" w:hanging="280"/>' : '';
-        return `<w:p><w:pPr>${align}${indent}<w:wordWrap w:val="1"/><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
+        const keepNext = options.keepNext ? '<w:keepNext/>' : '';
+        return `<w:p><w:pPr>${align}${indent}${keepNext}<w:wordWrap w:val="1"/><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr>${runs || '<w:r><w:t></w:t></w:r>'}</w:p>`;
     }
 
     function paragraphXml(element, options = {}) {
@@ -407,6 +462,11 @@
         return groups.map(nodes => {
             const lineText = nodes.map(node => node.textContent || '').join('').replace(/\s+/g, ' ').trim();
             const lineOptions = Object.assign({}, options);
+            if (element.classList.contains('vl-objective-heading')) {
+                lineOptions.keepNext = true;
+                lineOptions.align = 'left';
+            }
+            if (element.classList.contains('vl-objective-item') || element.classList.contains('vl-integration')) lineOptions.align = 'left';
             if (/^KẾ\s+HOẠCH\s+BÀI\s+DẠY$/i.test(lineText)) {
                 lineOptions.align = 'center';
                 lineOptions.bold = true;

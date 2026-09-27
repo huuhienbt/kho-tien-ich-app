@@ -1,4 +1,8 @@
-# E-GV v9.0 – Phân quyền tài khoản và cầu nối native Android
+# E-GV v9.2 — KHBD mẫu Vĩnh Long
+
+Xem `HUONG_DAN_CAP_NHAT_V9.2.md` để cập nhật và sử dụng. Prompt mới ở `PROMPT_KHBD_VINH_LONG.txt`.
+
+# E-GV v9.1 – Đăng nhập nhanh, phân quyền tài khoản và cầu nối native Android
 
 - Android không còn phụ thuộc vào URL scheme của từng nền tảng.
 - Website gọi giao thức riêng `egv://open-ai` để APK E-GV v1.1 mở trực tiếp package ChatGPT, Gemini, Claude, NotebookLM, Grok, Copilot, DeepSeek, Canva, Perplexity hoặc Suno.
@@ -21,6 +25,12 @@ Website tĩnh triển khai trên `https://e-gv.vercel.app`, kết nối Google A
 
 ## Chức năng phiên bản này
 
+- Làm nóng Google Apps Script ở chế độ nền khi mở website hoặc hộp đăng nhập, giúp giảm độ trễ ở lần xác thực đầu tiên.
+- Khôi phục ngay phiên thành viên hoặc quản trị còn hạn trên thiết bị; phiên hết hạn được loại bỏ trước khi gọi máy chủ.
+- Dùng chung lớp trạng thái cho đăng nhập email, Google và quản trị; sau 1,6 giây sẽ báo rõ máy chủ đang khởi động thay vì để giao diện đứng im.
+- Thêm giới hạn chờ 20 giây cho email/quản trị và 25 giây cho Google; không cho gửi lặp nhiều yêu cầu đăng nhập.
+- Lưu đệm bản ghi tài khoản theo cả mã người dùng và email trong 5 phút, giảm việc đọc toàn bộ sheet `Users` ở mỗi yêu cầu có xác thực.
+- Chỉ ghi `last_login` tối đa một lần trong 30 phút; thay đổi quyền Thường/VIP sẽ xóa và tạo lại bộ nhớ đệm ngay để quyền mới có hiệu lực.
 - Thêm bốn mức truy cập rõ ràng: Khách, Thành viên Thường, Thành viên VIP và Quản trị.
 - Khách chỉ có nút `Sao chép` trên Prompt thường; nút `Sử dụng` chỉ xuất hiện sau khi đăng nhập.
 - Prompt VIP chỉ gửi nội dung cho tài khoản VIP hoặc quản trị; tài khoản thường vẫn thấy thẻ nhưng nội dung bị khóa.

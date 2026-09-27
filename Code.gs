@@ -11,10 +11,15 @@ const USER_HEADERS = ['id', 'name', 'email', 'password_hash', 'salt', 'provider'
 const FAVORITE_HEADERS = ['user_id', 'prompt_id', 'created_at'];
 const AGE_SCORE_MODEL_VERSION = 'egv-age-score-v5';
 const AGE_ANALYSIS_VERSION = 'egv-age-analysis-v8';
+const USER_CACHE_TTL_SECONDS = 300;
+const LAST_LOGIN_WRITE_INTERVAL_MS = 30 * 60 * 1000;
 
 function doGet(e) {
   try {
     const type = String((e && e.parameter && e.parameter.type) || 'prompts').toLowerCase();
+    if (type === 'health') {
+      return createResponse({ status: 'success', ready: true, serverTime: new Date().toISOString() });
+    }
     if (type === 'repairs') {
       const repairItems = getRepairItems();
       return createResponse({
@@ -83,7 +88,7 @@ function doPost(e) {
     const action = String(payload.action || '').trim();
     const data = payload.data || {};
 
-    if (action === 'verify') return handleAdminLogin(payload.adminPassword, payload.clientId);
+    if (action === 'verify') return handleAdminLogin(payload.adminPassword || data.adminPassword, payload.clientId);
     if (action === 'user_register') return handleUserRegister(data, payload.clientId);
     if (action === 'user_login') return handleUserLogin(data, payload.clientId);
     if (action === 'google_login') return handleGoogleLogin(data, payload.clientId);
@@ -229,6 +234,7 @@ function handleUserRegister(data, clientId) {
       created_at: new Date().toISOString(), last_login: new Date().toISOString()
     };
     appendRecord(sheet, user);
+    putCachedUser(user);
     return userSessionResponse(user);
   } finally {
     lock.releaseLock();
@@ -239,17 +245,32 @@ function handleUserLogin(data, clientId) {
   enforceRateLimit(clientId, 'login', 20);
   const email = normalizeEmail(data.email);
   const password = String(data.password || '');
-  const found = findUserByEmail(email);
-  if (!found || String(readInsensitive(found.data, 'status') || 'active') !== 'active') {
+  let found = null;
+  let user = getCachedUserByEmail(email);
+  if (!user) {
+    found = findUserByEmail(email);
+    user = found && found.data;
+  }
+  if (!user || String(readInsensitive(user, 'status') || 'active') !== 'active') {
     return createResponse({ status: 'error', message: 'Email hoặc mật khẩu không đúng.' });
   }
-  const storedHash = String(readInsensitive(found.data, 'password_hash') || '');
-  const salt = String(readInsensitive(found.data, 'salt') || '');
+  const storedHash = String(readInsensitive(user, 'password_hash') || '');
+  const salt = String(readInsensitive(user, 'salt') || '');
   if (!storedHash || !constantTimeEquals(hashPassword(password, salt), storedHash)) {
     return createResponse({ status: 'error', message: 'Email hoặc mật khẩu không đúng.' });
   }
-  updateRecordAtRow(found.sheet, found.row, { last_login: new Date().toISOString() });
-  return userSessionResponse(found.data);
+  const loginTime = Date.parse(String(readInsensitive(user, 'last_login') || ''));
+  const shouldUpdateLoginTime = !isFinite(loginTime) || Date.now() - loginTime > LAST_LOGIN_WRITE_INTERVAL_MS;
+  if (shouldUpdateLoginTime) {
+    if (!found) found = findUserByEmail(email);
+    if (found) {
+      const now = new Date().toISOString();
+      updateRecordAtRow(found.sheet, found.row, { last_login: now });
+      user = Object.assign({}, found.data, { last_login: now });
+    }
+  }
+  putCachedUser(user);
+  return userSessionResponse(user);
 }
 
 function handleGoogleLogin(data, clientId) {
@@ -317,7 +338,7 @@ function prepareExistingGoogleUser(user, googleUser) {
   const changes = {};
   const storedName = String(readInsensitive(user, 'name') || '');
   const loginTime = Date.parse(String(readInsensitive(user, 'last_login') || ''));
-  const shouldUpdateLoginTime = !isFinite(loginTime) || Date.now() - loginTime > 30 * 60 * 1000;
+  const shouldUpdateLoginTime = !isFinite(loginTime) || Date.now() - loginTime > LAST_LOGIN_WRITE_INTERVAL_MS;
 
   if (!storedName && googleUser.name) {
     merged.name = googleUser.name;
@@ -339,32 +360,74 @@ function googleCacheKey(prefix, value) {
   return prefix + Utilities.base64EncodeWebSafe(digest).replace(/=+$/g, '').slice(0, 40);
 }
 
-function getCachedGoogleUser(email) {
+function userCacheKeyByEmail(email) {
+  const normalized = normalizeEmail(email);
+  return normalized ? googleCacheKey('user-email:', normalized) : '';
+}
+
+function userCacheKeyById(id) {
+  const normalized = String(id || '').trim();
+  return normalized ? googleCacheKey('user-id:', normalized) : '';
+}
+
+function cachedUserRecord(user) {
+  if (!user) return null;
+  const record = {};
+  USER_HEADERS.forEach(function (header) {
+    record[header] = String(readInsensitive(user, header) || '');
+  });
+  record.email = normalizeEmail(record.email);
+  record.status = String(record.status || 'active').toLowerCase();
+  record.membership = normalizeMembership(record.membership);
+  record.provider = normalizeProvider(record.provider);
+  return record.id && record.email ? record : null;
+}
+
+function readCachedUser(cacheKey) {
+  if (!cacheKey) return null;
   try {
-    const value = CacheService.getScriptCache().get(googleCacheKey('google-user:', normalizeEmail(email)));
-    if (!value) return null;
-    const user = JSON.parse(value);
-    return String(readInsensitive(user, 'status') || 'active').toLowerCase() === 'active' ? user : null;
+    const value = CacheService.getScriptCache().get(cacheKey);
+    return value ? JSON.parse(value) : null;
   } catch (_) {
     return null;
   }
 }
 
-function putCachedGoogleUser(user) {
+function getCachedUserByEmail(email) {
+  return readCachedUser(userCacheKeyByEmail(email));
+}
+
+function getCachedUserById(id) {
+  return readCachedUser(userCacheKeyById(id));
+}
+
+function putCachedUser(user) {
+  const record = cachedUserRecord(user);
+  if (!record) return;
   try {
-    const safeUser = {
-      id: String(readInsensitive(user, 'id') || ''),
-      name: String(readInsensitive(user, 'name') || ''),
-      email: normalizeEmail(readInsensitive(user, 'email')),
-      google_sub: String(readInsensitive(user, 'google_sub') || ''),
-      status: String(readInsensitive(user, 'status') || 'active'),
-      membership: normalizeMembership(readInsensitive(user, 'membership')),
-      last_login: String(readInsensitive(user, 'last_login') || '')
-    };
-    if (safeUser.id && safeUser.email) {
-      CacheService.getScriptCache().put(googleCacheKey('google-user:', safeUser.email), JSON.stringify(safeUser), 300);
-    }
+    const serialized = JSON.stringify(record);
+    const values = {};
+    values[userCacheKeyByEmail(record.email)] = serialized;
+    values[userCacheKeyById(record.id)] = serialized;
+    CacheService.getScriptCache().putAll(values, USER_CACHE_TTL_SECONDS);
   } catch (_) {}
+}
+
+function clearCachedUser(user) {
+  const email = normalizeEmail(readInsensitive(user, 'email'));
+  const id = String(readInsensitive(user, 'id') || '').trim();
+  const keys = [userCacheKeyByEmail(email), userCacheKeyById(id)].filter(Boolean);
+  if (!keys.length) return;
+  try { CacheService.getScriptCache().removeAll(keys); } catch (_) {}
+}
+
+function getCachedGoogleUser(email) {
+  const user = getCachedUserByEmail(email);
+  return user && String(readInsensitive(user, 'status') || 'active').toLowerCase() === 'active' ? user : null;
+}
+
+function putCachedGoogleUser(user) {
+  putCachedUser(user);
 }
 
 function verifyGoogleIdToken(credential) {
@@ -433,14 +496,18 @@ function resolvePrincipal(payload) {
 }
 
 function hydrateMemberPrincipal(principal) {
-  const found = findUserById(principal && principal.sub);
-  if (!found) return null;
-  const status = String(readInsensitive(found.data, 'status') || 'active').toLowerCase();
+  let user = getCachedUserById(principal && principal.sub);
+  if (!user) {
+    const found = findUserById(principal && principal.sub);
+    user = found && found.data;
+  }
+  if (!user) return null;
+  const status = String(readInsensitive(user, 'status') || 'active').toLowerCase();
   if (status !== 'active') return null;
   return Object.assign({}, principal, {
-    name: String(readInsensitive(found.data, 'name') || principal.name || ''),
-    email: normalizeEmail(readInsensitive(found.data, 'email') || principal.email),
-    membership: normalizeMembership(readInsensitive(found.data, 'membership'))
+    name: String(readInsensitive(user, 'name') || principal.name || ''),
+    email: normalizeEmail(readInsensitive(user, 'email') || principal.email),
+    membership: normalizeMembership(readInsensitive(user, 'membership'))
   });
 }
 
@@ -454,7 +521,9 @@ function isAdminPrincipal(payload) {
 
 function handleAdminGetUsers() {
   ensureSheet('Users', USER_HEADERS);
-  const users = getSheetObjects('Users').map(safeAdminUser).sort(function (left, right) {
+  const records = getSheetObjects('Users');
+  records.forEach(putCachedUser);
+  const users = records.map(safeAdminUser).sort(function (left, right) {
     return String(right.created_at || '').localeCompare(String(left.created_at || ''));
   });
   return createResponse({ status: 'success', data: users });
@@ -472,7 +541,8 @@ function handleAdminSetMembership(data) {
     if (!found) return createResponse({ status: 'error', message: 'Không tìm thấy tài khoản.' });
     updateRecordAtRow(found.sheet, found.row, { membership: membership });
     const updated = Object.assign({}, found.data, { membership: membership });
-    clearCachedGoogleUser(readInsensitive(updated, 'email'));
+    clearCachedUser(updated);
+    putCachedUser(updated);
     return createResponse({
       status: 'success',
       user: safeAdminUser(updated),
@@ -497,11 +567,7 @@ function safeAdminUser(user) {
 }
 
 function clearCachedGoogleUser(email) {
-  const normalized = normalizeEmail(email);
-  if (!normalized) return;
-  try {
-    CacheService.getScriptCache().remove(googleCacheKey('google-user:', normalized));
-  } catch (_) {}
+  clearCachedUser({ email: email });
 }
 
 function issueToken(claims, ttlSeconds) {
@@ -1110,23 +1176,42 @@ function enforceLessonPlanTiming(text, periods, durationText) {
   return lines.join('\n').trim();
 }
 
-function handleLessonPlan(data) {
-  const apiKeys = getGeminiApiKeys();
-  const model = getSetting('GEMINI_MODEL', false, 'gemini-3.6-flash');
-  const subject = cleanText(data.subject || '', 120);
-  const grade = cleanText(data.grade || '', 30);
-  const lesson = cleanText(data.lesson || '', 220);
-  const periods = Math.min(12, Math.max(1, Math.round(Number(data.periods) || 1)));
-  const minutesPerPeriod = Math.min(120, Math.max(20, Math.round(Number(data.minutesPerPeriod) || 35)));
-  const totalMinutes = periods * minutesPerPeriod;
-  const durationText = periods === 1
-    ? '1 tiết (' + minutesPerPeriod + ' phút)'
-    : periods + ' tiết (mỗi tiết ' + minutesPerPeriod + ' phút, tổng ' + totalMinutes + ' phút)';
-  const integrated = cleanText(data.integrated || 'Không', 1200);
-  const images = Array.isArray(data.images) ? data.images.slice(0, 12) : [];
-
-  const promptText = `Bạn là một giáo viên Tiểu học có nhiều năm kinh nghiệm.
-Hãy đọc kỹ các hình ảnh SGK tôi cung cấp và xây dựng một KẾ HOẠCH BÀI DẠY hoàn chỉnh, bám sát Chương trình GDPT 2018 và chuẩn mẫu cấu trúc của phân môn Tiếng Việt (Đọc).
+// v9.2: the default template remains the v9.1 prompt; Vinh Long is opt-in.
+function buildLessonPlanPrompt(context) {
+  const { subject, grade, lesson, periods, minutesPerPeriod, totalMinutes, durationText, integrated } = context;
+  const isVinhLong = context.lessonTemplate === 'vinh-long';
+  const objectivesTemplate = isVinhLong ? `**Qua bài học, học sinh thực hiện được:**
+- [Kiến thức và kĩ năng cụ thể, quan sát hoặc đánh giá được trong tiết này.]
+**Học sinh vận dụng bài học trong thực tế cuộc sống:**
+- [Việc làm hoặc tình huống gần gũi giúp HS vận dụng kiến thức của tiết này.]
+**Giúp các em hình thành và phát triển phẩm chất:**
+- [Phẩm chất phù hợp, kèm biểu hiện cụ thể qua nhiệm vụ học tập.]
+**Giúp các em hình thành và phát triển năng lực:**
+- [Năng lực chung và năng lực đặc thù phù hợp môn học, nêu biểu hiện trong tiết này.]
+[Chỉ khi tiết có tích hợp: cuối mục I, mỗi nội dung một dòng theo dạng **\* Tích hợp TÊN NỘI DUNG (MÃ NẾU ĐƯỢC CUNG CẤP):** Lời giải thích cụ thể.]` : `1. Năng lực chung.
+- ...
+2. Năng lực đặc thù.
+- ...
+3. Phẩm chất.
+- ...`;
+  const templateRules = isVinhLong ? `
+8. QUY CÁCH KHBD MẪU VĨNH LONG:
+   - Đây là nhiệm vụ TẠO MỚI KHBD từ ảnh SGK, không phải sửa một file Word có sẵn. Tạo đủ các mục I, II, III, IV; không yêu cầu người dùng gửi file Word gốc.
+   - Mẫu Vĩnh Long quy định cách tổ chức và trình bày MỤC I. Các mục II, III, IV tiếp tục theo cấu trúc phía dưới, giữ bảng GV–HS và trình tự hoạt động. Không lấy kiến thức từ bài học hoặc lớp khác để lấp đầy mẫu.
+   - Mỗi tiết là một khối riêng: TIẾT 1, TIẾT 2...; trong MỖI khối có đủ mục I, II, III, IV. Với 1 tiết vẫn ghi TIẾT 1. Viết đủ các tiết, không dùng câu "tương tự tiết trước" thay cho nội dung.
+   - Mục I của từng tiết phải có đúng bốn câu dẫn dưới đây, nguyên văn và đúng thứ tự. Mỗi câu dẫn đứng một dòng, in đậm bằng **...**. Khi hiển thị và xuất Word, E-GV sẽ tô bốn câu dẫn màu đỏ (#FF0000).
+   - Nhóm "Qua bài học, học sinh thực hiện được:" nêu kết quả kiến thức, kĩ năng cụ thể. Nhóm vận dụng nêu cách dùng kiến thức vào đời sống. Nhóm phẩm chất nêu phẩm chất gắn với hành vi. Nhóm năng lực nêu năng lực chung và đặc thù gắn với nhiệm vụ, không chép lại các ý của ba nhóm trước.
+   - Mỗi nhóm có các yêu cầu thiết thực, đủ ý cho tiết học; mỗi yêu cầu một dòng bắt đầu bằng "- ", chữ đen thường, không in đậm hay in nghiêng. Không liệt kê năng lực, phẩm chất không thể hiện trong bài; tránh trùng ý và tránh mục tiêu chung chung.
+   - Tích hợp: chỉ ghi nội dung đã được người dùng chọn và thực sự có hoạt động tương ứng trong tiết đó. Cuối mục I của từng tiết, đặt mỗi nội dung tích hợp trên một dòng riêng; không tạo một nhóm thứ năm.
+   - Cú pháp chính xác: **\* Tích hợp TÊN NỘI DUNG (MÃ):** Lời giải thích. Dấu * đầu nhãn là ký tự hiển thị, không phải dấu đầu dòng. In đậm TOÀN BỘ nhãn, gồm dấu *, tên, mã nếu có và dấu hai chấm. E-GV sẽ tô nhãn màu xanh dương (#0000FF); lời giải thích sau dấu hai chấm là chữ đen thường và được ngăn cách bằng một khoảng trắng.
+   - Chỉ đưa mã khi mã được cung cấp rõ trong THÔNG TIN GỢI Ý hoặc đọc được rõ từ tài liệu đính kèm. Không tự tạo, suy đoán hay mặc định mã AI/NLS/STEM. Nếu chưa có mã, viết **\* Tích hợp TÊN NỘI DUNG:** Lời giải thích; nếu tiết không có tích hợp, bỏ hẳn dòng này.
+   - Mỗi dòng tích hợp nêu việc HS thực hiện và kết quả mong đợi, đồng thời được triển khai thành câu hỏi/nhiệm vụ phù hợp ở mục III của chính tiết đó.
+   - Đọc đúng môn, lớp, tên bài, câu hỏi, số liệu và hình minh họa từ ảnh; nếu ảnh thiếu hoặc không rõ, nêu chính xác phần cần bổ sung, không tự bịa nội dung SGK. Lời thoại và cách tổ chức do GV thiết kế phải bám nội dung đọc được.
+   - Với Toán hoặc môn khác, xây dựng hoạt động đúng đặc trưng môn học; chỉ dùng Luyện đọc/Tìm hiểu bài khi thực sự là bài Đọc. Không áp dụng máy móc cấu trúc Tiếng Việt cho mọi môn.
+   - Tự kiểm tra trước khi trả lời: đủ ${periods} tiết; mỗi tiết đủ bốn nhóm mục I; yêu cầu phân nhóm đúng nghĩa; tích hợp đúng lựa chọn và không bịa mã; tổng thời gian từng tiết bằng ${minutesPerPeriod} phút; câu hỏi có đáp án; nội dung mục III nằm trong bảng hai cột. Không in bản tự kiểm tra vào KHBD.
+   - Chỉ trả về KHBD bằng Markdown. Không dùng HTML, mã màu, JSON, hàng rào code hoặc ghi chú mẫu trong nội dung đầu ra. Thay toàn bộ phần trong ngoặc vuông bằng nội dung thực tế.` : '';
+  return `Bạn là một giáo viên Tiểu học có nhiều năm kinh nghiệm.
+Hãy đọc kỹ các hình ảnh SGK tôi cung cấp và xây dựng một KẾ HOẠCH BÀI DẠY hoàn chỉnh, bám sát Chương trình GDPT 2018 và ${isVinhLong ? 'cấu trúc KHBD mẫu Vĩnh Long theo quy cách người dùng cung cấp, phù hợp môn học và lớp đã chọn' : 'chuẩn mẫu cấu trúc của phân môn Tiếng Việt (Đọc)' }.
 
 THÔNG TIN GỢI Ý (Nếu có):
 - Môn: ${subject || 'Tự động trích xuất từ ảnh'}
@@ -1145,7 +1230,7 @@ YÊU CẦU PHÂN TÍCH VÀ SOẠN BÀI CHUYÊN SÂU:
    - Tại các bước nhận xét, tổng kết, kết luận, HÃY VIẾT SẴN CÂU NÓI TRỰC TIẾP. Trong lời thoại trực tiếp, BẮT BUỘC xưng hô là "thầy" và gọi "các em" (Ví dụ: - GV nhận xét: "Hôm nay các em đã làm việc rất tốt. Thầy khen ngợi tinh thần học tập tích cực của cả lớp."). Tuyệt đối KHÔNG dùng "Thầy/Cô" hay "cô".
 4. Tuân thủ ĐÚNG cấu trúc chia nhỏ a) Mục tiêu và b) Cách tổ chức dạy học ở MỖI HOẠT ĐỘNG.
 5. QUY TẮC BẢNG BẮT BUỘC:
-   - Toàn bộ nội dung bắt đầu bằng GV hoặc HS phải nằm trong bảng hai cột "HOẠT ĐỘNG CỦA GV" và "HOẠT ĐỘNG CỦA HS". KHÔNG viết bất kỳ dòng GV/HS nào bên ngoài bảng.
+   - ${isVinhLong ? 'Trong mục III, toàn bộ' : 'Toàn bộ'} nội dung bắt đầu bằng GV hoặc HS phải nằm trong bảng hai cột "HOẠT ĐỘNG CỦA GV" và "HOẠT ĐỘNG CỦA HS". KHÔNG viết bất kỳ dòng GV/HS nào bên ngoài bảng${isVinhLong ? ' trong mục III; danh sách đồ dùng GV/HS ở mục II trình bày như mẫu' : ''}.
    - Mỗi hàng Markdown phải nằm trọn trên một dòng, bắt đầu bằng dấu |, có đúng hai ô ngăn cách bằng dấu | và kết thúc bằng dấu |.
    - Mỗi cặp hoạt động GV và HS tương ứng trình bày trên cùng một hàng. Nếu một bên chưa có nội dung thì để ô đó trống nhưng vẫn giữ đủ dấu |.
    - Chỉ dùng dấu gạch đầu dòng (-), không dùng dấu chấm tròn (•).
@@ -1157,7 +1242,7 @@ YÊU CẦU PHÂN TÍCH VÀ SOẠN BÀI CHUYÊN SÂU:
 7. QUY TẮC THỜI LƯỢNG:
    - Giữ chính xác ${periods} tiết, mỗi tiết ${minutesPerPeriod} phút; không tự thay đổi số tiết hoặc thời lượng.
    - Phân bổ các hoạt động hợp lý trong tổng ${totalMinutes} phút và ghi số phút dự kiến ngay sau tên từng hoạt động.
-   - Nếu bài có từ 2 tiết trở lên, ghi rõ **TIẾT 1**, **TIẾT 2**... và phân chia nội dung tương ứng; không dồn toàn bộ hoạt động vào một tiết.
+   - Nếu bài có từ 2 tiết trở lên, ghi rõ **TIẾT 1**, **TIẾT 2**... và phân chia nội dung tương ứng; không dồn toàn bộ hoạt động vào một tiết.${templateRules}
 
 CẤU TRÚC KẾ HOẠCH BÀI DẠY BẮT BUỘC (Trình bày y hệt như sau):
 
@@ -1167,14 +1252,9 @@ CẤU TRÚC KẾ HOẠCH BÀI DẠY BẮT BUỘC (Trình bày y hệt như sau):
 **Tên bài:** [Tìm trong hình điền vào]
 **Số tiết:** ${periods}
 **Thời lượng:** ${durationText}
-
+${isVinhLong ? '\n**TIẾT 1**\nThời lượng tiết: ' + minutesPerPeriod + ' phút\n' : ''}
 I. YÊU CẦU CẦN ĐẠT
-1. Năng lực chung.
-- ...
-2. Năng lực đặc thù.
-- ...
-3. Phẩm chất.
-- ...
+${objectivesTemplate}
 
 II. ĐỒ DÙNG DẠY HỌC
 - GV: ...
@@ -1213,6 +1293,69 @@ b) Cách tổ chức dạy học:
 
 IV. ĐIỀU CHỈNH SAU BÀI DẠY (nếu có):
 (Để khoảng trống 2 dòng)`;
+}
+
+// Validate the structure rather than silently inventing missing lesson objectives.
+function validateVinhLongLessonPlan(text, periods) {
+  const headings = [
+    'Qua bài học, học sinh thực hiện được:',
+    'Học sinh vận dụng bài học trong thực tế cuộc sống:',
+    'Giúp các em hình thành và phát triển phẩm chất:',
+    'Giúp các em hình thành và phát triển năng lực:'
+  ];
+  const sections = [];
+  let current = null;
+  String(text || '').split(/\r?\n/).forEach(function (line) {
+    const plain = line.replace(/^\s*#{1,6}\s*/, '').replace(/\*\*|__/g, '').trim();
+    if (/^I[.)]\s*YÊU CẦU CẦN ĐẠT/i.test(plain)) {
+      current = [];
+      sections.push(current);
+    } else if (/^(?:II|III|IV)[.)]\s|^TIẾT\s+\d+/i.test(plain)) {
+      current = null;
+    } else if (current && plain) {
+      current.push(plain);
+    }
+  });
+  if (sections.length !== periods) return 'Mẫu Vĩnh Long cần một mục I riêng cho mỗi tiết.';
+  for (let index = 0; index < sections.length; index++) {
+    const lines = sections[index];
+    const found = lines.map(function (line, pos) {
+      const normalized = line.replace(/^(?:[-•]|\d+[.)])\s*/, '');
+      return { pos: pos, heading: headings.indexOf(normalized) };
+    }).filter(function (item) { return item.heading >= 0; });
+    if (found.length !== 4 || found.some(function (item, pos) { return item.heading !== pos; })) {
+      return 'Mục I của tiết ' + (index + 1) + ' chưa đủ bốn nhóm đúng thứ tự.';
+    }
+    for (let group = 0; group < 4; group++) {
+      const start = found[group].pos + 1;
+      const end = group < 3 ? found[group + 1].pos : lines.length;
+      if (!lines.slice(start, end).some(function (line) { return /^[-•]\s+\S/.test(line) && !/^[-•]\s*Tích hợp/i.test(line); })) {
+        return 'Mục I của tiết ' + (index + 1) + ' còn nhóm yêu cầu chưa có nội dung.';
+      }
+    }
+  }
+  return '';
+}
+
+function handleLessonPlan(data) {
+  const apiKeys = getGeminiApiKeys();
+  const model = getSetting('GEMINI_MODEL', false, 'gemini-3.6-flash');
+  const subject = cleanText(data.subject || '', 120);
+  const grade = cleanText(data.grade || '', 30);
+  const lesson = cleanText(data.lesson || '', 220);
+  const periods = Math.min(12, Math.max(1, Math.round(Number(data.periods) || 1)));
+  const minutesPerPeriod = Math.min(120, Math.max(20, Math.round(Number(data.minutesPerPeriod) || 35)));
+  const totalMinutes = periods * minutesPerPeriod;
+  const durationText = periods === 1
+    ? '1 tiết (' + minutesPerPeriod + ' phút)'
+    : periods + ' tiết (mỗi tiết ' + minutesPerPeriod + ' phút, tổng ' + totalMinutes + ' phút)';
+  const integrated = cleanText(data.integrated || 'Không', 1200);
+  const images = Array.isArray(data.images) ? data.images.slice(0, 12) : [];
+
+  const lessonTemplate = data.lessonTemplate === 'vinh-long' ? 'vinh-long' : 'standard';
+  const promptText = buildLessonPlanPrompt({
+    subject, grade, lesson, periods, minutesPerPeriod, totalMinutes, durationText, integrated, lessonTemplate
+  });
 
   const parts = [{ text: promptText }];
   images.forEach(function (image) {
@@ -1255,7 +1398,13 @@ IV. ĐIỀU CHỈNH SAU BÀI DẠY (nếu có):
 
     if (responseCode >= 200 && responseCode < 300 && result.candidates && result.candidates.length) {
       const text = ((result.candidates[0].content && result.candidates[0].content.parts) || []).map(function (part) { return part.text || ''; }).join('\n').trim();
-      if (text) return createResponse({ status: 'success', result: enforceLessonPlanTiming(text, periods, durationText) });
+      if (text) {
+        if (lessonTemplate === 'vinh-long') {
+          const templateError = validateVinhLongLessonPlan(text, periods);
+          if (templateError) return createResponse({ status: 'error', message: 'Gemini chưa tạo đủ cấu trúc mẫu Vĩnh Long. ' + templateError + ' Vui lòng tạo lại.' });
+        }
+        return createResponse({ status: 'success', result: enforceLessonPlanTiming(text, periods, durationText), lessonTemplate: lessonTemplate });
+      }
       lastMessage = 'Gemini trả về nội dung rỗng.';
       break;
     }
@@ -1457,7 +1606,8 @@ function findRowById(sheet, id) {
 }
 
 function findUserByEmail(email) {
-  const sheet = ensureSheet('Users', USER_HEADERS);
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName('Users') || ensureSheet('Users', USER_HEADERS);
   if (sheet.getLastRow() <= 1) return null;
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(function (header) { return String(header).trim(); });
@@ -1466,6 +1616,7 @@ function findUserByEmail(email) {
     if (normalizeEmail(values[index][emailIndex]) === email) {
       const data = {};
       headers.forEach(function (header, column) { data[header] = values[index][column]; });
+      putCachedUser(data);
       return { sheet: sheet, row: index + 1, data: data };
     }
   }
@@ -1475,7 +1626,8 @@ function findUserByEmail(email) {
 function findUserById(id) {
   const wantedId = String(id || '');
   if (!wantedId) return null;
-  const sheet = ensureSheet('Users', USER_HEADERS);
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName('Users') || ensureSheet('Users', USER_HEADERS);
   if (sheet.getLastRow() <= 1) return null;
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(function (header) { return String(header).trim(); });
@@ -1485,6 +1637,7 @@ function findUserById(id) {
     if (String(values[index][idIndex]) === wantedId) {
       const data = {};
       headers.forEach(function (header, column) { data[header] = values[index][column]; });
+      putCachedUser(data);
       return { sheet: sheet, row: index + 1, data: data };
     }
   }
