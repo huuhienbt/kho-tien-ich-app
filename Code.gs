@@ -93,6 +93,9 @@ function doPost(e) {
     if (action === 'user_login') return handleUserLogin(data, payload.clientId);
     if (action === 'google_login') return handleGoogleLogin(data, payload.clientId);
 
+    // E-GV v9.3: API nhóm học; kiểm tra phiên và quyền trong NhomHoc.gs.
+    if (action.indexOf('nh_') === 0) return handleNhomHoc(payload);
+
     if (action === 'age_reading') {
       const principal = resolvePrincipal(payload);
       if (!principal) return createResponse({ status: 'error', message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.' });

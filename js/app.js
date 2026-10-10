@@ -57,6 +57,7 @@
     }
 
     const iconPaths = {
+        users: '<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/>',
         home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/>',
         book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
         wrench: '<path d="M14.7 6.3a4 4 0 0 0-5-5l2.2 2.2-3.4 3.4-2.2-2.2a4 4 0 0 0 5 5l6.7 6.7a2.1 2.1 0 1 0 3-3Z"/><path d="m6.5 12.5-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8"/>',
@@ -79,7 +80,8 @@
             ['upload', 'upload.html', 'Kho tệp Drive', 'upload'],
             ['ai', 'ai.html', 'Trợ giảng AI', 'sparkle'],
             ['calendar', 'calendar.html', 'Lịch Việt', 'calendar'],
-            ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench']
+            ['repairs', 'repairs.html', 'Nhật ký sửa chữa', 'wrench'],
+            ['groups', 'groups.html', 'Nhóm học', 'users']
         ];
         return items.map(([key, href, label, iconName]) =>
             `<a href="${href}" class="nav-link${activePage === key ? ' active' : ''}"${activePage === key ? ' aria-current="page"' : ''}>${icon(iconName)}<span>${label}</span></a>`
@@ -92,12 +94,11 @@
             ['prompts', 'prompts.html', 'Prompt', 'book'],
             ['upload', 'upload.html', 'Drive', 'upload'],
             ['ai', 'ai.html', 'Trợ giảng', 'sparkle'],
-            ['calendar', 'calendar.html', 'Lịch Việt', 'calendar'],
-            ['repairs', 'repairs.html', 'Nhật ký', 'wrench']
+            ['calendar', 'calendar.html', 'Lịch Việt', 'calendar']
         ];
         return items.map(([key, href, label, iconName]) =>
             `<a href="${href}" class="mobile-nav-link${key === 'ai' ? ' mobile-nav-primary' : ''}${activePage === key ? ' active' : ''}"${activePage === key ? ' aria-current="page"' : ''}>${icon(iconName, 'mobile-nav-icon')}<span>${label}</span></a>`
-        ).join('');
+        ).join('') + `<details class="mobile-more"><summary class="mobile-nav-link${['groups','repairs'].includes(activePage) ? ' active' : ''}">${icon('menu', 'mobile-nav-icon')}<span>Thêm</span></summary><div class="mobile-more-menu"><a href="groups.html"${activePage === 'groups' ? ' aria-current="page"' : ''}>${icon('users')} Nhóm học</a><a href="repairs.html"${activePage === 'repairs' ? ' aria-current="page"' : ''}>${icon('wrench')} Nhật ký sửa chữa</a></div></details>`;
     }
 
     function renderShell(activePage) {

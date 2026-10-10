@@ -116,6 +116,12 @@ body {
 #userDisplayName { max-width: 92px; }
 
 .mobile-bottom-nav { display: none; }
+.mobile-more { position: relative; }
+.mobile-more summary { list-style: none; cursor: pointer; }
+.mobile-more summary::-webkit-details-marker { display: none; }
+.mobile-more-menu { position: absolute; bottom: calc(100% + 14px); right: 0; width: 210px; background: #fff; border: 1px solid #e2e8f0; border-radius: 15px; box-shadow: 0 8px 30px #0f172a22; padding: 7px; }
+.mobile-more-menu a { display: flex; align-items: center; gap: 10px; color: #334155; padding: 13px 10px; border-radius: 9px; font-size: 13px; text-decoration: none; }
+.mobile-more-menu a:hover, .mobile-more-menu a[aria-current="page"] { background: #eff6ff; color: #1d4ed8; }
 
 /* Nút và điều khiển */
 .btn {
@@ -2043,6 +2049,15 @@ body.google-auth-busy { overflow: hidden; }
     .nav-link { padding-inline: 9px; font-size: .76rem; }
     .header-inner { gap: 13px; }
     .brand-subtitle { display: none; }
+}
+
+/* Bảy mục điều hướng: tài khoản ở hàng đầu, các trang ở hàng bên dưới. */
+@media (min-width: 1021px) {
+    .header-inner { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; padding-block: 12px; }
+    .brand { grid-column: 1; grid-row: 1; }
+    .nav-actions { grid-column: 2; grid-row: 1; justify-self: end; }
+    .nav-actions .menu-toggle { display: none; }
+    .nav-list { grid-column: 1 / -1; grid-row: 2; min-width: 0; flex-wrap: wrap; margin-top: 10px; }
 }
 
 @media (max-width: 1020px) {
