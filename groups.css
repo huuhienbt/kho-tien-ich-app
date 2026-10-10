@@ -1,0 +1,57 @@
+.page-groups [hidden]{display:none!important}
+.nh-toolbar{display:flex;gap:16px;align-items:end;padding:20px;flex-wrap:wrap;margin-bottom:18px}
+.nh-toolbar label{display:grid;gap:7px;min-width:170px;font-size:13px;font-weight:700;flex:1}
+.nh-toolbar label:first-child{flex:2}
+.nh-gate,.nh-empty{padding:40px;text-align:center}
+.nh-gate p,.nh-empty p{color:#64748b;margin:12px 0 20px}
+.nh-group-meta{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:16px 0}
+.nh-group-meta p{font-size:13px;color:#64748b;margin:0}
+.nh-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.nh-stat{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;min-width:0}
+.nh-stat span,.nh-stat small{display:block;font-size:12px;color:#64748b}
+.nh-stat strong{display:block;margin:7px 0;color:#1d4ed8;font-size:clamp(19px,2vw,28px);overflow-wrap:anywhere}
+.nh-tabs{display:flex;gap:6px;background:#eaf0f8;padding:5px;border-radius:14px;margin-bottom:20px;width:max-content;max-width:100%}
+.nh-tabs button{border:0;background:transparent;border-radius:10px;padding:11px 23px;color:#526076;font:inherit;font-weight:700;cursor:pointer}
+.nh-tabs button[aria-pressed=true]{background:#fff;color:#1d4ed8;box-shadow:0 2px 8px #1e40af12}
+.nh-attendance-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start}
+.nh-session-list,.nh-card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:20px;min-width:0}
+.nh-session-list h2,.nh-card h2{font-size:18px;margin:0 0 12px}
+.nh-session-button{display:flex;width:100%;align-items:center;justify-content:space-between;text-align:left;margin-top:10px;padding:13px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#334155;cursor:pointer;gap:8px}
+.nh-session-button small{display:block;color:#64748b;font-size:12px;margin-top:4px}
+.nh-session-button[aria-pressed=true]{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
+.nh-pill{border-radius:20px;padding:4px 9px;font-size:11px;font-weight:700;white-space:nowrap;background:#f1f5f9;color:#475569}
+.nh-pill.green{background:#dcfce7;color:#166534}.nh-pill.orange{background:#fff7ed;color:#9a3412}
+.nh-card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.nh-card-heading h2{margin:0}.nh-card-heading p{margin:5px 0 0;color:#64748b;font-size:13px}
+.nh-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.nh-table-wrap{overflow:auto;max-width:100%}
+.nh-table{border-collapse:collapse;width:100%;font-size:13px}
+.nh-table th{background:#f8fafc;color:#475569;font-size:12px;text-align:left;font-weight:700;white-space:nowrap}
+.nh-table td,.nh-table th{padding:12px 10px;border-bottom:1px solid #eaf0f6;vertical-align:middle}
+.nh-table td strong{font-size:14px}.nh-table td small{display:block;color:#64748b;margin-top:5px}
+.nh-table .nh-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nh-table .form-control{min-width:115px;font-size:13px;padding:9px}
+.nh-mark-controls{display:flex;gap:5px;flex-wrap:wrap}
+.nh-mark-controls button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-height:38px;padding:7px 10px;cursor:pointer;color:#475569;white-space:nowrap;font:inherit}
+.nh-mark-controls button[aria-pressed=true][data-mark=co_mat]{background:#dcfce7;border-color:#4ade80;color:#166534}
+.nh-mark-controls button[aria-pressed=true][data-mark=vang]{background:#fff1f2;border-color:#fda4af;color:#be123c}
+.nh-mark-controls button[aria-pressed=true][data-mark=chua_diem_danh]{background:#f1f5f9;border-color:#94a3b8}
+.nh-save-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.nh-save-bar p,.nh-caption{font-size:12px;color:#64748b;margin:0}
+.nh-feedback{padding:14px 18px;border-radius:12px;background:#eff6ff;color:#1d4ed8;margin-bottom:18px}
+.nh-feedback.error,.nh-error{color:#b91c1c;background:#fff1f2;padding:12px;border-radius:10px}
+.nh-muted{color:#64748b}.nh-due{color:#b45309;font-weight:700}.nh-credit{color:#15803d;font-weight:700}
+.nh-link{border:0;background:transparent;color:#1d4ed8;font:inherit;text-decoration:underline;cursor:pointer;padding:7px}
+.nh-dialog{border:0;border-radius:22px;box-shadow:0 25px 70px #0f172a33;width:min(600px,calc(100% - 24px));max-height:90vh;padding:25px;color:#172033}
+.nh-dialog::backdrop{background:#0f172a70;backdrop-filter:blur(3px)}
+.nh-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:10px}.nh-dialog h2{font-size:21px;margin:0}
+.nh-close{border:0;border-radius:10px;background:#f1f5f9;width:36px;height:36px;font-size:25px;color:#475569;cursor:pointer}
+.nh-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.nh-form-grid label{font-size:13px;font-weight:600;display:grid;gap:7px}
+.nh-form-grid .wide{grid-column:1/-1}.nh-form-grid small{font-weight:400;line-height:1.5;color:#64748b}.nh-form-grid textarea{resize:vertical;min-height:90px}
+.nh-dialog footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.nh-dialog .nh-error{margin:15px 0 0}
+.nh-busy{position:fixed;inset:0;background:#ffffffb8;z-index:2000;display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;color:#1d4ed8;backdrop-filter:blur(2px)}
+.nh-busy span{width:24px;height:24px;border:3px solid #bfdbfe;border-top-color:#2563eb;border-radius:50%;animation:nh-spin .8s linear infinite}@keyframes nh-spin{to{transform:rotate(360deg)}}
+.page-groups button:disabled{opacity:.5;cursor:not-allowed}.page-groups button:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+@media(max-width:850px){.nh-attendance-layout{grid-template-columns:1fr}.nh-session-list .nh-session-items{display:flex;gap:10px;overflow:auto;padding-bottom:5px}.nh-session-button{min-width:160px;width:auto}.nh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.nh-session-list{padding:16px}}
+@media(max-width:560px){.nh-toolbar{gap:10px;padding:15px}.nh-toolbar label{min-width:130px}.nh-toolbar label:first-child{flex-basis:100%}.nh-group-meta{align-items:flex-start}.nh-group-meta .btn{font-size:11px;white-space:nowrap}.nh-tabs{width:100%}.nh-tabs button{flex:1;padding:11px 8px;font-size:13px}.nh-card{padding:15px}.nh-form-grid{grid-template-columns:1fr}.nh-attendance-table thead{display:none}.nh-attendance-table,.nh-attendance-table tbody,.nh-attendance-table tr,.nh-attendance-table td{display:block;width:100%}.nh-attendance-table tr{padding:12px 0;border-bottom:1px solid #e2e8f0}.nh-attendance-table td{border:0;padding:5px 0}.nh-mark-controls button{flex:1}.nh-gate,.nh-empty{padding:25px 15px}}
+@media(prefers-reduced-motion:reduce){.nh-busy span{animation:none}}
