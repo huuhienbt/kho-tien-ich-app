@@ -1,0 +1,73 @@
+'use strict';
+// DOM integration test; no browser, network, live Google API or real account is used.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {JSDOM}=require(require.resolve('jsdom',{paths:[process.env.EGV_QA_DEPENDENCIES||process.cwd()]}));
+const {ledgerFixture}=require('./nhom-hoc-ledger.test.cjs');
+const root=path.resolve(__dirname,'..');
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tick=()=>new Promise(r=>setImmediate(r));
+async function settle(){for(let i=0;i<12;i++)await tick();}
+async function tests() {
+  const h=ledgerFixture(),{api}=h;
+  api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:api('nh_view',{groupId:'g35',month:'2026-09'}).revision,sessions:[{id:'p12',date:'2026-10-12'},{id:'p13',date:'2026-10-13'},{id:'p15',date:'2026-10-15'}]});
+  const dom=new JSDOM(fs.readFileSync(path.join(root,'groups.html'),'utf8'),{url:'https://egv.test/groups.html',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
+  await new Promise(r=>w.addEventListener('load',r,{once:true}));
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+  let role='guest',release=null;const calls=[],exports=[],blobs=[];w.Blob=Blob;w.URL.createObjectURL=b=>{blobs.push(b);return 'blob:test';};w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){exports.push(this.download);};w.confirm=()=>true;
+  w.App={escapeHTML,init(){},isAdmin:()=>role==='admin',openLogin:type=>calls.push({login:type}),async apiPost(action,data){calls.push({action,data});if(release&&action==='nh_view')return new Promise(r=>release=r);const p=role==='admin'?{adminToken:'admin-test'}:{userToken:'member'};return h.ctx.handleNhomHoc({action,data,...p});}};
+  const errors=[];w.addEventListener('error',e=>errors.push(e.message));
+  w.eval(fs.readFileSync(path.join(root,'js/groups.js'),'utf8'));d.dispatchEvent(new w.Event('DOMContentLoaded'));await settle();
+  assert.equal(d.getElementById('nhGate').hidden,false);assert.equal(calls.filter(c=>c.action).length,0);
+  d.getElementById('nhLogin').click();assert.equal(calls.at(-1).login,'admin');
+  for(const r of ['member','google','vip']){role=r;w.dispatchEvent(new w.Event('app:auth-change'));await settle();assert.equal(d.getElementById('nhWorkspace').hidden,true);assert.equal(calls.filter(c=>c.action).length,0);}
+  role='admin';w.dispatchEvent(new w.Event('app:auth-change'));await settle();
+  assert.equal(d.getElementById('nhMonth').value,'2026-09');assert.equal(d.querySelectorAll('.nh-group-card').length,2);
+  d.querySelector('[data-group="g35"]').click();await settle();assert.equal(d.getElementById('nhMonth').value,'2026-09');
+  assert.match(d.getElementById('nhPeriodInfo').textContent,/5\/8/);assert.equal(d.querySelectorAll('.nh-matrix-table thead th').length,10);
+  assert.equal(d.querySelector('[data-cycle="p12"][data-student="s1"]').disabled,true);assert.match(d.querySelector('[data-cycle="p12"]').getAttribute('aria-label'),/Dự kiến/);
+  const learned=api('nh_view',{groupId:'g35',month:'2026-09'});h.setToday('2026-10-15');
+  const now=api('nh_view',{groupId:'g35',month:'2026-09'});
+  api('nh_attendance_batch_save',{groupId:'g35',sessions:now.sessions.map((s,i)=>({sessionId:s.ma_buoi,revision:s.revision,marks:[{studentId:'s1',status:i<6?'co_mat':'vang'},{studentId:'s2',status:'co_mat'}]}))});
+  api('nh_receipt_save',{groupId:'g35',id:'r1',studentId:'s1',month:'2026-09',date:'2026-09-30',amount:200000,method:'chuyen_khoan',note:'Đóng lần 1'});
+  d.getElementById('nhReload').click();await settle();assert.match(d.getElementById('nhPeriodInfo').textContent,/8\/8/);assert.match(d.querySelector('[data-group="g35"]').textContent,/0\/8/);
+  assert.match(d.getElementById('nhFees').textContent,/375\.000đ/);assert.match(d.getElementById('nhFees').textContent,/Miễn học phí/);
+  const first=api('nh_view',{groupId:'g35',month:'2026-09'}).sessions[0];
+  d.querySelector(`[data-cycle="${first.ma_buoi}"][data-student="s1"]`).click();assert.match(d.getElementById('nhFees').textContent,/312\.500đ/);
+  d.querySelector('[data-cycle="p13"][data-student="s1"]').click();d.querySelector('[data-cycle="p13"][data-student="s1"]').click();
+  assert.match(d.getElementById('nhSaveHint').textContent,/2 ô/);assert.match(d.getElementById('nhFees').textContent,/375\.000đ/);
+  d.querySelector('[data-session="p13"]').click();d.querySelector('[data-mark-note="p13"][data-student="s1"]').click();
+  d.querySelector('[name="note"]').value='<b>Ghi chú buổi học</b>';d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  assert.match(d.getElementById('nhSaveHint').textContent,/2 ô/);
+  const savedBefore=calls.filter(c=>c.action==='nh_attendance_batch_save').length;d.getElementById('nhSaveAttendance').click();await settle();
+  assert.equal(calls.filter(c=>c.action==='nh_attendance_batch_save').length,savedBefore+1);assert.equal(calls.filter(c=>c.action==='nh_attendance_batch_save').at(-1).data.sessions.length,2);
+  assert.equal(api('nh_view',{groupId:'g35',month:'2026-09'}).fees.find(f=>f.studentId==='s1').due,375000);
+  assert.equal(d.getElementById('nhSaveAttendance').disabled,true);
+  d.querySelector('[data-profile="s1"]').click();assert.equal(d.getElementById('nhProfile').open,true);assert.match(d.getElementById('nhProfileBody').textContent,/6 buổi/);assert.match(d.getElementById('nhProfileBody').textContent,/30\/09\/2026/);assert.match(d.getElementById('nhProfileBody').textContent,/<b>Ghi chú buổi học<\/b>/);assert.equal(d.getElementById('nhProfileBody').querySelectorAll('b').length,0);
+  d.getElementById('nhProfileBody').querySelector('[data-receive="s1"]').click();assert.equal(d.getElementById('nhProfile').open,false);assert.equal(d.querySelector('[name="amount"]').value,'175000');
+  d.querySelector('[name="note"]').value='Đóng đủ';d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  let v=api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(v.fees.find(f=>f.studentId==='s1').paid,375000);assert.equal(v.receipts.length,2);assert.equal(v.receipts.find(p=>p.ma_thu!=='r1').ngay_dong,'2026-10-15');
+  // Retained old marks on a class moved back to Planned must not create fees.
+  const moved=v.sessions[1];
+  api('nh_session_save',{groupId:'g35',id:moved.ma_buoi,date:moved.ngay_hoc,update:true,planned:true,revision:moved.revision});
+  d.getElementById('nhReload').click();await settle();
+  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/312\.500đ/);
+  d.querySelector(`[data-cycle="${first.ma_buoi}"][data-student="s1"]`).click();
+  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/312\.500đ/);
+  d.getElementById('nhReload').click();await settle();
+  const revised=api('nh_view',{groupId:'g35',month:'2026-09'}).sessions.find(s=>s.ma_buoi===moved.ma_buoi);
+  api('nh_session_save',{groupId:'g35',id:moved.ma_buoi,date:moved.ngay_hoc,update:true,planned:false,revision:revised.revision});
+  d.getElementById('nhReload').click();await settle();
+  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/375\.000đ/);
+  d.querySelector('[data-tab="fees"]').click();const filter=d.getElementById('nhFeeFilter');filter.value='free';filter.dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal([...d.querySelectorAll('.nh-fee-row')].filter(r=>!r.hidden).length,1);
+  d.getElementById('nhExport').click();assert.equal(exports[0],'Nhom_hoc_2026-09.csv');const csv=await blobs[0].text();assert.match(csv,/LỊCH SỬ ĐÓNG TIỀN/);assert.match(csv,/175000/);
+  d.querySelector('[data-tab="attendance"]').click();d.getElementById('nhSearch').value='hoc sinh a';d.getElementById('nhSearch').dispatchEvent(new w.Event('input',{bubbles:true}));assert([...d.querySelectorAll('.nh-mobile-student')].some(r=>!r.hidden));assert.equal([...d.querySelectorAll('.nh-mobile-student')].filter(r=>!r.hidden).length,1);
+  d.getElementById('nhNextMonth').click();await settle();assert.equal(d.getElementById('nhMonth').value,'2026-10');
+  d.querySelector('[data-action="plan-sessions"]').click();await settle();assert.equal(d.getElementById('nhDialog').open,true);assert.equal(d.querySelector('[name="date_0"]').value,'2026-10-20');assert.equal(d.querySelector('[name="date_7"]').value,'2026-11-12');
+  d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();v=api('nh_view',{groupId:'g35',month:'2026-10'});assert.equal(v.sessions.length,8);assert.equal(v.period.completed,0);assert.equal(v.fees.find(f=>f.studentId==='s1').due,0);
+  assert(d.querySelectorAll('.nh-cell-mark.future').length>0);assert.equal(d.getElementById('nhSaveAttendance').disabled,true);
+  d.querySelector('[data-profile="s1"]').click();role='member';w.dispatchEvent(new w.Event('app:auth-change'));await settle();assert.equal(d.getElementById('nhProfile').open,false);assert.equal(d.getElementById('nhProfileBody').textContent,'');assert.equal(d.getElementById('nhAttendance').textContent,'');assert.equal(d.getElementById('nhGroupCards').textContent,'');assert.equal(d.getElementById('nhWorkspace').hidden,true);
+  assert.deepEqual(errors,[]);dom.window.close();
+  console.log('PASS: actual HTML/JavaScript with mocked Sheets; guest/member/Google/VIP gate; two group cards; period navigation; 8 attendance columns; future cells disabled; two-session save in one request; live fee preview; notes retained/escaped; student drawer; installment dates; fee filter; CSV export; accent-insensitive search; October/November planning; logout clears sensitive DOM. Browser layout was not tested by this DOM test.');
+}
+tests().catch(error=>{console.error(error);process.exitCode=1;});
