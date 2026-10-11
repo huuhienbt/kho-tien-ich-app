@@ -218,3 +218,13 @@
   .nh-toolbar .nh-group-select{display:none}
   #nhEmpty,#nhGroupContent{grid-column:1/-1;min-width:0}
 }
+.nh-tabs button[hidden]{display:none}
+.nh-files-panel{padding:18px}
+.nh-files-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.nh-files-head h2{margin:0;font-size:18px}
+.nh-files-head p{margin:5px 0 0;color:var(--text-muted,#64748b);font-size:13px}
+.nh-file-upload{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end;margin-bottom:16px}
+.nh-file-upload label{display:grid;gap:6px;font-size:13px;font-weight:600}
+.nh-files-panel td small{display:block;color:#64748b;margin-top:4px}
+.nh-file-actions{display:flex;gap:6px}
+@media(max-width:850px){.nh-file-upload{grid-template-columns:1fr}.nh-files-head{align-items:flex-start}.nh-file-actions{flex-direction:column}}

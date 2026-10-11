@@ -7,7 +7,7 @@
   const shortDate = value => dateLabel(value).slice(0,5);
   const periodLabel = value => 'tháng ' + String(value || '').split('-').reverse().join('/');
   const uid = () => window.crypto.randomUUID();
-  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',focusSession:false,profileId:''};
+  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',focusSession:false,profileId:'',files:null,filesLoading:false};
   const statusLabel = {co_mat:'Có mặt',vang:'Vắng',chua_diem_danh:'Chưa điểm danh'};
   const markSymbol = {co_mat:'✓',vang:'×',chua_diem_danh:'·'};
   const message = (text,error=false) => { $('nhFeedback').textContent=text; $('nhFeedback').className='nh-feedback'+(error?' error':''); $('nhFeedback').hidden=!text; };
@@ -33,7 +33,8 @@
   function resetAuth() {
     state.epoch++;state.boot=null;state.view=null;clearDrafts();state.groupId='';state.month='';state.search='';state.feeSearch='';state.feeFilter='all';state.sessionId='';state.tab='attendance';state.focusSession=false;
     $('nhDialog').close();state.submit=null;closeProfile();
-    ['nhStats','nhAttendance','nhOverview','nhStudents','nhFees','nhGroup','nhGroupCards','nhPeriodInfo'].forEach(id=>$(id).replaceChildren());
+    state.files=null;state.filesLoading=false;$('nhFilesTab').hidden=true;
+    ['nhStats','nhAttendance','nhOverview','nhStudents','nhFees','nhFiles','nhGroup','nhGroupCards','nhPeriodInfo'].forEach(id=>$(id).replaceChildren());
     $('nhWorkspace').hidden=true;$('nhGroupContent').hidden=true;$('nhAddGroup').hidden=true;message('');$('nhGate').hidden=App.isAdmin();busy(false);
     if(App.isAdmin())boot();
   }
@@ -79,7 +80,7 @@
   }
   async function changeGroup(id) {
     if(!state.boot?.features?.attendanceBatch||state.busy||!discard()){$('nhGroup').value=state.groupId;return;}
-    clearDrafts();state.groupId=id;state.search='';state.feeSearch='';state.sessionId='';state.month=state.boot.groups.find(g=>g.ma_nhom===id)?.ky_hien_tai||state.boot.today.slice(0,7);$('nhMonth').value=state.month;$('nhGroup').value=id;await reload();
+    clearDrafts();state.files=null;state.filesLoading=false;state.groupId=id;state.search='';state.feeSearch='';state.sessionId='';state.month=state.boot.groups.find(g=>g.ma_nhom===id)?.ky_hien_tai||state.boot.today.slice(0,7);$('nhMonth').value=state.month;$('nhGroup').value=id;await reload();
   }
   function changeMonth(value) {
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)||value<'2000-01'||value>'2100-12'||!discard()){$('nhMonth').value=state.month;return;}
@@ -119,7 +120,33 @@
     $('nhOverviewTab').textContent=cycle?'8 buổi':'Tổng quan';
     $('nhPrevMonth').disabled=v.month==='2000-01';$('nhNextMonth').disabled=v.month==='2100-12';paintGroupCards();paintSummary();paintAttendance();paintOverview();paintStudents();paintFees();paintTab();
   }
-  function paintTab() {Object.entries({attendance:'nhAttendance',overview:'nhOverview',students:'nhStudents',fees:'nhFees'}).forEach(([key,id])=>$(id).hidden=state.tab!==key);document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab)));}
+  function paintTab() {const filesEnabled=!!state.boot?.features?.files;$('nhFilesTab').hidden=!filesEnabled;if(state.tab==='files'&&!filesEnabled)state.tab='attendance';Object.entries({attendance:'nhAttendance',overview:'nhOverview',students:'nhStudents',fees:'nhFees',files:'nhFiles'}).forEach(([key,id])=>$(id).hidden=state.tab!==key);document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab)));if(state.tab==='files')paintFiles();}
+
+  function paintFiles() {
+    if(!state.boot?.features?.files)return;
+    const rows=(state.files?.files||[]).map(f=>`<tr><td><strong>${esc(f.name)}</strong><small>${esc(f.note||'')}</small></td><td>${(f.size/1024).toLocaleString('vi-VN',{maximumFractionDigits:0})} KB</td><td>${dateLabel(f.created_at.slice(0,10))}</td><td><div class="nh-file-actions"><button class="btn btn-secondary" type="button" data-file-download="${esc(f.id)}">Tải</button><button class="btn btn-danger" type="button" data-file-delete="${esc(f.id)}">Xóa</button></div></td></tr>`).join('');
+    $('nhFiles').innerHTML=`<section class="panel nh-files-panel"><div class="nh-files-head"><div><h2>Tệp của nhóm</h2><p>Chỉ quản trị được xem và tải tệp. Mỗi tệp tối đa 5 MB.</p></div><button class="btn btn-secondary" type="button" data-action="reload-files">Tải lại</button></div><div class="nh-file-upload"><label>Chọn tệp<input id="nhFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.webp" class="form-control"></label><label>Ghi chú<input id="nhFileNote" class="form-control" maxlength="500"></label><button type="button" class="btn btn-primary" data-action="upload-file">Tải lên</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Tên tệp</th><th>Dung lượng</th><th>Ngày tải</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="4">${state.filesLoading?'Đang tải danh sách tệp…':state.files?'Chưa có tệp.':'Đang tải danh sách tệp…'}</td></tr>`}</tbody></table></div>${state.files?.hasMore?'<p>Đang hiển thị 200 tệp gần nhất.</p>':''}</section>`;
+    if(state.files===null&&!state.filesLoading)loadFiles().catch(error=>message(error.message,true));
+  }
+  async function loadFiles() {
+    const epoch=state.epoch,groupId=state.groupId;state.filesLoading=true;
+    try {const files=await call('nh_files_list',{groupId});if(epoch===state.epoch&&groupId===state.groupId){state.files=files;state.filesLoading=false;if(state.tab==='files')paintFiles();}}
+    finally {if(epoch===state.epoch&&groupId===state.groupId)state.filesLoading=false;}
+  }
+  async function uploadFile() {
+    const file=$('nhFileInput')?.files[0],note=$('nhFileNote')?.value||'';if(!file)return message('Chọn tệp trước khi tải lên.',true);
+    const epoch=state.epoch;busy(true,'Đang tải tệp…');
+    try {await App.uploadGroupFile(file,state.groupId,note);if(epoch!==state.epoch)return;await loadFiles();message('Đã lưu tệp của nhóm.');}
+    catch(error){if(epoch===state.epoch)message(error.message,true);}finally{if(epoch===state.epoch)busy(false);}
+  }
+  async function fileAction(id,remove=false) {
+    if(remove&&!window.confirm('Xóa tệp này khỏi nhóm?'))return;
+    const epoch=state.epoch;busy(true,remove?'Đang xóa tệp…':'Đang tải tệp…');
+    try {
+      if(remove){await call('nh_file_delete',{id});if(epoch===state.epoch){await loadFiles();message('Đã xóa tệp.');}}
+      else {const result=await App.apiPost('nh_file_download',{id},{auth:true,download:true,timeoutMs:60000});if(epoch!==state.epoch)return;const url=URL.createObjectURL(result.blob),a=document.createElement('a');a.href=url;a.download=result.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+    } catch(error){if(epoch===state.epoch)message(error.message,true);}finally{if(epoch===state.epoch)busy(false);}
+  }
   function isMakeup(s) {const days=(state.view.group.thu_trong_tuan||'').split(',').filter(Boolean).map(d=>d==='CN'?0:Number(d)-1);return !!days.length&&!days.includes(new Date(s.ngay_hoc+'T12:00:00Z').getUTCDay());}
   function sessionState(s) {return s.trang_thai==='da_huy'?'Đã hủy':s.ngay_hoc>state.view.today?'Dự kiến':s.trang_thai==='du_kien'?'Chưa xác nhận':'Đã học';}
   function slotSessions() {const v=state.view,active=v.sessions.filter(s=>s.trang_thai!=='da_huy');if(v.period.mode!=='eight_sessions')return active;const learned=active.filter(s=>s.trang_thai==='da_hoc'&&s.ngay_hoc<=v.today),plans=active.filter(s=>!learned.includes(s)).slice(0,Math.max(0,8-learned.length));return learned.concat(plans).sort((a,b)=>a.ngay_hoc.localeCompare(b.ngay_hoc));}
@@ -329,6 +356,8 @@
     const button=event.target.closest('button');if(!button||button.disabled||state.busy)return;
     if(button.dataset.profile)return openProfile(button.dataset.profile);
     if(button.dataset.tab){state.tab=button.dataset.tab;paintTab();return;}
+    if(button.dataset.fileDownload)return fileAction(button.dataset.fileDownload);
+    if(button.dataset.fileDelete)return fileAction(button.dataset.fileDelete,true);
     if(button.dataset.session){state.sessionId=button.dataset.session;state.focusSession=true;state.tab='attendance';paintAttendance();paintTab();return;}
     if(button.dataset.cycle){const panel=button.closest('.nh-tab-panel'),sessionId=button.dataset.cycle,id=button.dataset.student,old=getMark(sessionId,id).status,next={chua_diem_danh:'co_mat',co_mat:'vang',vang:'chua_diem_danh'}[old];setDraft(sessionId,id,{status:next});refreshAfterMark(sessionId,id);panel.querySelectorAll('[data-cycle]').forEach(b=>{if(b.dataset.cycle===sessionId&&b.dataset.student===id)b.focus({preventScroll:true});});return;}
     if(button.dataset.mark){const id=button.dataset.student;setDraft(state.sessionId,id,{status:button.dataset.mark});refreshAfterMark(state.sessionId,id);return;}
@@ -337,6 +366,8 @@
     if(button.dataset.receive)return externalEdit(()=>receiptForm(button.dataset.receive));
     if(button.dataset.void)return externalEdit(()=>voidForm(button.dataset.void));
     const action=button.dataset.action;
+    if(action==='upload-file')return uploadFile();
+    if(action==='reload-files')return loadFiles().catch(error=>message(error.message,true));
     if(action==='save-attendance')return saveAttendance();
     if(action==='toggle-mode'){state.focusSession=!state.focusSession;paintAttendance();return;}
     if(action==='all-present'){const s=selectedSession();if(!writable(s))return;state.view.roster.filter(m=>within(m,s.ngay_hoc)).forEach(m=>setDraft(s.ma_buoi,m.ma_hoc_sinh,{status:'co_mat'}));paintAttendance();paintOverview();paintSummary();paintFees();updateDraftUi();return;}

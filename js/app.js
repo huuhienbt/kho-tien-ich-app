@@ -294,14 +294,22 @@
         const controller = timeoutMs && typeof AbortController !== 'undefined' ? new AbortController() : null;
         const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
         try {
-            const response = await fetch(config.API_URL, {
+            const endpoint = action.startsWith('nh_') && config.GROUPS_API_URL ? config.GROUPS_API_URL + '/api' : config.API_URL;
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload),
                 signal: controller?.signal
             });
-            if (!response.ok) throw new Error('Máy chủ không phản hồi.');
-            const result = await response.json();
+            if (options.download && response.ok) {
+                const disposition = response.headers.get('Content-Disposition') || '';
+                let name = 'tep-nhom-hoc';
+                try { name = decodeURIComponent(disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1] || name); } catch {}
+                return { blob: await response.blob(), name };
+            }
+            let result;
+            try { result = await response.json(); } catch { throw new Error('Máy chủ không phản hồi đúng định dạng. Vui lòng thử lại.'); }
+            if (!response.ok && result.status === 'success') throw new Error('Máy chủ không phản hồi.');
             if (result.status !== 'success') {
                 const message = result.message || 'Thao tác không thành công.';
                 if (action !== 'verify' && /mật khẩu quản trị/i.test(message)) logout();
@@ -323,6 +331,25 @@
         } finally {
             if (timeoutId) clearTimeout(timeoutId);
         }
+    }
+
+    async function uploadGroupFile(file, groupId, note = '') {
+        if (!state.adminToken || !config.GROUPS_API_URL) throw new Error('Vui lòng đăng nhập quản trị.');
+        if (!file || file.size <= 0 || file.size > 5 * 1024 * 1024) throw new Error('Mỗi tệp tối đa 5 MB.');
+        const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 60000);
+        try {
+            const response = await fetch(config.GROUPS_API_URL + '/files/upload?groupId=' + encodeURIComponent(groupId), {
+                method: 'POST',
+                headers: {'Authorization': 'Bearer ' + state.adminToken, 'Content-Type': file.type || 'application/octet-stream', 'X-File-Size': String(file.size), 'X-File-Name': encodeURIComponent(file.name), 'X-File-Note': encodeURIComponent(note)},
+                body: file, signal: controller.signal
+            });
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') throw new Error(result.message || 'Không tải lên được tệp.');
+            return result.data;
+        } catch (error) {
+            if (error?.name === 'AbortError') throw new Error('Tải tệp quá lâu. Kiểm tra danh sách tệp trước khi tải lại.');
+            throw error;
+        } finally { clearTimeout(timeout); }
     }
 
     async function guestAuth(event) {
@@ -580,7 +607,7 @@
     }
 
     window.App = Object.freeze({
-        init, icon, openModal, closeModal, openLogin, toast, requireAdmin, requireUser, apiGet, apiPost,
+        init, icon, openModal, closeModal, openLogin, toast, requireAdmin, requireUser, apiGet, apiPost, uploadGroupFile,
         escapeHTML, safeUrl, formatBytes, debounce,
         isLoggedIn: isAuthenticated,
         isAuthenticated,

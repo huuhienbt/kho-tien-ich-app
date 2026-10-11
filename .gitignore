@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+dist/
+.dev.vars*
+*.sqlite
+*.sqlite-*
+*snapshot*.json
+*private*.json
