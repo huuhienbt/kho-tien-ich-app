@@ -69,8 +69,9 @@ function egvCollectionsSigned_(payload){
   try{
     const props=PropertiesService.getScriptProperties();
     if(request.op==='activate_export'){
+      const tables=egvCollectionsRead_();
       props.setProperty('EGV_COLLECTIONS_ACTIVE','1');
-      return createResponse({status:'success',data:{tables:egvCollectionsRead_(),active:true}});
+      return createResponse({status:'success',data:{tables:tables,active:true}});
     }
     if(request.op==='export')return createResponse({status:'success',data:{tables:egvCollectionsRead_(),active:egvCollectionsActive_()}});
     if(request.op==='status')return createResponse({status:'success',data:{active:egvCollectionsActive_(),revision:Number(props.getProperty('EGV_COLLECTIONS_BACKUP_REVISION')||0),checksum:props.getProperty('EGV_COLLECTIONS_BACKUP_CHECKSUM')||''}});
