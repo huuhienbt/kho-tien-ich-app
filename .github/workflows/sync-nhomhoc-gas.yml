@@ -1,0 +1,78 @@
+name: Sync NhomHoc to Apps Script
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - NhomHoc.gs
+      - scripts/sync-nhomhoc-gas.mjs
+      - tests/sync-nhomhoc-gas.test.mjs
+      - .github/workflows/sync-nhomhoc-gas.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gas-nhomhoc-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test group ledger and deployment safeguards
+        run: |
+          node tests/nhom-hoc-cycle.test.cjs
+          node tests/nhom-hoc-ledger.test.cjs
+          node --test tests/sync-nhomhoc-gas.test.mjs
+
+  sync:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check initial Google authorization
+        id: config
+        env:
+          GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+          GAS_DEPLOYMENT_ID: ${{ secrets.GAS_DEPLOYMENT_ID }}
+          GAS_OAUTH_CLIENT_ID: ${{ secrets.GAS_OAUTH_CLIENT_ID }}
+          GAS_OAUTH_CLIENT_SECRET: ${{ secrets.GAS_OAUTH_CLIENT_SECRET }}
+          GAS_OAUTH_REFRESH_TOKEN: ${{ secrets.GAS_OAUTH_REFRESH_TOKEN }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          import { REQUIRED_SECRETS } from './scripts/sync-nhomhoc-gas.mjs';
+          const ready = REQUIRED_SECRETS.every(key => process.env[key]?.trim());
+          appendFileSync(process.env.GITHUB_OUTPUT, `ready=${ready}\n`);
+          if (!ready) {
+            const note = 'Chưa cấu hình đủ 5 GitHub Secrets. Chưa kết nối hoặc cập nhật Apps Script. Xem HUONG_DAN_TU_DONG_NHOMHOC_GAS.md, rồi chạy Run workflow.';
+            console.log(`::notice::${note}`);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, note + '\n');
+          }
+          NODE
+      - name: Preserve live files, update NhomHoc and existing Web App
+        if: steps.config.outputs.ready == 'true'
+        env:
+          GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+          GAS_DEPLOYMENT_ID: ${{ secrets.GAS_DEPLOYMENT_ID }}
+          GAS_OAUTH_CLIENT_ID: ${{ secrets.GAS_OAUTH_CLIENT_ID }}
+          GAS_OAUTH_CLIENT_SECRET: ${{ secrets.GAS_OAUTH_CLIENT_SECRET }}
+          GAS_OAUTH_REFRESH_TOKEN: ${{ secrets.GAS_OAUTH_REFRESH_TOKEN }}
+        run: |
+          current_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$GITHUB_SHA" != "$current_main" ]; then
+            echo 'Nhánh main đã có mã mới hơn. Chạy lại workflow trên main để tránh triển khai phiên bản cũ.' >&2
+            exit 1
+          fi
+          node scripts/sync-nhomhoc-gas.mjs
