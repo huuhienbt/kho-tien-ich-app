@@ -1,0 +1,21 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require(require.resolve('jsdom',{paths:[process.env.EGV_QA_DEPENDENCIES||process.cwd()]}));
+const root=path.resolve(__dirname,'..');
+test('group requests route to Worker; other app requests keep Apps Script; server conflicts remain readable; files require admin',async t=>{
+ const dom=new JSDOM('<!doctype html><div id="appShell"></div>',{url:'https://e-gv.vercel.app/groups.html',runScripts:'outside-only'}),w=dom.window;
+ t.after(()=>dom.window.close());
+ w.APP_CONFIG={API_URL:'https://gas.example/exec',GROUPS_API_URL:'https://worker.example',SESSION_KEY:'admin',USER_TOKEN_KEY:'user',USER_PROFILE_KEY:'profile',CLIENT_ID_KEY:'client',APP_NAME:'E-GV'};
+ const claims=Buffer.from(JSON.stringify({role:'admin',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url');
+ w.sessionStorage.setItem('admin',claims+'.signed');
+ const calls=[];
+ w.fetch=async(url,options)=>{calls.push({url,payload:JSON.parse(options.body)});return {ok:true,json:async()=>({status:'success',data:{}})};};
+ w.eval(fs.readFileSync(path.join(root,'js/app.js'),'utf8'));
+ await w.App.apiPost('nh_boot');assert.equal(calls.at(-1).url,'https://worker.example/api');assert.equal(calls.at(-1).payload.adminToken,claims+'.signed');
+ await w.App.apiPost('verify');assert.equal(calls.at(-1).url,'https://gas.example/exec');
+ w.fetch=async()=>({ok:false,json:async()=>({status:'error',message:'Dữ liệu vừa được cập nhật ở phiên khác. Tải lại trước khi lưu.'})});
+ await assert.rejects(w.App.apiPost('nh_attendance_save'),/phiên khác/);
+ const member=new JSDOM('<!doctype html>',{url:'https://e-gv.vercel.app',runScripts:'outside-only'});t.after(()=>member.window.close());member.window.APP_CONFIG=w.APP_CONFIG;
+ member.window.eval(fs.readFileSync(path.join(root,'js/app.js'),'utf8'));
+ await assert.rejects(member.window.App.uploadGroupFile({size:5},'g1'),/đăng nhập quản trị/);
+});

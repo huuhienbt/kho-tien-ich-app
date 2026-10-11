@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "egv-nhom-hoc",
+  "account_id": "1cbb6895e6fe935d9acc42e27809d088",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "APP_ORIGIN": "https://e-gv.vercel.app",
+    "GAS_URL": "https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec",
+    "FILE_MAX_BYTES": "5242880",
+    "FILE_TOTAL_BYTES": "1073741824"
+  },
+  "d1_databases": [{"binding":"DB","database_name":"egv-nhom-hoc","database_id":"9c97549e-fe62-43c3-96d4-68d0fe1c0e5f","migrations_dir":"migrations"}],
+  "ratelimits": [{"name":"AUTH_LIMITER","namespace_id":"1001","simple":{"limit":8,"period":60}}],
+  "observability": {"enabled":true,"head_sampling_rate":0.1},
+  "env": {
+    "r2": {
+      "name":"egv-nhom-hoc",
+      "vars": {"APP_ORIGIN":"https://e-gv.vercel.app","GAS_URL":"https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec","FILE_MAX_BYTES":"5242880","FILE_TOTAL_BYTES":"1073741824"},
+      "d1_databases": [{"binding":"DB","database_name":"egv-nhom-hoc","database_id":"9c97549e-fe62-43c3-96d4-68d0fe1c0e5f","migrations_dir":"migrations"}],
+      "r2_buckets": [{"binding":"FILES","bucket_name":"egv-nhom-hoc-files"}],
+      "ratelimits": [{"name":"AUTH_LIMITER","namespace_id":"1001","simple":{"limit":8,"period":60}}]
+    }
+  }
+}

@@ -1,0 +1,80 @@
+name: Check and deploy Cloudflare groups
+on:
+  pull_request:
+    paths: ['cloudflare/nhom-hoc/**','NhomHoc.gs','js/app.js','js/config.js','js/groups.js','groups.html','groups.css','tests/nh-cloudflare-api.test.cjs','tests/nhom-hoc-*.test.cjs','.github/workflows/cloudflare-groups.yml']
+  push:
+    branches: [main]
+    paths: ['cloudflare/nhom-hoc/**','NhomHoc.gs','js/app.js','js/config.js','js/groups.js','groups.html','groups.css','tests/nh-cloudflare-api.test.cjs','tests/nhom-hoc-*.test.cjs','.github/workflows/cloudflare-groups.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-groups-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cloudflare/nhom-hoc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: cloudflare/nhom-hoc/package-lock.json
+      - run: npm ci
+      - run: npm run types && npm run check && npm test
+      - name: Check existing group UI and API routing
+        working-directory: .
+        env:
+          EGV_QA_DEPENDENCIES: ${{ github.workspace }}/cloudflare/nhom-hoc
+        run: |
+          node tests/nhom-hoc-cycle.test.cjs
+          node tests/nhom-hoc-ledger.test.cjs
+          node tests/nhom-hoc-ui.test.cjs
+          node --test tests/nh-cloudflare-api.test.cjs tests/nhom-hoc-auth-bridge.test.cjs
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cloudflare/nhom-hoc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check deployment credential
+        id: credential
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {appendFileSync} from 'node:fs';
+          const ready=Boolean(process.env.CLOUDFLARE_API_TOKEN?.trim());
+          appendFileSync(process.env.GITHUB_OUTPUT,`ready=${ready}\n`);
+          if(!ready)appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Worker đã được triển khai qua kết nối Cloudflare. Để các lần cập nhật sau tự triển khai, thêm GitHub Secret CLOUDFLARE_API_TOKEN. Chưa thực hiện triển khai từ workflow này.\n');
+          NODE
+      - if: steps.credential.outputs.ready == 'true'
+        run: npm ci
+      - name: Apply schema and deploy verified Worker
+        if: steps.credential.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: '1cbb6895e6fe935d9acc42e27809d088'
+          R2_ENABLED: ${{ vars.EGV_R2_ENABLED }}
+        run: |
+          target_env=''
+          if [ "$R2_ENABLED" = 'true' ]; then target_env='r2'; fi
+          current_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$GITHUB_SHA" != "$current_main" ]; then
+            echo 'Main đã thay đổi. Chạy lại workflow trên main để tránh triển khai bản cũ.' >&2
+            exit 1
+          fi
+          npx wrangler d1 migrations apply egv-nhom-hoc --remote --env="$target_env"
+          npx wrangler deploy --env="$target_env"

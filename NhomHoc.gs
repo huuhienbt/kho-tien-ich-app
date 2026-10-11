@@ -14,8 +14,8 @@ function nhBook_() {
   return SpreadsheetApp.openById(getSetting('EGV_NH_DATA_ID', true).trim());
 }
 
-// Turn on only after the Cloudflare database has been verified and the web endpoint switched.
-function nhCloudflareActive_() {return false;}
+// Freeze the legacy group API during/after cutover; nh_auth remains available.
+function nhCloudflareActive_() {return true;}
 
 // Có thể chạy một lần từ trình biên tập; không cần xóa hay thay trang cũ.
 function setupNhomHoc() {

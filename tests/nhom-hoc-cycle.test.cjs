@@ -21,6 +21,8 @@ function harness(seed={}){
     base64WebSafe:b=>Buffer.from(b).toString('base64url'),cleanText:(x,max)=>String(x??'').trim().slice(0,max),getSetting:(name,_,fallback)=>name==='EGV_NH_DATA_ID'?'configured-test-sheet':fallback,
     getSheetObjects:()=>[{id:'u1',name:'Giáo viên',status:'active'}],resolvePrincipal:p=>p.adminToken==='admin-test'?{sub:'u1',role:'admin'}:p.userToken?{sub:'u1',role:'member'}:null,createResponse:r=>r};
   vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(root,'NhomHoc.gs'),'utf8'),ctx);ctx.nhToday_=()=>today;
+  // Exercise the shared ledger with fake Sheets even after production switches to D1.
+  ctx.nhCloudflareActive_=()=>false;
   function api(action,data={}){const r=ctx.handleNhomHoc({action,data,adminToken:'admin-test'});assert.equal(r.status,'success');assert.equal(locks,0);return r.data;}
   return {ctx,sheets,api,setToday:d=>today=d};
 }
