@@ -1,0 +1,69 @@
+name: Check and deploy Prompt and repairs
+on:
+ pull_request:
+  paths: ['cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
+ push:
+  branches: [main]
+  paths: ['cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
+ workflow_dispatch:
+permissions:
+ contents: read
+concurrency:
+ group: cloudflare-collections-${{ github.ref }}
+ cancel-in-progress: false
+jobs:
+ check:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 10
+  defaults:
+   run:
+    working-directory: cloudflare/kho-tien-ich
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-node@v4
+     with:
+      node-version: '24'
+      cache: npm
+      cache-dependency-path: cloudflare/kho-tien-ich/package-lock.json
+   - run: npm ci
+   - run: npm run types && npm run check && npm test
+   - name: Check Apps Script preservation and frontend routing
+     working-directory: .
+     env:
+      EGV_QA_DEPENDENCIES: ${{ github.workspace }}/cloudflare/kho-tien-ich
+     run: node --test tests/collections-bridge.test.mjs tests/collections-api.test.cjs tests/sync-nhomhoc-gas.test.mjs
+ deploy:
+  needs: check
+  if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+  runs-on: ubuntu-24.04
+  timeout-minutes: 10
+  defaults:
+   run:
+    working-directory: cloudflare/kho-tien-ich
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-node@v4
+     with:
+      node-version: '24'
+   - name: Check deployment credential
+     id: credential
+     env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+     run: |
+      node --input-type=module <<'NODE'
+      import {appendFileSync} from 'node:fs';
+      const ready=Boolean(process.env.CLOUDFLARE_API_TOKEN?.trim());
+      appendFileSync(process.env.GITHUB_OUTPUT,`ready=${ready}\n`);
+      if(!ready)appendFileSync(process.env.GITHUB_STEP_SUMMARY,'Bản triển khai dùng kết nối Cloudflare. Để tự triển khai các lần sửa mã tiếp theo, cấu hình CLOUDFLARE_API_TOKEN. Chưa triển khai từ workflow này.\n');
+      NODE
+   - if: steps.credential.outputs.ready == 'true'
+     run: npm ci
+   - name: Deploy without replacing the existing signing secret
+     if: steps.credential.outputs.ready == 'true'
+     env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+     run: |
+      current_main=$(git ls-remote origin refs/heads/main | cut -f1)
+      if [ "$GITHUB_SHA" != "$current_main" ]; then exit 1; fi
+      npx wrangler d1 migrations apply egv-kho-tien-ich --remote
+      npx wrangler deploy

@@ -74,7 +74,7 @@ async function request(fetchImpl, url, options, stage) {
   try { return await response.json(); } catch { throw new Error(`${stage}_RESPONSE_INVALID`); }
 }
 
-export async function syncNhomHoc({ env, source, expectedUrl, fetchImpl = fetch, report = () => {} }) {
+export async function syncNhomHoc({ env, source, expectedUrl, fetchImpl = fetch, report = () => {}, transformFiles, label = 'NhomHoc' }) {
   if (REQUIRED_SECRETS.some(key => !env[key]?.trim())) throw new Error('GITHUB_SECRETS_MISSING');
   const scriptId = env.GAS_SCRIPT_ID.trim();
   const deploymentId = env.GAS_DEPLOYMENT_ID.trim();
@@ -101,7 +101,7 @@ export async function syncNhomHoc({ env, source, expectedUrl, fetchImpl = fetch,
   if (originalUrl !== expectedUrl) throw new Error('WEB_APP_URL_MISMATCH');
   const previousVersion = deployment.deploymentConfig.versionNumber;
   const before = filesOf(await get('/content', 'READ_CONTENT'));
-  const desired = replaceNhomHoc(before, source);
+  const desired = transformFiles ? filesOf({files: transformFiles(before, source)}) : replaceNhomHoc(before, source);
   const desiredHash = fingerprint(desired);
   const published = filesOf(await get(`/content?versionNumber=${previousVersion}`, 'READ_PUBLISHED_CONTENT'));
   if (fingerprint(before) === desiredHash && fingerprint(published) === desiredHash) {
@@ -121,7 +121,7 @@ export async function syncNhomHoc({ env, source, expectedUrl, fetchImpl = fetch,
     throw new Error('CONTENT_VERIFICATION_FAILED');
   }
   const sha = /^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '') ? env.GITHUB_SHA.slice(0, 12) : 'manual';
-  const description = `E-GV NhomHoc ${sha}`;
+  const description = `E-GV ${label} ${sha}`;
   const version = await write('/versions', 'POST', { description }, 'CREATE_VERSION');
   if (!Number.isInteger(version.versionNumber) || version.versionNumber < 1) throw new Error('VERSION_INVALID');
   // Verify the immutable snapshot before making it live.

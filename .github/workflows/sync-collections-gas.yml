@@ -1,0 +1,36 @@
+name: Sync Prompt and repair Sheets bridge
+on:
+ workflow_dispatch:
+ push:
+  branches: [main]
+  paths: [Collections.gs, scripts/sync-collections-gas.mjs, scripts/sync-nhomhoc-gas.mjs, .github/workflows/sync-collections-gas.yml]
+permissions:
+ contents: read
+concurrency:
+ group: gas-nhomhoc-production
+ cancel-in-progress: false
+jobs:
+ sync:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 10
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-node@v4
+     with:
+      node-version: '22'
+   - name: Validate preservation and signed Sheets bridge
+     run: node --test tests/sync-nhomhoc-gas.test.mjs tests/collections-bridge.test.mjs
+   - name: Preserve live files and install bridge
+     env:
+      GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+      GAS_DEPLOYMENT_ID: ${{ secrets.GAS_DEPLOYMENT_ID }}
+      GAS_OAUTH_CLIENT_ID: ${{ secrets.GAS_OAUTH_CLIENT_ID }}
+      GAS_OAUTH_CLIENT_SECRET: ${{ secrets.GAS_OAUTH_CLIENT_SECRET }}
+      GAS_OAUTH_REFRESH_TOKEN: ${{ secrets.GAS_OAUTH_REFRESH_TOKEN }}
+     run: |
+      current_main=$(git ls-remote origin refs/heads/main | cut -f1)
+      if [ "$GITHUB_SHA" != "$current_main" ]; then
+        echo 'Main đã có bản mới. Chạy lại workflow trên main.' >&2
+        exit 1
+      fi
+      node scripts/sync-collections-gas.mjs

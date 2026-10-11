@@ -1,0 +1,15 @@
+{
+ "$schema":"node_modules/wrangler/config-schema.json",
+ "name":"egv-kho-tien-ich",
+ "account_id":"1cbb6895e6fe935d9acc42e27809d088",
+ "main":"src/index.ts",
+ "compatibility_date":"2026-10-11",
+ "compatibility_flags":["nodejs_compat"],
+ "workers_dev":true,"preview_urls":false,
+ "vars":{"APP_ORIGIN":"https://e-gv.vercel.app","GAS_URL":"https://script.google.com/macros/s/AKfycbwYeoqfFXK5GyIJgzA_3J3LPkxkyGYFI59mOz9xpcga59TvGKil-gjYcPZL59yZOuhQ/exec","SHEETS_KEY_ID":"a21ada8e6e932c9a"},
+ "secrets":{"required":["SHEETS_SIGNING_KEY"]},
+ "d1_databases":[{"binding":"DB","database_name":"egv-kho-tien-ich","database_id":"e6271376-4628-4383-81f9-c91080949515","migrations_dir":"migrations"}],
+ "ratelimits":[{"name":"AUTH_LIMITER","namespace_id":"1002","simple":{"limit":10,"period":60}},{"name":"WRITE_LIMITER","namespace_id":"1003","simple":{"limit":60,"period":60}}],
+ "triggers":{"crons":["*/10 * * * *"]},
+ "observability":{"enabled":true,"head_sampling_rate":0.1,"logs":{"enabled":true,"invocation_logs":false}}
+}
