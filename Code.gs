@@ -88,6 +88,12 @@ function doPost(e) {
     const action = String(payload.action || '').trim();
     const data = payload.data || {};
 
+    // D1 collections: trusted authentication, signed Sheets backups and legacy write guard.
+    if (typeof egvCollectionsBridge_ === 'function') {
+      const collectionsResponse = egvCollectionsBridge_(payload);
+      if (collectionsResponse) return collectionsResponse;
+    }
+
     if (action === 'verify') return handleAdminLogin(payload.adminPassword || data.adminPassword, payload.clientId);
     if (action === 'user_register') return handleUserRegister(data, payload.clientId);
     if (action === 'user_login') return handleUserLogin(data, payload.clientId);

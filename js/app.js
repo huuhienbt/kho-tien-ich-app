@@ -294,7 +294,10 @@
         const controller = timeoutMs && typeof AbortController !== 'undefined' ? new AbortController() : null;
         const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
         try {
-            const endpoint = action.startsWith('nh_') && config.GROUPS_API_URL ? config.GROUPS_API_URL + '/api' : config.API_URL;
+            const collectionAction = ['get_prompts', 'get_repairs', 'toggle_favorite', 'sync_favorites', 'admin_get_users', 'admin_set_membership', 'collections_backup_status', 'collections_backup_now'].includes(action)
+                || (['create', 'update', 'delete'].includes(action) && ['prompts', 'repairs'].includes(options.sheetType));
+            const endpoint = action.startsWith('nh_') && config.GROUPS_API_URL ? config.GROUPS_API_URL + '/api'
+                : collectionAction && config.COLLECTIONS_API_URL ? config.COLLECTIONS_API_URL + '/api' : config.API_URL;
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -536,7 +539,9 @@
     }
 
     async function apiGet(type, options = {}) {
-        const url = new URL(config.API_URL);
+        const collectionType = ['prompts', 'repairs'].includes(type);
+        if (collectionType && config.COLLECTIONS_API_URL && options.includeAuth && isAuthenticated()) return apiPost(type === 'prompts' ? 'get_prompts' : 'get_repairs', {}, { userAuth: true });
+        const url = new URL(collectionType && config.COLLECTIONS_API_URL ? config.COLLECTIONS_API_URL + '/api' : config.API_URL);
         url.searchParams.set('type', type);
         if (options.includeAuth && state.userToken) url.searchParams.set('userToken', state.userToken);
         const response = await fetch(url.href);
