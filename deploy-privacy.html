@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Chính sách bảo mật E-GV Deploy: quyền OAuth, mã nguồn Apps Script, GitHub Secrets và cách thu hồi quyền đồng bộ.">
+  <meta name="theme-color" content="#2563eb">
+  <title>Chính sách bảo mật – E-GV Deploy</title>
+  <link rel="stylesheet" href="deploy-info.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="topbar"><nav class="nav" aria-label="Điều hướng E-GV Deploy">
+    <a class="brand" href="deploy.html"><span class="brand-mark" aria-hidden="true">E</span>E-GV Deploy</a>
+    <div class="nav-links"><a href="deploy.html">Giới thiệu</a><a href="deploy-privacy.html" aria-current="page">Bảo mật</a><a href="deploy-terms.html">Điều khoản</a></div>
+  </nav></header>
+  <main id="main">
+    <div class="hero"><span class="eyebrow">E-GV Deploy</span><h1>Chính sách bảo mật</h1><p>Cách công cụ đồng bộ xử lý quyền Google, mã nguồn và thông tin cấu hình của người quản trị.</p></div>
+    <article class="content" aria-label="Chính sách bảo mật">
+      <section aria-labelledby="scope"><h2 id="scope">1. Phạm vi áp dụng</h2>
+        <p>Chính sách này áp dụng cho <strong>E-GV Deploy</strong>, công cụ quản trị đồng bộ <code>NhomHoc.gs</code> từ GitHub vào Google Apps Script và cập nhật deployment Web App E-GV. Quyền OAuth được người quản trị cấp bằng tài khoản có quyền quản lý dự án.</p>
+      </section>
+      <section aria-labelledby="data"><h2 id="data">2. Thông tin được xử lý</h2>
+        <ul><li><strong>Thông tin xác thực:</strong> OAuth Client ID, Client secret, Refresh token và Access token ngắn hạn dùng để gọi Apps Script API.</li><li><strong>Thông tin dự án:</strong> Script ID, Deployment ID, số phiên bản, URL Web App, tên tệp, loại tệp, mã nguồn và manifest của dự án Apps Script được cấu hình.</li><li><strong>Mã cập nhật:</strong> tệp NhomHoc.gs trên GitHub cùng mã commit để nhận diện lần triển khai.</li><li><strong>Kết quả chạy:</strong> trạng thái kiểm thử, trạng thái đồng bộ, mã lỗi kỹ thuật cố định và số phiên bản trước/sau. GitHub Actions quản lý nhật ký công việc theo cấu hình repository.</li></ul>
+        <p>Google xử lý thao tác đăng nhập và đồng ý cấp quyền. Workflow hiện tại yêu cầu quyền quản lý mã dự án và deployment; không yêu cầu scope đọc Google Sheets, đọc tệp Drive hoặc hồ sơ cá nhân.</p>
+      </section>
+      <section aria-labelledby="purpose"><h2 id="purpose">3. Mục đích sử dụng</h2>
+        <p>Thông tin trên được dùng để xác thực với Google, xác định dự án và deployment, đọc các tệp hiện có để bảo toàn nội dung, thay NhomHoc.gs, kiểm tra kết quả, tạo phiên bản và cập nhật Web App. Công cụ kiểm tra URL trước khi ghi mã và không tạo deployment mới trong quy trình đồng bộ hiện tại.</p>
+        <p>Phạm vi OAuth cho phép quản lý các dự án mà tài khoản Google có quyền phù hợp. Workflow chỉ sử dụng Script ID và Deployment ID do người quản trị cấu hình. Việc đồng bộ không thực thi hàm đọc hoặc cập nhật dữ liệu học sinh, điểm danh hay học phí.</p>
+      </section>
+      <section aria-labelledby="storage"><h2 id="storage">4. Lưu trữ và bảo vệ</h2>
+        <p>Người quản trị lưu các thông tin cấu hình và xác thực trong <strong>GitHub Actions Secrets</strong>. Workflow đọc chúng khi chạy, gửi thông tin cần thiết đến Google qua HTTPS và xử lý nội dung dự án trong bộ nhớ của tiến trình đồng bộ. Quy trình hiện tại không ghi mã nguồn dự án Google, OAuth token hoặc client secret vào log, artifact hay repository.</p>
+        <p>NhomHoc.gs và mã workflow được lưu trên GitHub theo quyền truy cập repository; mã và phiên bản Apps Script được lưu trong dự án Google. Nhật ký Actions giữ kết quả công việc theo thời gian lưu cấu hình tại GitHub. Secrets tồn tại cho đến khi người quản trị cập nhật hoặc xóa chúng; quyền Google tồn tại cho đến khi hết hạn hoặc bị thu hồi theo cơ chế của Google.</p>
+        <p>Các trang thông tin E-GV Deploy là HTML/CSS tĩnh, không có biểu mẫu thu thập credentials, JavaScript theo dõi hoặc mã đặt cookie của công cụ.</p>
+      </section>
+      <section aria-labelledby="services"><h2 id="services">5. Các dịch vụ tham gia</h2>
+        <ul><li><strong>Google:</strong> xác thực OAuth, cấp token, lưu mã nguồn Apps Script và quản lý phiên bản triển khai.</li><li><strong>GitHub:</strong> lưu repository, Secrets, chạy Actions và quản lý kết quả công việc. Với repository công khai, mã được đưa lên repository và nhật ký Actions có thể được người khác xem; credentials phải được lưu trong Secrets.</li><li><strong>Vercel:</strong> phục vụ các trang thông tin công khai này. Workflow đồng bộ gọi Google từ môi trường GitHub Actions.</li></ul>
+        <p>Công cụ sử dụng thông tin OAuth và mã nguồn cho mục đích đồng bộ đã mô tả; không bán hoặc dùng những thông tin này cho quảng cáo. Hoạt động của từng nền tảng tuân theo chính sách riêng của <a href="https://policies.google.com/privacy">Google</a>, <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub</a> và <a href="https://vercel.com/legal/privacy-policy">Vercel</a>.</p>
+      </section>
+      <section aria-labelledby="control"><h2 id="control">6. Thu hồi quyền và xóa cấu hình</h2>
+        <p>Người quản trị có thể thu hồi quyền E-GV Deploy trong phần quản lý kết nối ứng dụng của tài khoản Google, tắt workflow và xóa các GitHub Secrets liên quan. Các bước này dừng những lần đồng bộ tiếp theo. Mã nguồn, các phiên bản đã triển khai và nhật ký đã có được quản lý/xóa riêng tại Google và GitHub theo quyền của người quản trị và khả năng của từng nền tảng.</p>
+        <p>Nếu client secret hoặc token bị lộ, người quản trị cần thay hoặc thu hồi thông tin đó và cập nhật Secrets. Khi có thay đổi cách xử lý dữ liệu, trang chính sách này sẽ được cập nhật tương ứng.</p>
+      </section>
+      <section aria-labelledby="contact"><h2 id="contact">7. Liên hệ</h2>
+        <p>Các yêu cầu hỗ trợ, thu hồi quyền hoặc giải đáp về dữ liệu được gửi đến người quản trị E-GV qua địa chỉ <strong>User support email</strong> hiển thị trên màn hình đồng ý OAuth của Google.</p>
+        <p class="updated">Cập nhật ngày 11/10/2026.</p>
+      </section>
+    </article>
+  </main>
+  <footer class="footer"><span>E-GV Deploy · Công cụ đồng bộ Apps Script</span><div class="footer-links"><a href="deploy.html">Giới thiệu</a><a href="deploy-terms.html">Điều khoản sử dụng</a><a href="index.html">Về E-GV</a></div></footer>
+</body>
+</html>

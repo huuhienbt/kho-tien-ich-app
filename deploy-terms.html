@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Điều khoản sử dụng E-GV Deploy dành cho người quản trị đồng bộ mã và triển khai Google Apps Script qua GitHub Actions.">
+  <meta name="theme-color" content="#2563eb">
+  <title>Điều khoản sử dụng – E-GV Deploy</title>
+  <link rel="stylesheet" href="deploy-info.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="topbar"><nav class="nav" aria-label="Điều hướng E-GV Deploy">
+    <a class="brand" href="deploy.html"><span class="brand-mark" aria-hidden="true">E</span>E-GV Deploy</a>
+    <div class="nav-links"><a href="deploy.html">Giới thiệu</a><a href="deploy-privacy.html">Bảo mật</a><a href="deploy-terms.html" aria-current="page">Điều khoản</a></div>
+  </nav></header>
+  <main id="main">
+    <div class="hero"><span class="eyebrow">E-GV Deploy</span><h1>Điều khoản sử dụng</h1><p>Điều kiện vận hành công cụ đồng bộ mã dành cho người quản trị E-GV.</p></div>
+    <article class="content" aria-label="Điều khoản sử dụng">
+      <section aria-labelledby="scope"><h2 id="scope">1. Người sử dụng và phạm vi</h2>
+        <p>E-GV Deploy dành cho người quản trị đã được phép quản lý repository GitHub, dự án Apps Script và deployment Web App tương ứng. Người sử dụng chỉ cấp quyền bằng tài khoản của mình hoặc tài khoản được chủ sở hữu cho phép sử dụng.</p>
+        <p>Công cụ cập nhật NhomHoc.gs thông qua Apps Script API và giữ các tệp khác lấy từ dự án Google hiện tại. Cấu hình Script Properties, khởi tạo dữ liệu nhóm học và quản lý các tệp Apps Script khác được thực hiện riêng theo hướng dẫn của E-GV.</p>
+      </section>
+      <section aria-labelledby="responsibility"><h2 id="responsibility">2. Trách nhiệm khi triển khai</h2>
+        <ul><li>Kiểm tra mã cập nhật và kết quả kiểm thử trước khi đưa lên nhánh main; các thay đổi thuộc đường dẫn kích hoạt workflow có thể tự chạy đồng bộ khi đã cấu hình đủ Secrets.</li><li>Cấu hình đúng Script ID, Deployment ID và URL Web App đang sử dụng; đọc Summary để xác định lần chạy đã đồng bộ hay chỉ bỏ qua vì chưa cấp quyền.</li><li>Hoàn tất các thay đổi thủ công đang chờ triển khai trong dự án Google. Phiên bản mới bao gồm toàn bộ mã HEAD tại thời điểm tạo phiên bản, cả các tệp khác được giữ nguyên.</li><li>Tránh chỉnh mã hoặc deployment đồng thời với workflow. Sau khi triển khai, kiểm tra chức năng nhóm học và lưu số phiên bản trước để có thể chọn lại khi cần.</li></ul>
+      </section>
+      <section aria-labelledby="credentials"><h2 id="credentials">3. Quản lý quyền và credentials</h2>
+        <p>Client secret, Refresh token và cấu hình xác thực được nhập trực tiếp vào GitHub Actions Secrets. Người quản trị chịu trách nhiệm giữ kín các giá trị này, quản lý người có quyền sửa workflow hoặc repository và thu hồi/thay credentials khi cần.</p>
+        <p>Công cụ chỉ hoạt động trong giới hạn quyền Google đã cấp và quyền tài khoản trên dự án. Cách xử lý thông tin được mô tả trong <a href="deploy-privacy.html">Chính sách bảo mật E-GV Deploy</a>.</p>
+      </section>
+      <section aria-labelledby="limits"><h2 id="limits">4. Điều kiện hoạt động</h2>
+        <p>Việc đồng bộ phụ thuộc vào GitHub Actions, Google OAuth, Apps Script API, hạn mức và trạng thái dịch vụ. Token có thể hết hạn hoặc bị thu hồi; lỗi mạng, lỗi quyền hoặc thay đổi đồng thời có thể làm quy trình dừng. Kết quả kiểm thử không bảo đảm mọi chức năng thực tế đều hoạt động trong mọi cấu hình.</p>
+        <p>Nếu tải mã lên thành công nhưng cập nhật deployment chưa hoàn tất, cần kiểm tra phiên bản đang chạy trong Apps Script và chạy lại sau khi xử lý lỗi. Các thao tác ghi mã và cập nhật deployment là các bước riêng, không phải một giao dịch nguyên tử. Công cụ không tự khôi phục toàn bộ dự án sau lỗi.</p>
+      </section>
+      <section aria-labelledby="stop"><h2 id="stop">5. Dừng sử dụng</h2>
+        <p>Người quản trị có thể tắt workflow, xóa GitHub Secrets và thu hồi quyền Google để dừng những lần đồng bộ tiếp theo. Việc dừng đồng bộ không tự xóa mã đã triển khai, phiên bản Apps Script, dữ liệu ứng dụng hoặc nhật ký đã lưu trên các nền tảng.</p>
+        <p>Người sử dụng cần tuân thủ các điều khoản của Google, GitHub và những dịch vụ liên quan khi quản lý tài khoản, mã nguồn và dữ liệu thuộc quyền của mình.</p>
+      </section>
+      <section aria-labelledby="contact"><h2 id="contact">6. Cập nhật và hỗ trợ</h2>
+        <p>Khi phạm vi hoặc cách vận hành công cụ thay đổi, thông tin trên trang này được cập nhật tương ứng. Liên hệ người quản trị E-GV qua địa chỉ <strong>User support email</strong> trên màn hình đồng ý OAuth của Google để được hỗ trợ.</p>
+        <p class="updated">Cập nhật ngày 11/10/2026.</p>
+      </section>
+    </article>
+  </main>
+  <footer class="footer"><span>E-GV Deploy · Công cụ đồng bộ Apps Script</span><div class="footer-links"><a href="deploy.html">Giới thiệu</a><a href="deploy-privacy.html">Chính sách bảo mật</a><a href="index.html">Về E-GV</a></div></footer>
+</body>
+</html>
