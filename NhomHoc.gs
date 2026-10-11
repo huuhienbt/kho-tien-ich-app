@@ -1,5 +1,5 @@
 /* E-GV v9.4 — Điểm danh và học phí theo kỳ 8 buổi. Dùng cùng Code.gs. */
-const NH_VERSION = '9.4.0';
+const NH_VERSION = '9.5.0';
 const NH_SCHEMA = {
   NhomHoc: ['ma_nhom','ten_nhom','nam_hoc','thu_trong_tuan','gio_bat_dau','gio_ket_thuc','giao_vien_id','cach_tinh_hoc_phi','don_gia_vnd','trang_thai','ghi_chu','so_buoi_moi_ky','ky_bat_dau'],
   HocSinh: ['ma_hoc_sinh','ho_ten','lop','trang_thai','ghi_chu'],
@@ -13,6 +13,9 @@ const NH_SCHEMA = {
 function nhBook_() {
   return SpreadsheetApp.openById(getSetting('EGV_NH_DATA_ID', true).trim());
 }
+
+// Turn on only after the Cloudflare database has been verified and the web endpoint switched.
+function nhCloudflareActive_() {return false;}
 
 // Có thể chạy một lần từ trình biên tập; không cần xóa hay thay trang cũ.
 function setupNhomHoc() {
@@ -230,6 +233,9 @@ function handleNhomHoc(payload) {
   if(!principal) return createResponse({status:'error',message:'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'});
   if(principal.role!=='admin')return createResponse({status:'error',message:'Chỉ tài khoản quản trị được xem và quản lý nhóm học.'});
   const action=String(payload.action),data=payload.data||{};
+  // Verify existing signed admin sessions without opening the spreadsheet.
+  if(action==='nh_auth')return createResponse({status:'success',data:{role:'admin',sub:String(principal.sub),exp:Number(principal.exp)},version:NH_VERSION});
+  if(nhCloudflareActive_())return createResponse({status:'error',code:'NH_MIGRATED',message:'Nhóm học đã chuyển sang Cloudflare. Tải lại E-GV để sử dụng phiên bản mới.'});
   const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month'];
   if(allowed.indexOf(action)===-1)throw new Error('Lệnh nhóm học không hợp lệ.');
   const write=['nh_boot','nh_view','nh_schedule_preview'].indexOf(action)===-1;
