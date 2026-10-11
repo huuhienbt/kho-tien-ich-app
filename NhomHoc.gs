@@ -1,5 +1,5 @@
-/* E-GV v9.3.1 — Kỳ học đủ 8 buổi. Dùng cùng dự án Apps Script với Code.gs. */
-const NH_VERSION = '9.3.1';
+/* E-GV v9.4 — Điểm danh và học phí theo kỳ 8 buổi. Dùng cùng Code.gs. */
+const NH_VERSION = '9.4.0';
 const NH_SCHEMA = {
   NhomHoc: ['ma_nhom','ten_nhom','nam_hoc','thu_trong_tuan','gio_bat_dau','gio_ket_thuc','giao_vien_id','cach_tinh_hoc_phi','don_gia_vnd','trang_thai','ghi_chu','so_buoi_moi_ky','ky_bat_dau'],
   HocSinh: ['ma_hoc_sinh','ho_ten','lop','trang_thai','ghi_chu'],
@@ -126,18 +126,26 @@ function nhShiftMonth_(month,offset) {
   const parts=month.split('-').map(Number),date=new Date(Date.UTC(parts[0],parts[1]-1+offset,1));
   return nhMonth_(date.toISOString().slice(0,7));
 }
-// Đếm buổi của nhóm theo ngày thực tế. Buổi hủy không chiếm một suất trong kỳ.
-// Lịch đặt trước giữ thứ tự, nhưng chỉ buổi đã đến ngày mới được tính là đã học.
+// Chỉ buổi đã xác nhận mới tiêu thụ một suất. Lịch tương lai giữ chỗ dự kiến;
+// lịch quá ngày nhưng chưa xác nhận không đẩy buổi đã học sang kỳ sau.
 function nhSessionPeriods_(ctx,group,rows) {
   const cycle=nhCycle_(group),start=cycle?cycle.start+'-01':'',source=rows||nhRows_(ctx,'BuoiHoc');
   const sessions=source.filter(function(b){return b.ma_nhom===group.ma_nhom;}).map(nhPublic_);
   sessions.sort(function(a,b){return a.ngay_hoc.localeCompare(b.ngay_hoc)||a.ma_buoi.localeCompare(b.ma_buoi);});
+  const today=nhToday_();
   let count=0;
   sessions.forEach(function(b){
     b.ky_hoc=b.ngay_hoc.slice(0,7);b.thu_tu_ky=0;
     if(!cycle || b.ngay_hoc<start)return;
     b.ky_hoc=nhShiftMonth_(cycle.start,Math.floor(count/cycle.size));
-    if(b.trang_thai==='da_hoc'){b.thu_tu_ky=count%cycle.size+1;count++;}
+    if(b.trang_thai==='da_hoc' && b.ngay_hoc<=today){b.thu_tu_ky=count%cycle.size+1;count++;}
+  });
+  let planned=count;
+  sessions.forEach(function(b){
+    if(!cycle || b.ngay_hoc<start || b.trang_thai==='da_huy')return;
+    if(b.ngay_hoc>today || (b.ngay_hoc===today && b.trang_thai==='du_kien')){
+      b.ky_hoc=nhShiftMonth_(cycle.start,Math.floor(planned/cycle.size));b.thu_tu_ky=planned%cycle.size+1;planned++;
+    }
   });
   return sessions;
 }
@@ -151,12 +159,12 @@ function nhPeriod_(ctx,group,month,assigned) {
   let start=month+'-01',end=month+'-31';
   const mode=cycle && month>=cycle.start?'eight_sessions':'calendar';
   if(mode==='eight_sessions'){
-    const previous=all.filter(function(b){return b.ky_hoc<month && b.trang_thai==='da_hoc';});
+    const previous=all.filter(function(b){return b.ky_hoc<month && b.trang_thai!=='da_huy' && b.thu_tu_ky;});
     if(sessions.length)start=sessions[0].ngay_hoc;
     else if(previous.length)start=new Date(Date.parse(previous[previous.length-1].ngay_hoc+'T12:00:00Z')+86400000).toISOString().slice(0,10);
     else start=cycle.start+'-01';
     end=sessions.length?sessions[sessions.length-1].ngay_hoc:start;
-    if(sessions.filter(function(b){return b.trang_thai==='da_hoc';}).length<cycle.size && end<nhToday_())end=nhToday_();
+    if(sessions.filter(function(b){return b.trang_thai==='da_hoc' && b.ngay_hoc<=nhToday_();}).length<cycle.size && end<nhToday_())end=nhToday_();
   }
   const completed=sessions.filter(function(b){return b.trang_thai==='da_hoc' && b.ngay_hoc<=nhToday_();}).length;
   return {sessions:sessions,start:start,end:end,mode:mode,size:mode==='eight_sessions'?cycle.size:0,completed:completed,current:nhCurrentPeriod_(ctx,group)};
@@ -176,7 +184,10 @@ function nhBoot_(ctx) {
   const students=nhRows_(ctx,'HocSinh').filter(function(s){return memberIds.indexOf(s.ma_hoc_sinh)!==-1;}).map(nhPublic_);
   let teachers=[];
   if(ctx.admin) teachers=getSheetObjects('Users').filter(function(u){return String(u.status||'active')==='active';}).map(function(u){return {id:String(u.id),name:String(u.name||''),email:String(u.email||'')};});
-  return {groups:groups.map(function(g){return Object.assign(nhPublic_(g),{ky_hien_tai:nhCurrentPeriod_(ctx,g)});}),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions'};
+  return {groups:groups.map(function(g){
+    const current=nhCurrentPeriod_(ctx,g),period=nhPeriod_(ctx,g,current);
+    return Object.assign(nhPublic_(g),{ky_hien_tai:current,buoi_hien_tai:period.completed,so_buoi_ky:period.size});
+  }),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions',features:{attendanceBatch:true,plannedSessions:true,schedule:true}};
 }
 
 function nhView_(ctx,group,month) {
@@ -198,16 +209,19 @@ function nhView_(ctx,group,month) {
     }
   });
   const fees=roster.map(function(m){
-    const attended=sessions.filter(function(b){return b.trang_thai==='da_hoc' && b.ngay_hoc<=nhToday_() && nhWithin_(m,b.ngay_hoc) && marks.some(function(d){return d.ma_buoi===b.ma_buoi && d.ma_hoc_sinh===m.ma_hoc_sinh && d.trang_thai==='co_mat';});}).length;
+    const studied=sessions.filter(function(b){return b.trang_thai==='da_hoc' && b.ngay_hoc<=nhToday_() && nhWithin_(m,b.ngay_hoc);});
+    const attended=studied.filter(function(b){return marks.some(function(d){return d.ma_buoi===b.ma_buoi && d.ma_hoc_sinh===m.ma_hoc_sinh && d.trang_thai==='co_mat';});}).length;
+    const absent=studied.filter(function(b){return marks.some(function(d){return d.ma_buoi===b.ma_buoi && d.ma_hoc_sinh===m.ma_hoc_sinh && d.trang_thai==='vang';});}).length;
     const bill=bills.find(function(b){return b.ma_hoc_sinh===m.ma_hoc_sinh;});
     const eligible=m.ngay_vao<=end && (!m.ngay_nghi || m.ngay_nghi>=start);
     const rate=m.don_gia_rieng_vnd==='' ? Number(group.don_gia_vnd) : Number(m.don_gia_rieng_vnd);
     const due=bill ? Number(bill.phai_thu_vnd) : (eligible ? (group.cach_tinh_hoc_phi==='theo_buoi' ? attended*rate : rate) : 0);
     const paid=receipts.filter(function(p){return p.ma_hoc_sinh===m.ma_hoc_sinh && p.trang_thai==='da_thu';}).reduce(function(n,p){return n+Number(p.so_tien_vnd);},0);
-    return {studentId:m.ma_hoc_sinh,attended:attended,rate:bill?Number(bill.don_gia_vnd):rate,due:due,paid:paid,balance:due-paid,closed:!!bill};
+    return {studentId:m.ma_hoc_sinh,attended:attended,absent:absent,unmarked:studied.length-attended-absent,rate:bill?Number(bill.don_gia_vnd):rate,due:due,paid:paid,balance:due-paid,closed:!!bill};
   });
   sessions.forEach(function(b){b.revision=nhHash_([b,marks.filter(function(m){return m.ma_buoi===b.ma_buoi;}),roster.map(function(m){return [m.ma_hoc_sinh,m.ngay_vao,m.ngay_nghi];})]);});
-  const view={group:nhPublic_(group),month:month,period:{mode:period.mode,size:period.size,completed:period.completed,current:period.current,start:start,end:end},roster:roster,sessions:sessions,marks:marks,receipts:receipts,fees:fees,closed:bills.length>0,today:nhToday_()};
+  const currentPeriod=period.current===month?period:nhPeriod_(ctx,group,period.current);
+  const view={group:nhPublic_(group),month:month,period:{mode:period.mode,size:period.size,completed:period.completed,current:period.current,start:start,end:end},currentPeriod:{month:period.current,completed:currentPeriod.completed,size:currentPeriod.size},roster:roster,sessions:sessions,marks:marks,receipts:receipts,fees:fees,closed:bills.length>0,today:nhToday_()};
   view.revision=nhHash_(view);return view;
 }
 
@@ -216,9 +230,9 @@ function handleNhomHoc(payload) {
   if(!principal) return createResponse({status:'error',message:'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'});
   if(principal.role!=='admin')return createResponse({status:'error',message:'Chỉ tài khoản quản trị được xem và quản lý nhóm học.'});
   const action=String(payload.action),data=payload.data||{};
-  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month'];
+  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month'];
   if(allowed.indexOf(action)===-1)throw new Error('Lệnh nhóm học không hợp lệ.');
-  const write=action!=='nh_boot' && action!=='nh_view';
+  const write=['nh_boot','nh_view','nh_schedule_preview'].indexOf(action)===-1;
   const lock=write?LockService.getScriptLock():null;
   if(lock)lock.waitLock(10000);
   try {
@@ -233,6 +247,9 @@ function handleNhomHoc(payload) {
       else if(action==='nh_member_save')result=nhSaveMember_(ctx,group,data);
       else if(action==='nh_session_save')result=nhSaveSession_(ctx,group,data);
       else if(action==='nh_attendance_save')result=nhSaveAttendance_(ctx,group,data);
+      else if(action==='nh_attendance_batch_save')result=nhSaveAttendanceBatch_(ctx,group,data);
+      else if(action==='nh_schedule_preview')result=nhSchedulePreview_(ctx,group,data);
+      else if(action==='nh_sessions_plan')result=nhPlanSessions_(ctx,group,data);
       else if(action==='nh_receipt_save')result=nhSaveReceipt_(ctx,group,data);
       else if(action==='nh_receipt_void')result=nhVoidReceipt_(ctx,group,data);
       else if(action==='nh_close_month')result=nhCloseMonth_(ctx,group,data);
@@ -339,7 +356,7 @@ function nhSaveSession_(ctx,group,data) {
   if(from && to && to<=from)throw new Error('Giờ kết thúc phải sau giờ bắt đầu.');
   const cycle=nhCycle_(group);if(cycle && !existing && date<cycle.start+'-01')throw new Error('Ngày học phải từ kỳ bắt đầu '+cycle.start+' trở đi.');
   const item=Object.assign({},existing||{});
-  Object.assign(item,{ma_buoi:id,ma_nhom:group.ma_nhom,ngay_hoc:date,gio_bat_dau:from,gio_ket_thuc:to,trang_thai:data.cancelled?'da_huy':'da_hoc',ghi_chu:nhText_(data.note)});
+  Object.assign(item,{ma_buoi:id,ma_nhom:group.ma_nhom,ngay_hoc:date,gio_bat_dau:from,gio_ket_thuc:to,trang_thai:data.cancelled?'da_huy':date>nhToday_()||data.planned?'du_kien':'da_hoc',ghi_chu:nhText_(data.note)});
   const after=nhSessionPeriods_(ctx,group,sessions.filter(function(b){return b.ma_buoi!==id;}).concat([item]));
   const period=after.find(function(b){return b.ma_buoi===id;}).ky_hoc;
   nhAssertOpen_(ctx,group,period);nhAssertPeriodChangesOpen_(ctx,group,before,after);
@@ -347,7 +364,7 @@ function nhSaveSession_(ctx,group,data) {
   nhWrite_(ctx,'BuoiHoc',[existing||item]);return {id:id,month:period};
 }
 
-function nhSaveAttendance_(ctx,group,data) {
+function nhPrepareAttendance_(ctx,group,data) {
   nhActiveGroup_(group);
   const session=nhRows_(ctx,'BuoiHoc').find(function(b){return b.ma_buoi===data.sessionId && b.ma_nhom===group.ma_nhom;});
   if(!session || session.trang_thai==='da_huy')throw new Error('Buổi học không tồn tại hoặc đã hủy.');
@@ -365,7 +382,70 @@ function nhSaveAttendance_(ctx,group,data) {
     const old=all.find(function(m){return m.ma_buoi===session.ma_buoi && m.ma_hoc_sinh===d.studentId;});
     return Object.assign({},old||{},{ma_buoi:session.ma_buoi,ma_hoc_sinh:d.studentId,trang_thai:d.status,ghi_chu:nhText_(d.note,250),nguoi_cap_nhat_id:ctx.user.sub,cap_nhat_luc:now});
   });
-  nhWrite_(ctx,'DiemDanh',writes);return {saved:writes.length};
+  return {session:session,period:period,writes:writes};
+}
+function nhSaveAttendance_(ctx,group,data) {
+  return nhSaveAttendanceBatch_(ctx,group,{sessions:[data]});
+}
+function nhSaveAttendanceBatch_(ctx,group,data) {
+  if(!Array.isArray(data.sessions)||!data.sessions.length||data.sessions.length>32)throw new Error('Chọn từ 1 đến 32 buổi để lưu điểm danh.');
+  const seen={},prepared=data.sessions.map(function(input){
+    if(seen[input.sessionId])throw new Error('Buổi học bị trùng.');seen[input.sessionId]=true;
+    return nhPrepareAttendance_(ctx,group,input);
+  });
+  const confirmed=prepared.filter(function(p){return p.session.trang_thai==='du_kien' && p.writes.some(function(d){return d.trang_thai==='co_mat'||d.trang_thai==='vang';});}).map(function(p){return Object.assign({},p.session,{trang_thai:'da_hoc'});});
+  const before=nhSessionPeriods_(ctx,group),source=nhRows_(ctx,'BuoiHoc');
+  const after=nhSessionPeriods_(ctx,group,source.map(function(b){return confirmed.find(function(c){return c.ma_buoi===b.ma_buoi;})||b;}));
+  confirmed.forEach(function(b){nhAssertOpen_(ctx,group,after.find(function(a){return a.ma_buoi===b.ma_buoi;}).ky_hoc);});
+  nhAssertPeriodChangesOpen_(ctx,group,before,after);
+  // Tất cả kiểm tra kết thúc trước khi ghi; chỉ một yêu cầu và một khóa cho nhiều buổi.
+  nhWrite_(ctx,'BuoiHoc',confirmed);
+  const writes=prepared.reduce(function(out,p){return out.concat(p.writes);},[]);nhWrite_(ctx,'DiemDanh',writes);
+  return {saved:writes.length,confirmed:confirmed.length};
+}
+
+function nhSchedulePreview_(ctx,group,data) {
+  nhActiveGroup_(group);
+  const month=nhMonth_(data.month),cycle=nhCycle_(group);
+  if(!cycle || month<cycle.start)throw new Error('Xếp lịch tự động dành cho kỳ 8 buổi.');
+  nhAssertOpen_(ctx,group,month);
+  const all=nhSessionPeriods_(ctx,group),slots=all.filter(function(b){return b.trang_thai!=='da_huy' && b.thu_tu_ky;});
+  const prior=slots.filter(function(b){return b.ky_hoc<month;}),current=slots.filter(function(b){return b.ky_hoc===month;});
+  const offset=(Number(month.slice(0,4))-Number(cycle.start.slice(0,4)))*12+Number(month.slice(5))-Number(cycle.start.slice(5));
+  if(prior.length!==offset*cycle.size)throw new Error('Cần xếp đủ 8 buổi cho kỳ trước trước khi xếp kỳ này.');
+  const days=String(group.thu_trong_tuan||'').split(',').filter(Boolean).map(function(d){return d==='CN'?0:Number(d)-1;});
+  if(!days.length)throw new Error('Đặt thứ học trong Cài đặt nhóm trước khi xếp lịch.');
+  const anchor=prior.concat(current).reduce(function(last,b){return b.ngay_hoc>last?b.ngay_hoc:last;},cycle.start+'-01');
+  let date=data.startDate?nhDate_(data.startDate):anchor;
+  if(date<nhToday_())date=nhToday_();
+  if(date<=anchor && prior.concat(current).length)date=new Date(Date.parse(anchor+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+  const occupied=nhRows_(ctx,'BuoiHoc').filter(function(b){return b.ma_nhom===group.ma_nhom;}).map(function(b){return b.ngay_hoc;}),dates=[];
+  for(let i=0;dates.length<cycle.size-current.length && i<400;i++){
+    const value=new Date(Date.parse(date+'T12:00:00Z')+i*86400000),s=value.toISOString().slice(0,10);
+    if(days.indexOf(value.getUTCDay())!==-1 && occupied.indexOf(s)===-1)dates.push(nhDate_(s));
+  }
+  return {month:month,dates:dates,existing:current.length,revision:nhView_(ctx,group,month).revision};
+}
+function nhPlanSessions_(ctx,group,data) {
+  nhActiveGroup_(group);
+  const month=nhMonth_(data.month),cycle=nhCycle_(group),source=nhRows_(ctx,'BuoiHoc');
+  if(!cycle || month<cycle.start)throw new Error('Xếp lịch tự động dành cho kỳ 8 buổi.');
+  if(!Array.isArray(data.sessions)||!data.sessions.length||data.sessions.length>8)throw new Error('Chọn từ 1 đến 8 ngày học.');
+  const seen={},ids={},items=data.sessions.map(function(input){
+    const id=nhId_(input.id),date=nhDate_(input.date);
+    if(seen[date] || ids[id])throw new Error('Ngày hoặc mã buổi bị trùng.');seen[date]=true;ids[id]=true;
+    const old=source.find(function(b){return b.ma_buoi===id;});
+    if(!old && date<nhToday_())throw new Error('Lịch dự kiến phải từ hôm nay trở đi.');
+    if(old && (old.ma_nhom!==group.ma_nhom || old.ngay_hoc!==date))throw new Error('Mã buổi đã được dùng cho ngày khác.');
+    if(!old && source.some(function(b){return b.ma_nhom===group.ma_nhom && b.ngay_hoc===date;}))throw new Error('Ngày '+date+' đã có lịch. Tải lại để kiểm tra.');
+    return old||{ma_buoi:id,ma_nhom:group.ma_nhom,ngay_hoc:date,gio_bat_dau:group.gio_bat_dau,gio_ket_thuc:group.gio_ket_thuc,trang_thai:'du_kien',ghi_chu:nhText_(data.note)};
+  });
+  if(items.every(function(b){return !!b._row;}))return {saved:0,repeated:true};
+  nhAssertOpen_(ctx,group,month);
+  if(data.revision!==nhView_(ctx,group,month).revision)throw new Error('Lịch vừa thay đổi. Tải lại trước khi xếp lịch.');
+  const added=items.filter(function(b){return !b._row;}),before=nhSessionPeriods_(ctx,group),after=nhSessionPeriods_(ctx,group,source.concat(added));
+  if(added.some(function(b){return after.find(function(a){return a.ma_buoi===b.ma_buoi;}).ky_hoc!==month;}))throw new Error('Các ngày chọn chưa thuộc kỳ này. Xếp đủ kỳ trước và kiểm tra lại ngày học.');
+  nhAssertPeriodChangesOpen_(ctx,group,before,after);nhWrite_(ctx,'BuoiHoc',added);return {saved:added.length};
 }
 
 function nhSaveReceipt_(ctx,group,data) {
@@ -396,6 +476,7 @@ function nhCloseMonth_(ctx,group,data) {
     if(view.period.completed<view.period.size)throw new Error('Kỳ này mới học '+view.period.completed+'/'+view.period.size+' buổi. Đủ 8 buổi mới chốt kỳ.');
   }else if(month>nhToday_().slice(0,7))throw new Error('Không chốt học phí tháng tương lai.');
   if(!view.roster.length)throw new Error('Kỳ này chưa có học sinh.');
+  if(view.sessions.some(function(b){return b.trang_thai==='du_kien';}))throw new Error('Còn buổi dự kiến chưa xác nhận. Điểm danh hoặc hủy buổi trước khi chốt.');
   view.sessions.filter(function(b){return b.trang_thai==='da_hoc';}).forEach(function(b){
     if(b.ngay_hoc>nhToday_())throw new Error('Còn buổi học chưa đến ngày.');
     view.roster.filter(function(m){return nhWithin_(m,b.ngay_hoc);}).forEach(function(m){

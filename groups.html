@@ -7,24 +7,25 @@
   <title>Quản lý nhóm học – E-GV</title>
   <link rel="stylesheet" href="style.css?v=9.3.0">
   <link rel="stylesheet" href="modern-saas.css?v=9.3.0">
-  <link rel="stylesheet" href="groups.css?v=9.3.1">
+  <link rel="stylesheet" href="groups.css?v=9.4.0">
   <script src="js/config.js" defer></script>
   <script src="js/app.js?v=9.3.0" defer></script>
-  <script src="js/groups.js?v=9.3.1" defer></script>
+  <script src="js/groups.js?v=9.4.0" defer></script>
 </head>
 <body class="page-groups">
   <div id="appShell"></div>
   <main class="page-main"><div class="container">
     <header class="page-heading">
-      <div><p class="page-eyebrow">Sổ theo dõi giảng dạy</p><h1 class="page-title">Quản lý nhóm học</h1><p class="page-description">Danh sách học sinh, điểm danh và học phí trong cùng một nơi.</p></div>
+      <div><p class="page-eyebrow">Sổ theo dõi giảng dạy</p><h1 class="page-title">Quản lý nhóm học</h1><p class="page-description">Điểm danh nhanh, theo dõi từng buổi và học phí theo kỳ 8 buổi.</p></div>
       <button class="btn btn-primary" id="nhAddGroup" type="button" hidden>+ Tạo nhóm</button>
     </header>
     <section class="panel nh-gate" id="nhGate"><h2>Đăng nhập quản trị để quản lý nhóm học</h2><p>Thông tin học sinh, điểm danh và học phí chỉ dành cho quản trị.</p><button class="btn btn-primary" type="button" id="nhLogin">Đăng nhập quản trị</button></section>
     <p class="nh-feedback" id="nhFeedback" role="status" aria-live="polite" hidden></p>
     <div id="nhWorkspace" hidden>
+      <nav id="nhGroupCards" class="nh-group-cards" aria-label="Chọn nhóm học"></nav>
       <section class="panel nh-toolbar" aria-label="Chọn nhóm và kỳ học">
-        <label>Nhóm học<select id="nhGroup" class="form-control"></select></label>
-        <label>Kỳ học<input id="nhMonth" class="form-control" type="month" min="2000-01" max="2100-12"></label>
+        <label class="nh-group-select">Nhóm học<select id="nhGroup" class="form-control"></select></label>
+        <label>Kỳ học<div class="nh-month-picker"><button type="button" id="nhPrevMonth" aria-label="Xem kỳ trước">‹</button><input id="nhMonth" class="form-control" type="month" min="2000-01" max="2100-12"><button type="button" id="nhNextMonth" aria-label="Xem kỳ sau">›</button></div></label>
         <button class="btn btn-secondary" type="button" id="nhReload">Tải lại</button>
         <button class="btn btn-secondary" type="button" id="nhEditGroup" hidden>Cài đặt nhóm</button>
       </section>
@@ -45,6 +46,7 @@
     </div>
   </div></main>
   <dialog class="nh-dialog" id="nhDialog" aria-labelledby="nhDialogTitle"><form id="nhForm"><header><h2 id="nhDialogTitle"></h2><button class="nh-close" type="button" id="nhCloseDialog" aria-label="Đóng">×</button></header><div id="nhFormFields"></div><p id="nhFormError" class="nh-error" role="alert" hidden></p><footer><button type="button" class="btn btn-secondary" id="nhCancelDialog">Hủy</button><button type="submit" class="btn btn-primary" id="nhSubmit">Lưu</button></footer></form></dialog>
+  <dialog class="nh-profile" id="nhProfile" aria-labelledby="nhProfileName"><header><div><p class="page-eyebrow" id="nhProfilePeriod"></p><h2 id="nhProfileName"></h2></div><button class="nh-close" id="nhCloseProfile" type="button" aria-label="Đóng hồ sơ học sinh">×</button></header><div id="nhProfileBody"></div></dialog>
   <div id="nhBusy" class="nh-busy" hidden role="status"><span></span><p id="nhBusyText">Đang tải dữ liệu…</p></div>
 </body>
 </html>

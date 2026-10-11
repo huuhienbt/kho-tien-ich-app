@@ -35,7 +35,7 @@ function cycleTests(){
   assert.equal(h.ctx.nhRows_({book:h.ctx.nhBook_(),tables:{}},'NhomHoc')[0].so_buoi_moi_ky,'');
   h.ctx.setupNhomHoc();h.ctx.setupNhomHoc();assert.deepEqual(h.sheets.get('NhomHoc').values[1].slice(0,11),legacyRow);
   assert.equal(h.sheets.get('NhomHoc').getMaxColumns(),13);
-  for(const action of ['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month']){
+  for(const action of ['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month']){
     const denied=h.ctx.handleNhomHoc({action,data:{groupId:'legacy'},userToken:'member'});
     assert.equal(denied.status,'error');assert.match(denied.message,/Chỉ tài khoản quản trị/);assert(!denied.data);
   }
@@ -48,7 +48,7 @@ function cycleTests(){
   const dates=['2026-09-15','2026-09-24','2026-09-29','2026-10-01','2026-10-08'];
   for(let i=0;i<dates.length;i++)assert.equal(api('nh_session_save',{groupId:'cycle',id:'b'+(i+1),date:dates[i]}).month,'2026-09');
   const view=month=>api('nh_view',{groupId:'cycle',month});
-  function markAll(month){const v=view(month);for(const b of v.sessions.filter(b=>b.trang_thai==='da_hoc'&&b.ngay_hoc<=view(month).today)){
+  function markAll(month){const v=view(month);for(const b of v.sessions.filter(b=>b.trang_thai!=='da_huy'&&b.ngay_hoc<=view(month).today)){
     const fresh=view(month),s=fresh.sessions.find(s=>s.ma_buoi===b.ma_buoi);
     api('nh_attendance_save',{groupId:'cycle',sessionId:s.ma_buoi,revision:s.revision,marks:fresh.roster.filter(m=>m.ngay_vao<=s.ngay_hoc&&(!m.ngay_nghi||m.ngay_nghi>=s.ngay_hoc)).map(m=>({studentId:m.ma_hoc_sinh,status:'co_mat'}))});
   }}
@@ -62,10 +62,11 @@ function cycleTests(){
   for(const [id,date] of [['b6','2026-10-12'],['b7','2026-10-13'],['b8','2026-10-15'],['b9','2026-10-16']]){
     assert.equal(api('nh_session_save',{groupId:'cycle',id,date}).month,id==='b9'?'2026-10':'2026-09');
   }
-  v=view('2026-09');assert.equal(v.sessions.filter(b=>b.trang_thai==='da_hoc').length,8);assert.equal(v.period.completed,5);
+  v=view('2026-09');assert.equal(v.sessions.filter(b=>b.trang_thai!=='da_huy').length,8);assert.equal(v.period.completed,5);
+  assert.equal(v.sessions.filter(b=>b.trang_thai==='du_kien').length,3);
   assert.equal(api('nh_boot').groups.find(g=>g.ma_nhom==='cycle').ky_hien_tai,'2026-09');
   assert.throws(()=>api('nh_attendance_save',{groupId:'cycle',sessionId:'b8',revision:v.sessions.find(b=>b.ma_buoi==='b8').revision,marks:[]}),/đến ngày/);
-  h.setToday('2026-10-15');markAll('2026-09');v=view('2026-09');assert.equal(v.period.completed,8);assert.equal(v.fees.find(f=>f.studentId==='s1').due,500000);
+  h.setToday('2026-10-15');assert.equal(view('2026-09').period.completed,5);markAll('2026-09');v=view('2026-09');assert.equal(v.period.completed,8);assert.equal(v.fees.find(f=>f.studentId==='s1').due,500000);
   assert.equal(api('nh_boot').groups.find(g=>g.ma_nhom==='cycle').ky_hien_tai,'2026-10');assert.equal(view('2026-10').sessions[0].thu_tu_ky,1);
   api('nh_close_month',{groupId:'cycle',month:'2026-09',revision:v.revision});v=view('2026-09');assert(v.closed);
   const before=JSON.stringify(h.sheets.get('BuoiHoc').values);
@@ -77,6 +78,7 @@ function cycleTests(){
   v=view('2026-09');assert.equal(v.period.completed,7);assert.equal(v.sessions.find(b=>b.ma_buoi==='b9').thu_tu_ky,8);assert.equal(v.fees.find(f=>f.studentId==='s1').paid,500000);
   assert.equal(api('nh_boot').groups.find(g=>g.ma_nhom==='cycle').ky_hien_tai,'2026-09');assert.equal(v.fees.find(f=>f.studentId==='s2').due,0);
   for(let d=17;d<=24;d++)api('nh_session_save',{groupId:'cycle',id:'later'+d,date:'2026-10-'+d});
+  h.setToday('2026-10-16');markAll('2026-09');
   h.setToday('2026-10-30');markAll('2026-10');v=view('2026-10');assert.equal(v.period.completed,8);
   api('nh_close_month',{groupId:'cycle',month:'2026-10',revision:v.revision});
   const september=view('2026-09'),first=september.sessions.find(b=>b.ma_buoi==='b1');

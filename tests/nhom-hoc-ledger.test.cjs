@@ -1,0 +1,54 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {harness}=require('./nhom-hoc-cycle.test.cjs');
+function ledgerFixture() {
+  const h=harness();h.ctx.setupNhomHoc();h.setToday('2026-10-11');
+  for(const [id,name,days] of [['g24','Thứ 2–4','2,4'],['g35','Thứ 3–5','3,5']])h.api('nh_group_save',{id,name,days,teacher:'u1',mode:'theo_buoi',rate:62500,cycleSize:8,cycleStart:'2026-09'});
+  h.api('nh_students_save',{groupId:'g35',joinDate:'2026-09-01',students:[{id:'s1',memberId:'m1',name:'Học sinh A',className:'4/6'},{id:'s2',memberId:'m2',name:'Học sinh B',className:'4/6'}]});
+  h.api('nh_member_save',{groupId:'g35',memberId:'m2',joinDate:'2026-09-01',leaveDate:'',rate:0,note:'Miễn học phí'});
+  const dates24=['2026-09-07','2026-09-09','2026-09-16','2026-09-21','2026-09-23','2026-09-28','2026-09-30'];
+  const dates35=['2026-09-15','2026-09-24','2026-09-29','2026-10-01','2026-10-08'];
+  for(const [groupId,dates] of [['g24',dates24],['g35',dates35]])dates.forEach((date,i)=>h.api('nh_session_save',{groupId,id:groupId+'b'+i,date}));
+  return h;
+}
+function tests() {
+  const h=ledgerFixture(),{api}=h,view=(groupId,month='2026-09')=>api('nh_view',{groupId,month});
+  assert.equal(api('nh_schedule_preview',{groupId:'g24',month:'2026-09'}).dates.join(','),'2026-10-12');
+  let p=api('nh_schedule_preview',{groupId:'g35',month:'2026-09'});
+  assert.equal(p.dates.join(','),'2026-10-13,2026-10-15,2026-10-20');
+  const sessions=[{id:'p12',date:'2026-10-12'},{id:'p13',date:'2026-10-13'},{id:'p15',date:'2026-10-15'}];
+  api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:p.revision,sessions});
+  assert.equal(api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:p.revision,sessions}).repeated,true);
+  assert.equal(view('g35').period.completed,5);assert.equal(view('g35').sessions.filter(b=>b.trang_thai==='du_kien').length,3);
+  const future=view('g35').sessions.find(b=>b.ma_buoi==='p12');
+  assert.throws(()=>api('nh_attendance_batch_save',{groupId:'g35',sessions:[{sessionId:'p12',revision:future.revision,marks:[{studentId:'s1',status:'co_mat'}]}]}),/đến ngày/);
+  assert.throws(()=>api('nh_schedule_preview',{groupId:'g35',month:'2026-11'}),/kỳ trước/);
+  const next=api('nh_schedule_preview',{groupId:'g35',month:'2026-10'});
+  assert.equal(next.dates.join(','),'2026-10-20,2026-10-22,2026-10-27,2026-10-29,2026-11-03,2026-11-05,2026-11-10,2026-11-12');
+  h.setToday('2026-10-15');let v=view('g35');assert.equal(v.period.completed,5);assert.equal(v.fees[0].due,0);
+  const input=v.sessions.map((s,i)=>({sessionId:s.ma_buoi,revision:s.revision,marks:[{studentId:'s1',status:i<6?'co_mat':'vang',note:i===0?'Ghi chú buổi học':''},{studentId:'s2',status:'co_mat'}]}));
+  const before=JSON.stringify(h.sheets.get('DiemDanh').values);
+  const bad=JSON.parse(JSON.stringify(input));bad[1].marks[0].studentId='outside';
+  assert.throws(()=>api('nh_attendance_batch_save',{groupId:'g35',sessions:bad}),/không thuộc/);assert.equal(JSON.stringify(h.sheets.get('DiemDanh').values),before);
+  const saved=api('nh_attendance_batch_save',{groupId:'g35',sessions:input});assert.equal(saved.saved,16);assert.equal(saved.confirmed,3);
+  v=view('g35');assert.equal(v.period.completed,8);assert.equal(v.currentPeriod.month,'2026-10');assert.equal(v.currentPeriod.completed,0);
+  const normal=v.fees.find(f=>f.studentId==='s1'),free=v.fees.find(f=>f.studentId==='s2');
+  assert.equal(normal.attended,6);assert.equal(normal.absent,2);assert.equal(normal.due,375000);assert.equal(free.due,0);
+  const after=JSON.stringify(h.sheets.get('DiemDanh').values);
+  assert.throws(()=>api('nh_attendance_batch_save',{groupId:'g35',sessions:input}),/phiên khác/);assert.equal(JSON.stringify(h.sheets.get('DiemDanh').values),after);
+  api('nh_receipt_save',{groupId:'g35',id:'receipt1',studentId:'s1',month:'2026-09',date:'2026-09-30',amount:200000,method:'chuyen_khoan',note:'Đóng lần 1'});
+  api('nh_receipt_save',{groupId:'g35',id:'receipt2',studentId:'s1',month:'2026-09',date:'2026-10-15',amount:175000,method:'tien_mat',note:'Đóng lần 2'});
+  assert.equal(view('g35').fees.find(f=>f.studentId==='s1').balance,0);
+  api('nh_receipt_void',{groupId:'g35',id:'receipt2',reason:'Nhập nhầm'});v=view('g35');assert.equal(v.receipts.length,2);assert.equal(v.fees.find(f=>f.studentId==='s1').paid,200000);
+  api('nh_close_month',{groupId:'g35',month:'2026-09',revision:v.revision});assert.equal(view('g35').closed,true);
+  const oct=api('nh_schedule_preview',{groupId:'g35',month:'2026-10'}),plans=oct.dates.map((date,i)=>({id:'oct'+i,date}));
+  api('nh_sessions_plan',{groupId:'g35',month:'2026-10',revision:oct.revision,sessions:plans});
+  const count=h.sheets.get('BuoiHoc').getLastRow();api('nh_sessions_plan',{groupId:'g35',month:'2026-10',revision:oct.revision,sessions:plans});assert.equal(h.sheets.get('BuoiHoc').getLastRow(),count);
+  h.setToday('2026-11-13');const overdue=view('g35','2026-10');assert.equal(overdue.period.completed,0);assert.equal(overdue.fees[0].due,0);
+  assert.equal(api('nh_boot').groups.find(g=>g.ma_nhom==='g35').ky_hien_tai,'2026-10');
+  assert.throws(()=>api('nh_close_month',{groupId:'g35',month:'2026-10',revision:overdue.revision}),/0\/8/);
+  assert.equal(api('nh_sessions_plan',{groupId:'g35',month:'2026-10',revision:oct.revision,sessions:plans}).repeated,true);
+  console.log('PASS: regular-weekday scheduling across October/November; editable makeup dates; planned and overdue sessions never count as attended; batch validation before any write; concurrent revision rejection; 6/8 tuition = 375000; free tuition; installment dates; voided-receipt history; next-period progress; idempotent planning.');
+}
+if(require.main===module)tests();
+module.exports={ledgerFixture,tests};
