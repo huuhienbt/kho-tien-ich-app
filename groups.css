@@ -84,3 +84,53 @@
 @media(max-width:560px){.nh-group-cards{gap:10px;margin-bottom:15px}.nh-group-card{padding:14px;border-radius:16px}.nh-group-card>strong{font-size:17px}.nh-group-card-top{gap:5px;margin-bottom:12px}.nh-group-icon{font-size:11px;min-width:35px;min-height:35px;padding:6px}.nh-group-card .nh-pill{font-size:9px;padding:4px 6px}.nh-group-card>small{font-size:10px}.nh-group-card progress{margin-top:12px}.nh-toolbar .nh-group-select{display:none}.nh-toolbar label{min-width:0;flex-basis:100%}.nh-toolbar>.btn{flex:1;font-size:12px}.nh-period-info{padding:16px;gap:12px}.nh-period-info strong{font-size:18px}.nh-period-count{display:block;width:max-content;margin:8px 0 0;font-size:12px}.nh-period-info progress{width:100%}.nh-stat{padding:14px}.nh-stat small{font-size:10px}.nh-card-heading .nh-actions{width:100%}.nh-card-heading .nh-actions .btn{flex:1;padding:10px;font-size:11px}.nh-attendance-tools label{min-width:0;flex-basis:100%}.nh-legend{gap:9px;font-size:10px}.nh-legend b{width:20px;height:20px}.nh-save-bar{padding:12px;gap:10px}.nh-save-bar .btn{width:100%;min-height:44px}.nh-save-bar p{font-size:11px}.nh-profile{width:100vw;border-radius:0;padding:18px}.nh-profile>header{top:-18px;margin:-18px -18px 18px;padding:18px}.nh-profile h2{font-size:22px}.nh-profile-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.nh-profile-balance>.btn{width:100%}.nh-fees-table thead{display:none}.nh-fees-table tbody{display:grid;gap:12px}.nh-fees-table tr{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e2e8f0;border-radius:14px;padding:14px;gap:12px}.nh-fees-table td{border:0;padding:0!important;text-align:left!important;white-space:normal!important;min-width:0}.nh-fees-table td:first-child{grid-column:1/-1;border-bottom:1px solid #e2e8f0;padding-bottom:10px!important}.nh-fees-table td:nth-child(2)::before{content:'Có mặt'}.nh-fees-table td:nth-child(3)::before{content:'Vắng'}.nh-fees-table td:nth-child(4)::before{content:'Phải đóng'}.nh-fees-table td:nth-child(5)::before{content:'Đã đóng'}.nh-fees-table td:nth-child(6)::before{content:'Còn thiếu / Dư'}.nh-fees-table td:nth-child(n+2):nth-child(-n+6)::before{display:block;font-size:10px;color:#64748b;font-weight:400;margin-bottom:5px}.nh-fees-table td:nth-child(7){display:flex;align-items:center}.nh-fees-table td:last-child{grid-column:1/-1}.nh-fees-table .nh-receive{width:100%;min-height:42px}.nh-receipts-table thead{display:none}.nh-receipts-table tbody{display:grid;gap:12px}.nh-receipts-table tr{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e2e8f0;border-radius:14px;padding:14px;gap:12px}.nh-receipts-table td{padding:0;border:0;text-align:left!important;white-space:normal;overflow-wrap:anywhere;min-width:0}.nh-receipts-table td[data-label]::before{content:attr(data-label);display:block;font-size:10px;color:#64748b;margin-bottom:5px}.nh-receipts-table td[data-label='Ghi chú']{grid-column:1/-1}.nh-receipts-table .nh-link{padding:0;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.nh-group-card,.nh-cell-mark{transition:none}}
 @media(max-width:850px){.nh-matrix-quick{display:none}}
+
+/* Điểm danh gọn và tổng quan 8 buổi v9.4.1 */
+.nh-tabs button{padding-inline:16px;white-space:nowrap}
+.nh-mobile-roster{gap:7px}
+.nh-mobile-student{padding:9px 11px;border-radius:10px}
+.nh-mobile-student-top{gap:8px;margin-bottom:6px}
+.nh-mobile-student .nh-student-name{font-size:13px;line-height:1.35}
+.nh-mobile-student .nh-mark-controls{gap:4px}
+.nh-mobile-student .nh-mark-controls button{padding:5px;min-height:32px;font-size:11px}
+.nh-mark-controls button[aria-pressed=true][data-mark=vang]{background:#e5e7eb;border-color:#6b7280;color:#374151}
+.nh-cell-mark.vang{background:#e5e7eb;border-color:#9ca3af;color:#374151}
+.nh-legend b.red{background:#e5e7eb;color:#374151}
+.nh-matrix-table tbody td,.nh-matrix-table tbody .nh-sticky-name{padding-block:7px}
+#nhStudents .nh-table td,#nhStudents .nh-table th{padding-block:8px}
+.nh-overview-card .nh-card-heading{margin-bottom:12px}
+.nh-overview-search{display:grid;gap:5px;max-width:320px;font-size:12px;font-weight:600;color:#475569}
+.nh-overview-search .form-control{padding:8px 11px;min-height:38px;font-size:13px}
+.nh-square-legend{display:flex;align-items:center;flex-wrap:wrap;gap:9px 14px;margin:12px 0;font-size:11px;color:#475569}
+.nh-square-legend>span{display:inline-flex;align-items:center;gap:5px}
+.nh-square{display:inline-block;width:14px;height:14px;box-sizing:border-box;flex:none;border:1px solid #94a3b8;background:#fff;border-radius:2px;vertical-align:middle}
+.nh-square.co_mat,.nh-square-mark.co_mat .nh-square{background:#16a34a;border-color:#15803d}
+.nh-square.vang,.nh-square-mark.vang .nh-square{background:#4b5563;border-color:#374151}
+.nh-square.future,.nh-square.unscheduled,.nh-square-mark.future .nh-square{border-style:dashed;border-color:#94a3b8;background:#f8fafc}
+.nh-square.outside{border-color:#e2e8f0;background:#f1f5f9}
+.nh-square-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;width:100%;min-width:24px;min-height:28px;padding:2px;border:0;border-radius:4px;background:transparent;cursor:pointer}
+.page-groups .nh-square-mark:disabled{opacity:1;cursor:default}
+.nh-square-mark.changed .nh-square{outline:2px solid #60a5fa;outline-offset:2px}
+.nh-overview-wrap{border:1px solid #e2e8f0;border-radius:11px;max-height:65vh;scrollbar-width:thin}
+.nh-overview-table{table-layout:fixed;min-width:320px;max-width:820px;margin-inline:auto}
+.nh-overview-table th,.nh-overview-table td{text-align:center;padding:4px 1px;background:#fff}
+.nh-overview-table thead th{position:sticky;top:0;background:#f8fafc;z-index:2}
+.nh-overview-table .nh-overview-name{position:sticky;left:0;width:clamp(94px,25vw,220px);text-align:left;padding:6px 8px;z-index:1;background:#fff;box-shadow:1px 0 #e2e8f0}
+.nh-overview-table thead .nh-overview-name{background:#f8fafc;z-index:3}
+.nh-overview-table .nh-student-name{font-size:13px;line-height:1.35}
+.nh-overview-table tbody tr:nth-child(even)>*{background:#fafcff}
+.nh-overview-table .nh-overview-count{width:48px;font-size:10px;padding-inline:2px}
+.nh-overview-count strong{font-size:12px!important;color:#15803d;font-variant-numeric:tabular-nums}
+.nh-overview-date{display:grid;justify-items:center;gap:2px;width:100%;min-height:36px;border:0;padding:2px 0;border-radius:4px;background:transparent;color:#334155;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.nh-overview-date small,.nh-overview-unset{display:block;font-size:9px;color:#64748b;font-weight:400;white-space:nowrap}
+.nh-overview-caption{margin-top:10px}
+@media(max-width:560px){
+  .nh-tabs{gap:2px}.nh-tabs button{padding:10px 5px;font-size:12px}
+  .nh-overview-card{padding:12px 9px}.nh-overview-card h2{font-size:17px}
+  .nh-overview-table .nh-overview-name{width:94px;padding-inline:5px}
+  .nh-overview-table .nh-student-name{font-size:12px}
+  .nh-overview-table .nh-overview-count{width:36px;font-size:9px}
+  .nh-square-legend{gap:7px 10px;font-size:10px}
+  .nh-overview-search{max-width:none}
+  .nh-fees-table tbody{gap:7px}.nh-fees-table tr{padding:10px;gap:8px}
+}
