@@ -85,6 +85,7 @@ Từ các lần sau, cập nhật `NhomHoc.gs` trên `main` sẽ tự chạy quy
 - `OAUTH_HTTP_400`: refresh token hết hạn/bị thu hồi hoặc không khớp client. Cấp lại token bằng cùng client và thay Secret.
 - `OAUTH_HTTP_401`: kiểm tra Client ID và Client secret.
 - `*_HTTP_403`: kiểm tra cả hai chỗ bật API, hai scope và tài khoản đã cấp quyền. Tài khoản Google cần có quyền quản lý dự án/triển khai.
+- `EGV_PROJECT_FILES_MISSING`: dự án hoặc phiên bản đang chạy thiếu manifest `appsscript.json` hoặc tệp chính `Code.gs` / `Mã.gs`. Bộ đồng bộ nhận cả tên tiếng Anh và tiếng Việt, giữ nguyên tên và nội dung tệp chính; không cần đổi tên `Mã.gs` thành `Code.gs`.
 - `READ_DEPLOYMENT_HTTP_404`, `DEPLOYMENT_INVALID`, `WEB_APP_URL_MISMATCH`: kiểm tra Script ID, Deployment ID và URL hiện đang dùng trong `js/config.js`.
 - `REMOTE_CHANGED_RETRY`, `REMOTE_DEPLOYMENT_CHANGED`: có thay đổi thủ công đồng thời. Kiểm tra dự án rồi chạy lại workflow.
 - Nếu Actions báo nhánh `main` có mã mới hơn, chạy lại workflow trên `main`. Không chạy lại một lần chạy cũ để triển khai mã đã lỗi thời.

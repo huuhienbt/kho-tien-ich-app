@@ -22,7 +22,11 @@ export function filesOf(content) {
     return { name, type, source };
   });
   const manifest = files.find(f => f.name === 'appsscript' && f.type === 'JSON');
-  if (!manifest || !files.some(f => f.name === 'Code' && f.type === 'SERVER_JS')) {
+  // The Vietnamese editor names the default script Mã.gs. Accept either
+  // default name without renaming or changing any existing backend file.
+  const hasBackend = files.some(f => f.type === 'SERVER_JS' &&
+    ['Code', 'Mã'].includes(f.name.normalize('NFC')));
+  if (!manifest || !hasBackend) {
     throw new Error('EGV_PROJECT_FILES_MISSING');
   }
   try { JSON.parse(manifest.source); } catch { throw new Error('PROJECT_MANIFEST_INVALID'); }
