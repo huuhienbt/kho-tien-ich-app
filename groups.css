@@ -115,9 +115,9 @@
 .nh-overview-table{table-layout:fixed;min-width:320px;max-width:820px;margin-inline:auto}
 .nh-overview-table th,.nh-overview-table td{text-align:center;padding:4px 1px;background:#fff}
 .nh-overview-table thead th{position:sticky;top:0;background:#f8fafc;z-index:2}
-.nh-overview-table .nh-overview-name{position:sticky;left:0;width:clamp(94px,25vw,220px);text-align:left;padding:6px 8px;z-index:1;background:#fff;box-shadow:1px 0 #e2e8f0}
+.nh-overview-table .nh-overview-name{position:sticky;left:0;width:clamp(94px,25vw,220px);text-align:left;padding:6px 8px;z-index:1;background:#fff;box-shadow:1px 0 #e2e8f0;white-space:normal}
 .nh-overview-table thead .nh-overview-name{background:#f8fafc;z-index:3}
-.nh-overview-table .nh-student-name{font-size:13px;line-height:1.35}
+.nh-overview-table .nh-student-name{display:block;width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:normal;font-size:13px;line-height:1.35}
 .nh-overview-table tbody tr:nth-child(even)>*{background:#fafcff}
 .nh-overview-table .nh-overview-count{width:48px;font-size:10px;padding-inline:2px}
 .nh-overview-count strong{font-size:12px!important;color:#15803d;font-variant-numeric:tabular-nums}
