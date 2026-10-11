@@ -70,6 +70,22 @@ test('append NhomHoc when missing, without changing existing files', async () =>
   assert.equal(state.head.at(-1).name, 'NhomHoc');
 });
 
+test('Vietnamese Mã.gs is preserved through upload, version and deployment', async () => {
+  for (const name of ['Mã', 'Ma\u0303']) {
+    const localized = original.map(f => f.name === 'Code' ? { ...f, name } : f);
+    // Cover both localized and previously English-named deployed versions.
+    for (const published of [localized, original]) {
+      const { state, run } = fixture({ head: localized, published });
+      assert.deepEqual(await run(), { status: 'deployed', previousVersion: 7, version: 8 });
+      const preserved = filesOf({ files: localized }).filter(f => f.name !== 'NhomHoc');
+      assert.deepEqual(state.head.filter(f => f.name !== 'NhomHoc'), preserved);
+      assert.deepEqual(state.snapshots.get(8).filter(f => f.name !== 'NhomHoc'), preserved);
+      assert.equal(state.head.some(f => f.name === 'Code'), false);
+      assert.equal(state.head.find(f => f.name === 'NhomHoc').source, source);
+    }
+  }
+});
+
 test('identical live and published content is a no-op, even if file ordering differs', async () => {
   const matching = replaceNhomHoc(filesOf({ files: original }), source);
   const { state, run } = fixture({ head: matching, published: [...matching].reverse() });
@@ -100,7 +116,7 @@ test('wrong script deployment or missing Web App stops before code writes', asyn
   }
 });
 
-test('missing manifest, invalid JSON, missing Code and duplicate files are rejected', async () => {
+test('missing manifest, invalid JSON, missing backend and duplicate files are rejected', async () => {
   for (const files of [original.filter(f => f.name !== 'appsscript'), original.filter(f => f.name !== 'Code'),
     [...original, original[0]], original.map(f => f.name === 'appsscript' ? { ...f, source: '{' } : f)]) {
     const { state, run } = fixture({ head: files });
