@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="E-GV Deploy là công cụ quản trị đồng bộ NhomHoc.gs từ GitHub và cập nhật Web App Google Apps Script hiện có.">
+  <meta name="theme-color" content="#2563eb">
+  <title>E-GV Deploy – Đồng bộ Google Apps Script</title>
+  <link rel="stylesheet" href="deploy-info.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="topbar"><nav class="nav" aria-label="Điều hướng E-GV Deploy">
+    <a class="brand" href="deploy.html"><span class="brand-mark" aria-hidden="true">E</span>E-GV Deploy</a>
+    <div class="nav-links"><a href="deploy.html" aria-current="page">Giới thiệu</a><a href="deploy-privacy.html">Bảo mật</a><a href="deploy-terms.html">Điều khoản</a></div>
+  </nav></header>
+  <main id="main">
+    <div class="hero">
+      <span class="eyebrow">Công cụ quản trị E-GV</span>
+      <h1>Đồng bộ mã. Giữ nguyên kết nối.</h1>
+      <p>E-GV Deploy giúp người quản trị đưa bản cập nhật <strong>NhomHoc.gs</strong> từ GitHub vào Google Apps Script và cập nhật Web App đang dùng cho chức năng quản lý nhóm học.</p>
+      <span class="badge">Dành cho tài khoản quản trị đã được cấp quyền</span>
+    </div>
+    <article class="content" aria-label="Thông tin công cụ">
+      <section aria-labelledby="purpose"><h2 id="purpose">E-GV Deploy làm gì?</h2>
+        <p>Công cụ hoạt động qua GitHub Actions. Khi mã trên nhánh <code>main</code> được cập nhật hoặc người quản trị chạy workflow thủ công, quy trình kiểm thử trước, đọc các tệp trong dự án Google hiện tại, thay riêng <code>NhomHoc.gs</code>, kiểm tra lại nội dung rồi tạo phiên bản và cập nhật bản triển khai hiện có.</p>
+        <div class="cards">
+          <div class="card"><h3>Kiểm thử trước khi cập nhật</h3><p>Kiểm tra nghiệp vụ nhóm học và điều kiện đồng bộ trước khi gọi Google API.</p></div>
+          <div class="card"><h3>Bảo toàn tệp đang có</h3><p>Giữ nội dung Code.gs, manifest và các tệp khác lấy từ dự án Apps Script hiện tại.</p></div>
+          <div class="card"><h3>Giữ URL Web App</h3><p>Tạo phiên bản mới và cập nhật đúng deployment đã cấu hình để E-GV tiếp tục dùng URL cũ.</p></div>
+        </div>
+      </section>
+      <section aria-labelledby="access"><h2 id="access">Quyền Google được sử dụng</h2>
+        <p>Người quản trị cấp hai phạm vi OAuth: quản lý nội dung dự án Apps Script và quản lý các bản triển khai. Các quyền này cho phép truy cập những dự án mà tài khoản Google có quyền phù hợp; workflow E-GV Deploy được cấu hình để làm việc với một Script ID và một Deployment ID cụ thể.</p>
+        <p>Workflow đọc mã nguồn cùng manifest, sửa tệp và cập nhật phiên bản triển khai. Quy trình đồng bộ hiện tại không gọi API đọc dữ liệu Google Sheets, tải tệp Drive hoặc đọc Script Properties; nó cũng không chạy các hàm nghiệp vụ nhóm học.</p>
+      </section>
+      <section aria-labelledby="operation"><h2 id="operation">Người quản trị thiết lập một lần</h2>
+        <ol><li>Tạo OAuth Client riêng trong Google Cloud và cấp quyền bằng tài khoản quản lý dự án Apps Script.</li><li>Lưu Client ID, Client secret, Refresh token, Script ID và Deployment ID trong GitHub Actions Secrets.</li><li>Chạy workflow <strong>Sync NhomHoc to Apps Script</strong>, đọc kết quả trong Summary rồi kiểm tra chức năng nhóm học trên E-GV.</li></ol>
+        <p class="notice">Một phiên bản Apps Script chứa toàn bộ mã HEAD của dự án Google tại thời điểm tạo phiên bản. Người quản trị cần hoàn tất các chỉnh sửa thủ công ở tệp khác và tránh sửa hoặc triển khai đồng thời trong lúc workflow chạy.</p>
+        <a class="action" href="https://github.com/huuhienbt/kho-tien-ich-app/blob/main/HUONG_DAN_TU_DONG_NHOMHOC_GAS.md">Xem hướng dẫn thiết lập</a>
+      </section>
+      <section aria-labelledby="contact"><h2 id="contact">Quản lý quyền và liên hệ</h2>
+        <p>Người quản trị có thể tắt workflow, xóa GitHub Secrets hoặc thu hồi quyền của E-GV Deploy trong tài khoản Google. Khi cần hỗ trợ, liên hệ người quản trị E-GV qua địa chỉ <strong>User support email</strong> hiển thị trên màn hình đồng ý OAuth của Google.</p>
+        <p>Đọc <a href="deploy-privacy.html">Chính sách bảo mật</a> và <a href="deploy-terms.html">Điều khoản sử dụng</a> để biết cách công cụ xử lý quyền truy cập và mã nguồn.</p>
+      </section>
+    </article>
+  </main>
+  <footer class="footer"><span>E-GV Deploy · Công cụ đồng bộ Apps Script</span><div class="footer-links"><a href="deploy-privacy.html">Chính sách bảo mật</a><a href="deploy-terms.html">Điều khoản sử dụng</a><a href="index.html">Về E-GV</a></div></footer>
+</body>
+</html>

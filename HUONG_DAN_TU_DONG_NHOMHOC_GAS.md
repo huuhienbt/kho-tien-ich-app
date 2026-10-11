@@ -16,14 +16,25 @@ Mở [cài đặt Apps Script](https://script.google.com/home/usersettings) bằ
 2. Trong project đó, mở [Apps Script API](https://console.cloud.google.com/apis/library/script.googleapis.com) và chọn **Enable / Bật**. Chọn đúng project ở thanh trên cùng.
 3. Mở **Google Auth Platform** và thiết lập ứng dụng OAuth: tên `E-GV Deploy`, email hỗ trợ và liên hệ là email của mình. Nếu dùng tài khoản Gmail cá nhân, chọn **External**.
 4. Trong **Audience**, thêm tài khoản sở hữu dự án vào **Test users** nếu đang ở chế độ Testing. Để dùng lâu dài, chuyển **Publishing status** sang **In production** trước khi tạo refresh token. Khi ở Testing, refresh token cho các quyền Apps Script hết hạn sau 7 ngày; nếu đã tạo ở Testing, cần cấp lại token sau khi chuyển trạng thái. Việc xác minh ứng dụng phụ thuộc chính sách của Google và phạm vi sử dụng; chuyển trạng thái không tự làm ứng dụng được xác minh.
-5. Vào **Clients → Create client**, chọn **Web application**, đặt tên `E-GV GitHub Deploy`.
-6. Trong **Authorized redirect URIs**, thêm chính xác:
+5. Nếu nút **Publish app** bị mờ và yêu cầu hoàn tất Branding, điền các đường dẫn đang hoạt động của công cụ E-GV Deploy:
+
+   | Trường trong Branding | Giá trị |
+   | --- | --- |
+   | Application home page | `https://e-gv.vercel.app/deploy.html` |
+   | Application privacy policy link | `https://e-gv.vercel.app/deploy-privacy.html` |
+   | Application terms of service link | `https://e-gv.vercel.app/deploy-terms.html` |
+   | Authorized domains | `e-gv.vercel.app` (nhập tên miền, không có `https://` hoặc đường dẫn) |
+
+   Giữ tên ứng dụng `E-GV Deploy`, email hỗ trợ và email liên hệ của mình. Lưu cấu hình và làm theo các trường còn thiếu hoặc yêu cầu xác minh Google hiển thị. Các trang trên cung cấp thông tin về riêng công cụ đồng bộ mã. Việc điền đủ đường dẫn không tự bảo đảm Google cho phép xuất bản hoặc bỏ qua xác minh.
+
+6. Vào **Clients → Create client**, chọn **Web application**, đặt tên `E-GV GitHub Deploy`.
+7. Trong **Authorized redirect URIs**, thêm chính xác:
 
    ```text
    https://developers.google.com/oauthplayground
    ```
 
-7. Lưu lại. Giữ **Client ID** và **Client secret** để nhập trực tiếp vào GitHub Secrets ở bước 4.
+8. Lưu lại. Giữ **Client ID** và **Client secret** để nhập trực tiếp vào GitHub Secrets ở bước 4.
 
 Không dùng Gemini API key để đồng bộ Apps Script. Client dành cho triển khai được tạo riêng để không cần sửa cấu hình đăng nhập Google của E-GV.
 
