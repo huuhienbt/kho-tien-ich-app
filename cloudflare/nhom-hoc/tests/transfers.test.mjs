@@ -63,11 +63,12 @@ test('group transfers preserve payments, attendance, exemptions and identity; at
   d.querySelector('[name="name"]').value='Tên chưa lưu';d.querySelector('[data-transfer-member="free1"]').click();
   assert.equal(calls.filter(a=>a==='nh_member_transfer_preview').length,0);assert.equal(d.querySelector('[name="name"]').value,'Tên chưa lưu');
   w.confirm=()=>true;d.querySelector('[data-transfer-member="free1"]').click();await waitFor(()=>d.querySelector('[name="targetGroupId"]')&&d.getElementById('nhDialog').open);
-  assert.equal(d.querySelector('[name="date"]').value,'2026-10-13');assert.equal(d.querySelector('[name="rateMode"]').value,'keep');
+  const expectedDate=(await preview('free1')).defaultDate;
+  assert.equal(d.querySelector('[name="date"]').value,expectedDate);assert.equal(d.querySelector('[name="rateMode"]').value,'keep');
   assert.match(d.getElementById('nhForm').textContent,/miễn học phí/);
   d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
   await waitFor(()=>d.getElementById('nhBusy').hidden&&!d.getElementById('nhDialog').open&&d.getElementById('nhGroup').value==='g2');
-  const free=await db.prepare("SELECT don_gia_rieng_vnd,ngay_vao FROM ThanhVienNhom WHERE ma_nhom='g2' AND ma_hoc_sinh='free'").first();assert.equal(free.don_gia_rieng_vnd,0);assert.equal(free.ngay_vao,'2026-10-13');
+  const free=await db.prepare("SELECT don_gia_rieng_vnd,ngay_vao FROM ThanhVienNhom WHERE ma_nhom='g2' AND ma_hoc_sinh='free'").first();assert.equal(free.don_gia_rieng_vnd,0);assert.equal(free.ngay_vao,expectedDate);
   assert.match((await db.prepare("SELECT ghi_chu FROM ThanhVienNhom WHERE ma_nhom='g2' AND ma_hoc_sinh='free'").first()).ghi_chu,/Miễn thu/);
   assert.equal((await db.prepare("SELECT ho_ten FROM HocSinh WHERE ma_hoc_sinh='free'").first()).ho_ten,'Em miễn học phí');
   assert.match(d.getElementById('nhFeedback').textContent,/Đã chuyển/);

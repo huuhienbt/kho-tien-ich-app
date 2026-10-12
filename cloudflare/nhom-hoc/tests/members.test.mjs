@@ -76,6 +76,8 @@ test('remove membership: admin confirmation, preservation, concurrency, history 
   const waitFor=async predicate=>{for(let i=0;i<150;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,10));}throw new Error('UI did not settle');};
   w.eval(fs.readFileSync(new URL('../../../js/groups.js',import.meta.url),'utf8'));d.dispatchEvent(new w.Event('DOMContentLoaded'));
   await waitFor(()=>d.querySelector('[data-member="empty-again"]')&&d.getElementById('nhBusy').hidden);
+  d.getElementById('nhMonth').value='2026-10';d.getElementById('nhMonth').dispatchEvent(new w.Event('change'));
+  await waitFor(()=>d.getElementById('nhBusy').hidden&&d.querySelector('[data-member="history1"]'));
   d.querySelector('[data-tab="students"]').click();assert.equal(d.querySelector('#nhStudents [data-remove-member]'),null);d.querySelector('[data-member="empty-again"]').click();assert.match(d.getElementById('nhForm').textContent,/Để trống: đang học/);d.querySelector('[data-remove-member="empty-again"]').click();
   await waitFor(()=>d.getElementById('nhDialog').open);assert.equal(d.getElementById('nhSubmit').textContent,'Xóa khỏi nhóm');
   d.getElementById('nhCancelDialog').click();assert.equal(calls.filter(a=>a==='nh_member_remove').length,0);
