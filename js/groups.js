@@ -213,7 +213,7 @@
   }
   function paintStudents() {
     const v=state.view;
-    $('nhStudents').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Học sinh trong kỳ</h2><p>Ngày vào và ngày nghỉ xác định danh sách từng buổi.</p></div><button type="button" class="btn btn-primary" data-action="add-students" ${v.group.trang_thai!=='dang_hoc'?'disabled':''}>+ Thêm học sinh</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Học sinh</th><th>Ngày vào</th><th>Ngày nghỉ</th><th>Đơn giá riêng</th><th>Ghi chú</th><th></th></tr></thead><tbody>${v.roster.map(m=>`<tr><td>${studentButton(m)}<small>${esc(m.lop)}</small></td><td>${dateLabel(m.ngay_vao)}</td><td>${dateLabel(m.ngay_nghi)||'Đang học'}</td><td>${m.don_gia_rieng_vnd===''?'Theo nhóm':money(m.don_gia_rieng_vnd)}</td><td>${esc(m.ghi_chu)}</td><td><button type="button" class="nh-link" data-member="${esc(m.ma_thanh_vien)}">Sửa</button></td></tr>`).join('')}</tbody></table></div>${!v.roster.length?'<p class="nh-muted">Chưa có học sinh trong kỳ này.</p>':''}</div>`;
+    $('nhStudents').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Học sinh trong kỳ</h2><p>Ngày vào và ngày nghỉ xác định danh sách từng buổi.</p></div><button type="button" class="btn btn-primary" data-action="add-students" ${v.group.trang_thai!=='dang_hoc'?'disabled':''}>+ Thêm học sinh</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Học sinh</th><th>Ngày vào</th><th>Ngày nghỉ</th><th>Đơn giá riêng</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>${v.roster.map(m=>`<tr><td>${studentButton(m)}<small>${esc(m.lop)}</small></td><td>${dateLabel(m.ngay_vao)}</td><td>${dateLabel(m.ngay_nghi)||'Đang học'}${m.ngay_nghi&&m.ngay_nghi<v.today?'<small>Đã nghỉ nhóm</small>':''}</td><td>${m.don_gia_rieng_vnd===''?'Theo nhóm':money(m.don_gia_rieng_vnd)}</td><td>${esc(m.ghi_chu)}</td><td><div class="nh-member-actions"><button type="button" class="nh-link" data-member="${esc(m.ma_thanh_vien)}">Sửa</button>${state.boot?.features?.memberRemoval?`<button type="button" class="nh-link nh-remove-member" data-remove-member="${esc(m.ma_thanh_vien)}" aria-label="Xóa ${esc(m.ho_ten)} khỏi nhóm">Xóa khỏi nhóm</button>`:''}</div></td></tr>`).join('')}</tbody></table></div>${!v.roster.length?'<p class="nh-muted">Chưa có học sinh trong kỳ này.</p>':''}</div>`;
   }
   function receiptRows(receipts,names,individual=false) {return receipts.slice().sort((a,b)=>b.ngay_dong.localeCompare(a.ngay_dong)).map(p=>`<tr class="${p.trang_thai==='da_huy'?'nh-void-receipt':''}"><td data-label="Ngày đóng">${dateLabel(p.ngay_dong)}</td>${individual?'':`<td data-label="Học sinh">${esc(names[p.ma_hoc_sinh]||p.ma_hoc_sinh)}</td>`}<td class="nh-number" data-label="Số tiền">${money(p.so_tien_vnd)}</td><td data-label="Phương thức">${esc({tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',khac:'Khác'}[p.phuong_thuc]||'')}</td><td data-label="Ghi chú">${esc(p.ghi_chu)||'—'}</td><td><span class="nh-pill ${p.trang_thai==='da_huy'?'neutral':'green'}">${p.trang_thai==='da_huy'?'Đã hủy':'Đã thu'}</span></td><td>${p.trang_thai==='da_thu'?`<button type="button" class="nh-link" data-void="${esc(p.ma_thu)}">Hủy</button>`:''}</td></tr>`).join('');}
   function paintFees() {
@@ -236,7 +236,7 @@
   }
   function openForm(title,html,handler,submit='Lưu') {
     $('nhDialogTitle').textContent=title; $('nhFormFields').innerHTML=`<div class="nh-form-grid">${html}</div>`;
-    $('nhFormError').hidden=true; $('nhSubmit').textContent=submit;state.submit=handler; $('nhDialog').showModal();
+    $('nhFormError').hidden=true; $('nhSubmit').textContent=submit;$('nhSubmit').className='btn btn-primary';state.submit=handler; $('nhDialog').showModal();
   }
   function groupForm(isNew=false) {
     const g=isNew?{}:state.view.group,id=g.ma_nhom||uid();
@@ -278,6 +278,21 @@
     openForm(m.ho_ten,field('Họ tên','name',m.ho_ten,'text','required maxlength="120"')+field('Lớp','className',m.lop,'text','maxlength="40"')+field('Ngày vào','joinDate',m.ngay_vao,'date','required')+field('Ngày nghỉ (để trống nếu còn học)','leaveDate',m.ngay_nghi,'date')+
       `<label class="wide">Đơn giá riêng (đồng)<input class="form-control" name="rate" type="number" min="0" max="1000000000" step="1" value="${esc(m.don_gia_rieng_vnd)}" placeholder="Để trống: theo đơn giá nhóm"><small>Nhập 0 nếu miễn học phí. Áp dụng cùng cách tính của nhóm cho các kỳ chưa chốt.</small></label><label class="wide">Ghi chú<textarea class="form-control" name="note" maxlength="500">${esc(m.ghi_chu)}</textarea></label>`,
       f=>call('nh_member_save',{groupId:state.groupId,memberId:id,...f}));
+  }
+  async function removeMemberForm(memberId) {
+    const epoch=state.epoch,groupId=state.groupId;busy(true,'Đang kiểm tra lịch sử học sinh…');
+    let preview;
+    try {preview=await call('nh_member_remove_preview',{groupId,memberId});}
+    catch(error){if(epoch===state.epoch)message(error.message,true);return;}
+    finally {if(epoch===state.epoch)busy(false);}
+    if(epoch!==state.epoch||groupId!==state.groupId)return;
+    const description=preview.hasHistory
+      ? `<p class="nh-inline-info wide">${esc(preview.name)} đã có điểm danh hoặc học phí. Chọn ngày học cuối trong nhóm; các buổi và khoản thu trước đó vẫn được giữ trong kỳ cũ. Từ sau ngày này, em không còn thuộc các buổi học mới.</p>`+field('Ngày học cuối trong nhóm','leaveDate',preview.leaveDate,'date',`required min="${esc(preview.minLeaveDate)}"`)
+      : `<p class="nh-caption wide">Xóa <strong>${esc(preview.name)}</strong> khỏi nhóm <strong>${esc(state.view.group.ten_nhom)}</strong>? Em chưa có điểm danh hoặc học phí trong nhóm này. Thầy có thể thêm lại bằng cách chọn hồ sơ đã có.</p>`;
+    openForm(preview.hasHistory?'Cho học sinh nghỉ nhóm':'Xóa học sinh khỏi nhóm',description,
+      f=>call('nh_member_remove',{groupId,memberId,revision:preview.revision,mode:preview.hasHistory?'leave':'remove',leaveDate:f.leaveDate}),
+      preview.hasHistory?'Ghi nhận nghỉ nhóm':'Xóa khỏi nhóm');
+    if(!preview.hasHistory)$('nhSubmit').className='btn btn-danger';
   }
   function sessionForm(edit=false) {
     const s=edit?selectedSession():null,g=state.view.group,id=s?.ma_buoi||uid();
@@ -325,7 +340,7 @@
     try {
       const result=await handler(values);if(epoch!==state.epoch)return;$('nhDialog').close();state.submit=null;
       if(result?.local){paintAttendance();paintOverview();paintFees();paintSummary();updateDraftUi();return;}
-      try{await loadView(epoch);if(epoch===state.epoch)message('Đã lưu dữ liệu.');}
+      try{await loadView(epoch);if(epoch===state.epoch)message(result?.message||'Đã lưu dữ liệu.');}
       catch(error){if(epoch===state.epoch){message('Đã lưu, nhưng chưa tải lại được dữ liệu. Bấm Tải lại. '+error.message,true);paintEmpty('Dữ liệu đã lưu. Bấm Tải lại để xem kết quả.');}}
     }catch(error){if(epoch===state.epoch){$('nhFormError').hidden=false;$('nhFormError').textContent=error.message;}}
     finally{if(epoch===state.epoch){$('nhSubmit').textContent=caption;busy(false);}}
@@ -363,6 +378,7 @@
     if(button.dataset.mark){const id=button.dataset.student;setDraft(state.sessionId,id,{status:button.dataset.mark});refreshAfterMark(state.sessionId,id);return;}
     if(button.dataset.markNote)return noteForm(button.dataset.markNote,button.dataset.student);
     if(button.dataset.member)return externalEdit(()=>memberForm(button.dataset.member));
+    if(button.dataset.removeMember)return externalEdit(()=>removeMemberForm(button.dataset.removeMember));
     if(button.dataset.receive)return externalEdit(()=>receiptForm(button.dataset.receive));
     if(button.dataset.void)return externalEdit(()=>voidForm(button.dataset.void));
     const action=button.dataset.action;

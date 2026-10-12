@@ -13,6 +13,8 @@ Mọi API dữ liệu và tệp yêu cầu quản trị. CORS giới hạn ngu�
 
 `scripts/build-engine.mjs` sinh bộ xử lý từ `NhomHoc.gs`. Sau khi sửa quy tắc, chạy `npm run engine`; CI kiểm tra bộ xử lý đã được sinh lại. Hàm `nhCloudflareActive_()` khóa các API nhóm học cũ sau khi chuyển, nhưng vẫn giữ `nh_auth`. Không chuyển hàm này về `false` sau khi D1 có dữ liệu mới nếu chưa thực hiện quy trình chuyển dữ liệu ngược.
 
+Trong tab **Học sinh**, quản trị chọn **Xóa khỏi nhóm** bên cạnh **Sửa**. API kiểm tra lịch sử của đúng học sinh trong đúng nhóm trước khi hiển thị hộp xác nhận. Nếu chưa có điểm danh, khoản thu hoặc bản chốt học phí, chỉ liên kết nhóm được xóa; hồ sơ và nhóm khác được giữ. Hồ sơ còn được chọn trong **Thêm học sinh → học sinh đã có**. Nếu đã có dữ liệu, thao tác chuyển thành **Ghi nhận nghỉ nhóm**, chọn ngày học cuối; dữ liệu cũ và các kỳ đã chốt được bảo toàn. Học sinh nghỉ giữa kỳ vẫn xuất hiện trong kỳ đó để xem lịch sử và thu tiền còn thiếu, nhưng không thuộc buổi sau ngày nghỉ. Các API `nh_member_remove_preview` và `nh_member_remove` chỉ chạy trên Worker/D1, có kiểm tra phiên bản và nhật ký; không cần cập nhật Apps Script cho tính năng này.
+
 ## Giới hạn để ưu tiên miễn phí
 
 Không có nâng cấp gói hoặc dịch vụ AI trả phí trong Worker này. Workers Free: 100.000 yêu cầu/ngày, CPU 10 ms/lần. D1 Free: 5 triệu hàng đọc/ngày, 100.000 hàng ghi/ngày, 5 GB tổng dung lượng. R2 Standard có mức miễn phí 10 GB/tháng, 1 triệu thao tác Class A và 10 triệu Class B/tháng; vượt mức R2 có thể phát sinh phí.
