@@ -145,6 +145,7 @@
                             <div class="auth-divider"><span>hoặc</span></div>
                             <div class="google-button-wrap" id="googleSignInButton"></div>
                             <p class="auth-config-note" id="googleConfigNote" hidden>Chưa cấu hình Google Client ID.</p>
+                            <button class="btn btn-secondary auth-cancel" type="button" data-close-modal="loginModal">Hủy</button>
                         </section>
                         <section id="adminAuthPanel" role="tabpanel" aria-labelledby="adminAuthTab" hidden>
                             <p class="modal-help">Dành cho thầy quản trị nội dung Prompt, sửa chữa và Trợ giảng AI.</p>
@@ -680,10 +681,12 @@
         document.addEventListener('keydown', event => {
             if (loginDialogState) {
                 if (event.key === 'Escape') { event.preventDefault(); closeModal('loginModal'); return; }
-                // Native dialog handles focus across Google sign-in's iframe too.
-                if (event.key === 'Tab' && !loginDialogState.native) {
+                // Wrap the outer controls before focus can move to browser chrome.
+                // A cancel button after Google keeps its iframe in the normal Tab order.
+                if (event.key === 'Tab') {
                     const controls = loginFocusable(), first = controls[0], last = controls.at(-1);
                     if (!controls.length) { event.preventDefault(); document.getElementById('loginModal').focus(); }
+                    else if (!document.getElementById('loginModal').contains(document.activeElement) || document.activeElement === document.getElementById('loginModal')) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
                     else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
                     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
                 }
