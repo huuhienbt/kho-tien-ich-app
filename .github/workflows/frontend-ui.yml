@@ -1,0 +1,29 @@
+name: Check E-GV frontend
+on:
+  pull_request:
+    paths: ['*.html', '*.css', 'js/**', 'tests/**', '.github/workflows/frontend-ui.yml']
+  push:
+    branches: [main]
+    paths: ['*.html', '*.css', 'js/**', 'tests/**', '.github/workflows/frontend-ui.yml']
+permissions:
+  contents: read
+concurrency:
+  group: frontend-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: cloudflare/kho-tien-ich/package-lock.json
+      - run: npm ci --ignore-scripts
+        working-directory: cloudflare/kho-tien-ich
+      - name: Check role gates, routing, ledger, login dialog and homepage
+        env:
+          EGV_QA_DEPENDENCIES: ${{ github.workspace }}/cloudflare/kho-tien-ich
+        run: node --test tests/*.test.cjs tests/*.test.mjs

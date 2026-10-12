@@ -18,6 +18,8 @@
     return result.data;
   };
   const within = (m,date) => m.ngay_vao<=date && (!m.ngay_nghi || m.ngay_nghi>=date);
+  // Liên kết từ trang chủ chỉ chọn màn hình; không tạo hoặc sửa dữ liệu.
+  const launch = new URLSearchParams(window.location.search);
   const selectedSession = () => state.view?.sessions.find(s=>s.ma_buoi===state.sessionId);
   const writable = s => !!s && !state.view.closed && s.trang_thai!=='da_huy' && s.ngay_hoc<=state.view.today && state.view.group.trang_thai==='dang_hoc';
   const savedMark = (sessionId,studentId) => state.view.marks.find(m=>m.ma_buoi===sessionId&&m.ma_hoc_sinh===studentId)||{trang_thai:'chua_diem_danh',ghi_chu:''};
@@ -41,7 +43,14 @@
   async function boot() {
     const epoch=state.epoch;busy(true);
     try {
-      const data=await call('nh_boot');if(epoch!==state.epoch)return;state.boot=data;$('nhWorkspace').hidden=false;
+      const data=await call('nh_boot');if(epoch!==state.epoch)return;
+      if(!state.boot&&data.groups.some(g=>g.ma_nhom===launch.get('group'))){
+        state.groupId=launch.get('group');const month=launch.get('month');
+        if(/^\d{4}-(0[1-9]|1[0-2])$/.test(month||'')&&month>='2000-01'&&month<='2100-12')state.month=month;
+        if(['attendance','fees'].includes(launch.get('tab')))state.tab=launch.get('tab');
+        state.sessionId=launch.get('session')||'';state.attendanceMode=state.sessionId?'day':'overview';
+      }
+      state.boot=data;$('nhWorkspace').hidden=false;
       paintGroupSelect();state.month=state.month||(data.groups.find(g=>g.ma_nhom===state.groupId)?.ky_hien_tai||data.today.slice(0,7));$('nhMonth').value=state.month;paintGroupCards();
       if(!data.features?.attendanceBatch){paintEmpty('Cập nhật NhomHoc.gs bản 9.4 trong Apps Script rồi triển khai bản mới để dùng bảng điểm danh này.');message('Máy chủ nhóm học cần được cập nhật lên bản 9.4.',true);return;}
       $('nhAddGroup').hidden=!data.admin;
