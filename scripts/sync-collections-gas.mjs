@@ -13,6 +13,11 @@ export function replaceCollections(files,source){
   const matches=[...backend.source.matchAll(pattern)];if(matches.length!==1)throw new Error('COLLECTIONS_HOOK_UNRECOGNIZED');
   backend.source=backend.source.replace(pattern,"$1\n\n    // D1 collections bridge: preserve all other live backend functions.\n    if (typeof egvCollectionsBridge_ === 'function') {\n      const collectionsResponse = egvCollectionsBridge_(payload);\n      if (collectionsResponse) return collectionsResponse;\n    }");
  }
+ if(!backend.source.includes('return egvCloudAdminToken_(token, requiredRole);')){
+  const pattern=/function verifyToken\(token, requiredRole\) \{/g;
+  if([...backend.source.matchAll(pattern)].length!==1)throw new Error('ADMIN_TOKEN_HOOK_UNRECOGNIZED');
+  backend.source=backend.source.replace(pattern,"$&\n  if (typeof egvCloudAdminToken_ === 'function' && String(token || '').split('.')[1]?.length === 342) {\n    return egvCloudAdminToken_(token, requiredRole);\n  }");
+ }
  try{new Script(backend.source);}catch{throw new Error('COLLECTIONS_BACKEND_INVALID');}
  const old=next.find(f=>f.name==='Collections');if(old&&old.type!=='SERVER_JS')throw new Error('COLLECTIONS_FILE_TYPE_INVALID');
  const replacement={name:'Collections',type:'SERVER_JS',source};if(old)next[next.indexOf(old)]=replacement;else next.push(replacement);

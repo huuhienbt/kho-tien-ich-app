@@ -2,6 +2,8 @@
  * Chỉ có khóa công khai trong mã. Khóa ký riêng nằm trong Cloudflare Secret.
  */
 const EGV_COLLECTIONS_PUBLIC_KEY = {"kty":"RSA","n":"uBhMVQrksBr6nwsUtiBBFep-Ve3bfqfo6YUcAHHLRt9f7f-8glKrvKLmNFZicSQqt_q8otMe5RzQVH8xqd9ZdI1hJw294GsxjAD38yM7iurOZY3RrUr76pi9wPodkRXlTZOIC-JPl5HWHZR_TUf1D5J-fJ-moRXMSRKe8UF2it1F0dLPg93Pbs4drJVLQ3fyk_HPkodiq3rPVgVJRh-sAQB_HU1S8omoptvsx2rG3dJ5jFTLcaSTF39q1qlbibX1r8rBVXMLCjtXXXD7EU8-cYa9JxhU8cajYxUPKDAThKkXrkMDJdCWFY76RRe-RV4v3lW17iKbS9tjN-1pP9BqGw","e":"AQAB"};
+const EGV_NATIVE_ADMIN_PUBLIC_KEY = {"kty":"RSA","n":"o5gWG8nXHBkAcY1_UGF23D8DlLdpDVa5SNJ7zLh43679dGXjNeQzjgxhYGprpC3WS1QZjmdLqTxX4LRGZXt-e51AZddIDU30uPYBtZpO_tzz-WtaEXPNqhGSZYSPO0JTWWb4Ww2U1oRC3_GjUIkQMua60YUEEbFxTj8Rgm3XTPyXVSR1sP1smBxDsuTJ3gXlY6KWLR1z5RxN4Wo1Kw_x-LP8Pr_0Mx6TQCK-4qQkpQvu1ZWH1BJZO5StLVas7-Y2GwUbleK6nkOgzwzfnPudKyyFthFahvwsFa1Ws2tt5LtQWJYpDPLjpctLYxFFRePJBADKvrfLGKW6ItXaY2mSfQ","e":"AQAB"};
+const EGV_NATIVE_ADMIN_KEY_ID = "0a8dcb353c66494f";
 const EGV_COLLECTIONS_KEY_ID = 'a21ada8e6e932c9a';
 const EGV_COLLECTIONS_SHEET_ID = '1KPw-UYew83KygpFNe4vMd4VeO1xmkKbHBTLIr61l-L8';
 const EGV_COLLECTIONS_HEADERS = {
@@ -13,7 +15,13 @@ function egvCollectionsActive_(){return PropertiesService.getScriptProperties().
 function egvCollectionsMoved_(){return createResponse({status:'error',code:'COLLECTIONS_MIGRATED',message:'Kho Prompt và nhật ký đã chuyển sang Cloudflare. Vui lòng tải lại E-GV.'});}
 function egvCollectionsBridge_(payload){
   const action=String(payload.action||'');
-  if(action==='collections_health')return createResponse({status:'success',version:'9.6.0',active:egvCollectionsActive_(),cryptoSupported:typeof BigInt==='function',keyId:EGV_COLLECTIONS_KEY_ID});
+  if(action==='verify'&&egvNativeAdminActive_())return createResponse({status:'error',code:'ADMIN_AUTH_MIGRATED',message:'Đăng nhập quản trị đã chuyển sang Cloudflare. Vui lòng tải lại E-GV.'});
+  if(action==='admin_auth_complete'){
+    if(!egvCloudAdminToken_(payload.adminToken,'admin'))return createResponse({status:'error',message:'Phiên quản trị không hợp lệ.'});
+    PropertiesService.getScriptProperties().setProperty('EGV_NATIVE_ADMIN_AUTH_ACTIVE','1');
+    return createResponse({status:'success'});
+  }
+  if(action==='collections_health')return createResponse({status:'success',version:'9.6.0',active:egvCollectionsActive_(),cryptoSupported:typeof BigInt==='function',keyId:EGV_COLLECTIONS_KEY_ID,nativeAdminKeyId:EGV_NATIVE_ADMIN_KEY_ID});
   if(action==='collections_auth'){
     const p=resolvePrincipal(payload);
     if(!p)return createResponse({status:'error',message:'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'});
@@ -38,10 +46,10 @@ function egvCollectionsBridge_(payload){
   return null;
 }
 function egvCollectionsHex_(bytes){return bytes.map(b=>(b&255).toString(16).padStart(2,'0')).join('');}
-function egvCollectionsVerify_(message,signature){
+function egvCollectionsVerify_(message,signature,publicKey){
   if(typeof message!=='string'||message.length>1000000||typeof signature!=='string'||!/^[A-Za-z0-9_-]{342}$/.test(signature))return false;
   try{
-    const bytes=Utilities.base64DecodeWebSafe(signature),modulusBytes=Utilities.base64DecodeWebSafe(EGV_COLLECTIONS_PUBLIC_KEY.n);
+    const bytes=Utilities.base64DecodeWebSafe(signature),modulusBytes=Utilities.base64DecodeWebSafe((publicKey||EGV_COLLECTIONS_PUBLIC_KEY).n);
     if(bytes.length!==256||modulusBytes.length!==256)return false;
     const modulus=BigInt('0x'+egvCollectionsHex_(modulusBytes));let value=BigInt('0x'+egvCollectionsHex_(bytes));
     if(value>=modulus)return false;
@@ -120,4 +128,19 @@ function egvCollectionsPlans_(tables){
       });return row;
     });return {sheet:sheet,headers:headers,rows:rows,previousRows:old.length};
   });
+}
+
+/** Native tokens grant admin only; member tokens keep their existing verifier. */
+function egvNativeAdminActive_(){return PropertiesService.getScriptProperties().getProperty('EGV_NATIVE_ADMIN_AUTH_ACTIVE')==='1';}
+function egvCloudAdminToken_(token,requiredRole){
+  try{
+    if(typeof token!=='string'||token.length>4096)return null;
+    const parts=token.split('.');
+    if(parts.length!==2||!/^[A-Za-z0-9_-]+$/.test(parts[0]))return null;
+    const p=JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString());
+    const now=Math.floor(Date.now()/1000);
+    if(!p||p.iss!=='egv-cloudflare-admin'||p.aud!==APP_ORIGIN||p.kid!==EGV_NATIVE_ADMIN_KEY_ID||p.role!=='admin'||p.sub!=='admin'||requiredRole&&requiredRole!=='admin'||!Number.isSafeInteger(p.iat)||!Number.isSafeInteger(p.exp)||p.iat>now+30||p.exp<=now||p.exp>p.iat+8*3600||p.exp<=p.iat||typeof p.nonce!=='string'||p.nonce.length!==36)return null;
+    if(!egvCollectionsVerify_(parts[0],parts[1],EGV_NATIVE_ADMIN_PUBLIC_KEY))return null;
+    return p;
+  }catch(error){return null;}
 }

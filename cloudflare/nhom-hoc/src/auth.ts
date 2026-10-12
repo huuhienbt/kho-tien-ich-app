@@ -1,7 +1,10 @@
 import {createHash} from 'node:crypto';
 import {boundedText,HttpError} from './util.js';
+import {verifyNativeAdmin} from '../../shared/admin-token.js';
 export type Principal = {role:'admin',sub:string,exp:number};
 export async function authenticate(request:Request,env:Env,token:unknown):Promise<Principal> {
+  const native=await verifyNativeAdmin(token,env);
+  if(native!==undefined){if(!native)throw new HttpError(401,'Phiên đăng nhập quản trị không hợp lệ hoặc đã hết hạn.');return native;}
   if(typeof token!=='string'||token.length>4096||!token.includes('.')) throw new HttpError(401,'Vui lòng đăng nhập quản trị.');
   const hash=createHash('sha256').update(token).digest('hex'), now=Math.floor(Date.now()/1000);
   const cached=await env.DB.prepare('SELECT sub,expires_at FROM nh_sessions WHERE token_hash=? AND expires_at>?').bind(hash,now).first<{sub:string,expires_at:number}>();

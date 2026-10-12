@@ -35,10 +35,10 @@ function harness(){
 }
 test('surgical hook preserves live Code/Mã, other modules, manifest and private properties',()=>{
  for(const name of ['Code','Mã']){
-  const unhooked=backend.replace(/\n    \/\/ D1 collections:.*?\n    \}\n/s,'\n');
+  const unhooked=backend.replace(/\n    \/\/ D1 collections:.*?\n    \}\n/s,'\n').replace(/\n  if \(typeof egvCloudAdminToken_.*?\n  \}/s,'');
   const files=[{name,type:'SERVER_JS',source:unhooked},{name:'NhomHoc',type:'SERVER_JS',source:'private-ledger'},{name:'Custom',type:'SERVER_JS',source:'keep'},{name:'appsscript',type:'JSON',source:'{"timeZone":"Asia/Ho_Chi_Minh"}'}];
   const next=replaceCollections(files,moduleSource);assert.deepEqual(next.slice(1,-1),files.slice(1));assert.equal(next.at(-1).name,'Collections');assert(next[0].source.includes('egvCollectionsBridge_(payload)'));assert.deepEqual(replaceCollections(next,moduleSource),next);
-  assert.equal(next[0].source.replace(/\n\n    \/\/ D1 collections bridge:.*?\n    \}/s,''),unhooked);
+  assert.equal(next[0].source.replace(/\n\n    \/\/ D1 collections bridge:.*?\n    \}/s,'').replace(/\n  if \(typeof egvCloudAdminToken_.*?\n  \}/s,''),unhooked);
  }
  assert.throws(()=>replaceCollections([{name:'Code',type:'SERVER_JS',source:'function doPost(e) { return 1; }'}],moduleSource),/UNRECOGNIZED/);
 });

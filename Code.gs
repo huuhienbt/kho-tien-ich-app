@@ -590,6 +590,9 @@ function issueToken(claims, ttlSeconds) {
 }
 
 function verifyToken(token, requiredRole) {
+  if (typeof egvCloudAdminToken_ === 'function' && String(token || '').split('.')[1]?.length === 342) {
+    return egvCloudAdminToken_(token, requiredRole);
+  }
   try {
     const parts = String(token || '').split('.');
     if (parts.length !== 2 || !constantTimeEquals(signValue(parts[0]), parts[1])) return null;
