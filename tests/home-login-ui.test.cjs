@@ -89,6 +89,8 @@ test('Native login dialog selects the right field, supports tab arrows, and rest
     const tab=d.getElementById('adminAuthTab');tab.focus();key(tab,'ArrowLeft');assert.equal(d.activeElement.id,'userAuthTab');assert.equal(d.getElementById('adminAuthPanel').hidden,true);
     assert.equal(d.getElementById('userAuthTab').getAttribute('aria-selected'),'true'); assert.equal(tab.tabIndex,-1);
     key(d.activeElement,'End');assert.equal(d.activeElement.id,'adminAuthTab');assert.equal(d.getElementById('userAuthPanel').hidden,true);
+    const first=modal.querySelector('.modal-close'), last=d.getElementById('adminLoginSubmit');first.focus();key(first,'Tab',true);assert.equal(d.activeElement,last);key(last,'Tab');assert.equal(d.activeElement,first);
+    d.getElementById('userAuthTab').click();first.focus();key(first,'Tab',true);assert.equal(d.activeElement,modal.querySelector('.auth-cancel'));key(d.activeElement,'Tab');assert.equal(d.activeElement,first);
     key(d.activeElement,'Escape'); assert.equal(modal.open,false); assert.equal(d.activeElement,opener);assert.equal(d.body.style.overflow,'auto');assert.equal(d.body.style.paddingRight,'3px');
     assert.equal(d.getElementById('toastRegion').parentElement,d.body); assert.equal(d.getElementById('alreadyInert').getAttribute('aria-hidden'),'true');
     opener.click();modal.dispatchEvent(new w.Event('cancel',{cancelable:true}));assert.equal(modal.open,false);assert.equal(d.activeElement,opener);
