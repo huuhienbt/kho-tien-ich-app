@@ -1,0 +1,92 @@
+/* Trang chủ: bố cục gọn, ưu tiên các thao tác thường dùng. */
+.page-home { --container: 1080px; }
+.page-home .page-main { padding-block: 24px 40px; }
+.page-home .home-hero {
+    min-height: 0;
+    padding: 24px 28px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(30, 64, 175, .14);
+}
+.page-home .hero-kicker { padding: 0; margin-bottom: 10px; border: 0; background: transparent; }
+.page-home .home-date { margin-left: 8px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,.3); }
+.page-home .hero h1 { font-size: clamp(1.5rem, 2.7vw, 2rem); line-height: 1.25; letter-spacing: -.035em; }
+.page-home .hero p { margin: 8px 0 0; font-size: .82rem; }
+.page-home .hero-actions { position: relative; z-index: 1; display: grid; gap: 8px; min-width: 232px; }
+.page-home .hero-actions .btn { justify-content: space-between; min-height: 42px; font-size: .8rem; padding: 10px 14px; }
+.page-home .section-heading { margin: 22px 0 12px; gap: 12px; }
+.page-home .section-heading h2 { font-size: 1.05rem; }
+.page-home .section-heading p { margin: 4px 0 0; color: var(--text-light); font-size: .75rem; }
+.page-home .dashboard-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.page-home .dash-card {
+    display: grid;
+    grid-template-columns: 40px minmax(0,1fr) 14px;
+    align-items: center;
+    gap: 12px;
+    min-height: 104px;
+    padding: 16px;
+    border-radius: 16px;
+}
+.page-home .dash-card:hover { transform: translateY(-2px); }
+.page-home .dash-icon-wrap { width: 40px; height: 40px; margin: 0; border-radius: 12px; }
+.page-home .dash-icon-wrap svg { width: 21px; height: 21px; }
+.page-home .dash-title { margin-bottom: 5px; font-size: .87rem; }
+.page-home .dash-desc { font-size: .74rem; line-height: 1.5; }
+.page-home .home-tool-arrow { color: var(--text-light); font-size: .9rem; }
+.page-home .home-role-label { display: inline-block; padding: 2px 5px; border-radius: 5px; background: #eaf7f1; color: #047857; font-size: .55rem; font-weight: 650; vertical-align: middle; }
+.page-home .overview-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.page-home .stat-card { min-height: 88px; grid-template-columns: 36px minmax(0,1fr); gap: 12px; padding: 14px 16px; border-radius: 14px; }
+.page-home .stat-icon { width: 36px; height: 36px; border-radius: 10px; }
+.page-home .stat-icon svg { width: 19px; height: 19px; }
+.page-home .stat-value { font-size: 1.35rem; }
+.page-home .stat-hint { font-size: .65rem; }
+.home-group-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.home-group-card { padding: 16px 18px; border: 1px solid var(--border); border-radius: 16px; background: #fff; box-shadow: var(--shadow-sm); }
+.home-group-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.home-group-top h3 { margin: 0; font-size: .95rem; }
+.home-group-period { margin: 4px 0 0; font-size: .72rem; color: var(--text-light); }
+.home-group-progress { padding: 5px 9px; border-radius: 8px; color: #1d4ed8; background: #eef4ff; white-space: nowrap; font-size: .7rem; font-weight: 700; }
+.home-group-next { margin: 12px 0; font-size: .75rem; color: #475569; }
+.home-group-next.today { color: #047857; font-weight: 650; }
+.home-group-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
+.home-group-metrics div { border-top: 1px solid #edf1f6; padding-top: 10px; }
+.home-group-metrics dt { font-size: .7rem; color: var(--text-light); }
+.home-group-metrics dd { margin: 4px 0 0; font-size: 1.1rem; font-weight: 750; color: var(--text); }
+.home-group-metrics .has-pending { color: #b45309; }
+.home-group-metrics .has-balance { color: #b91c1c; }
+.home-group-actions { display: flex; gap: 8px; }
+.home-group-actions .btn { min-height: 38px; font-size: .74rem; }
+.home-group-status { margin: 0 0 10px; font-size: .76rem; color: var(--text-light); }
+.home-group-status:empty { display: none; }
+.home-group-status.error { padding: 12px 14px; border-radius: 10px; background: #fff1f2; color: #b91c1c; }
+.home-group-unavailable { color: #b91c1c; font-size: .76rem; margin: 14px 0; }
+@media (max-width: 900px) {
+    .page-home .dashboard-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 600px) {
+    .page-home .page-main { padding-block: 16px 30px; }
+    .page-home .home-hero { padding: 20px; grid-template-columns: minmax(0,1fr); gap: 16px; border-radius: 18px; }
+    .page-home .hero-kicker { font-size: .64rem; gap: 7px; }
+    .page-home .home-date { margin-left: 4px; padding-left: 8px; }
+    .page-home .hero-actions { min-width: 0; grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .page-home .hero-actions .btn { width: 100%; min-height: 44px; justify-content: center; padding: 10px; font-size: .74rem; }
+    .page-home .hero-actions .btn span { display: none; }
+    .page-home .section-heading { margin-top: 18px; align-items: center; }
+    .page-home .section-heading h2 { font-size: .98rem; }
+    .page-home .dashboard-grid { gap: 8px; }
+    .page-home .dash-card { min-height: 132px; padding: 14px; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-content: start; }
+    .page-home .dash-icon-wrap { width: 34px; height: 34px; border-radius: 10px; }
+    .page-home .home-tool-copy { grid-column: 1 / -1; grid-row: 2; }
+    .page-home .home-tool-arrow { grid-column: 2; grid-row: 1; align-self: start; }
+    .page-home .dash-title { font-size: .81rem; }
+    .page-home .dash-desc { font-size: .69rem; }
+    .page-home .home-role-label { font-size: .5rem; }
+    .page-home .stat-card { grid-template-columns: minmax(0,1fr); min-height: 96px; padding: 12px 10px; gap: 0; }
+    .page-home .stat-icon, .page-home .stat-hint { display: none; }
+    .page-home .stat-label { font-size: .65rem; line-height: 1.5; }
+    .page-home .stat-value { margin-top: 6px; font-size: 1.3rem; }
+    .home-group-grid { grid-template-columns: minmax(0,1fr); gap: 10px; }
+    .home-group-card { padding: 15px 16px; }
+    .home-group-actions .btn { flex: 1; min-height: 44px; }
+}

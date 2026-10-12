@@ -126,14 +126,14 @@
     function ensureGlobalUi() {
         if (!document.getElementById('loginModal')) {
             document.body.insertAdjacentHTML('beforeend', `
-                <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+                <dialog class="modal" id="loginModal" aria-modal="true" aria-labelledby="loginTitle" tabindex="-1">
                     <div class="modal-content modal-sm auth-modal">
                         <div class="modal-header"><h2 class="modal-title" id="loginTitle">Đăng nhập</h2><button class="modal-close" type="button" data-close-modal="loginModal" aria-label="Đóng">×</button></div>
                         <div class="auth-tabs" role="tablist" aria-label="Loại tài khoản">
-                            <button class="auth-tab active" type="button" data-auth-tab="user">Thành viên</button>
-                            <button class="auth-tab" type="button" data-auth-tab="admin">Quản trị viên</button>
+                            <button class="auth-tab active" id="userAuthTab" role="tab" aria-controls="userAuthPanel" aria-selected="true" type="button" data-auth-tab="user">Thành viên</button>
+                            <button class="auth-tab" id="adminAuthTab" role="tab" aria-controls="adminAuthPanel" aria-selected="false" tabindex="-1" type="button" data-auth-tab="admin">Quản trị viên</button>
                         </div>
-                        <section id="userAuthPanel">
+                        <section id="userAuthPanel" role="tabpanel" aria-labelledby="userAuthTab">
                             <p class="modal-help" id="guestAuthHelp">Đăng nhập để sử dụng Prompt và lưu các tiện ích cá nhân. Prompt VIP cần tài khoản VIP.</p>
                             <form id="guestAuthForm">
                                 <div class="form-group" id="guestNameGroup" hidden><label class="form-label" for="guestName">Họ và tên</label><input class="form-control" id="guestName" autocomplete="name"></div>
@@ -146,7 +146,7 @@
                             <div class="google-button-wrap" id="googleSignInButton"></div>
                             <p class="auth-config-note" id="googleConfigNote" hidden>Chưa cấu hình Google Client ID.</p>
                         </section>
-                        <section id="adminAuthPanel" hidden>
+                        <section id="adminAuthPanel" role="tabpanel" aria-labelledby="adminAuthTab" hidden>
                             <p class="modal-help">Dành cho thầy quản trị nội dung Prompt, sửa chữa và Trợ giảng AI.</p>
                             <form id="adminLoginForm">
                                 <div class="form-group"><label class="form-label" for="adminPass">Mật khẩu quản trị</label><input class="form-control" type="password" id="adminPass" autocomplete="current-password" required></div>
@@ -154,7 +154,7 @@
                             </form>
                         </section>
                     </div>
-                </div>`);
+                </dialog>`);
         }
         if (!document.getElementById('toastRegion')) {
             document.body.insertAdjacentHTML('beforeend', '<div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>');
@@ -199,21 +199,89 @@
         window.dispatchEvent(new CustomEvent('app:auth-change', { detail: { admin, user, membership, authenticated: admin || user } }));
     }
 
+    let loginDialogState = null;
+
+    function canFocus(element) {
+        if (!element?.isConnected || element.disabled || typeof element.focus !== 'function') return false;
+        for (let node = element; node; node = node.parentElement) {
+            const style = window.getComputedStyle(node);
+            if (node.hidden || node.hasAttribute('inert') || style.display === 'none' || style.visibility === 'hidden') return false;
+        }
+        return true;
+    }
+
+    function loginFocusable() {
+        return Array.from(document.getElementById('loginModal').querySelectorAll('a[href], button, input, select, textarea, iframe, [tabindex]'))
+            .filter(element => element.tabIndex >= 0 && canFocus(element));
+    }
+
+    function finishLoginClose() {
+        if (!loginDialogState) return;
+        const previous = loginDialogState;
+        loginDialogState = null;
+        document.getElementById('loginModal').classList.remove('open');
+        document.body.style.overflow = previous.overflow;
+        document.body.style.paddingRight = previous.paddingRight;
+        previous.background.forEach(([node, inert, hidden]) => {
+            if (inert === null) node.removeAttribute('inert'); else node.setAttribute('inert', inert);
+            if (hidden === null) node.removeAttribute('aria-hidden'); else node.setAttribute('aria-hidden', hidden);
+        });
+        previous.auxiliary.forEach(([node, parent, next]) => parent.insertBefore(node, next?.parentNode === parent ? next : null));
+        const target = [previous.opener, document.getElementById('logoutButton'), document.getElementById('loginButton')].find(element => element?.matches('a[href], button, input, select, textarea, [tabindex]') && canFocus(element));
+        target?.focus({ preventScroll: true });
+    }
+
     function openModal(id) {
         const modal = document.getElementById(id);
         if (!modal) return;
+        if (id === 'loginModal') {
+            if (loginDialogState) return;
+            const native = typeof modal.showModal === 'function';
+            modal.classList.toggle('login-dialog-fallback', !native);
+            loginDialogState = { opener: document.activeElement, native, overflow: document.body.style.overflow, paddingRight: document.body.style.paddingRight, background: [], auxiliary: [] };
+            // Status and errors must remain visible and announced inside the native dialog.
+            ['toastRegion', 'authProgress'].forEach(key => {
+                const node = document.getElementById(key);
+                if (node) { loginDialogState.auxiliary.push([node, node.parentNode, node.nextSibling]); modal.append(node); }
+            });
+            const gutter = window.innerWidth - document.documentElement.clientWidth;
+            if (gutter > 0) document.body.style.paddingRight = `${(parseFloat(window.getComputedStyle(document.body).paddingRight) || 0) + gutter}px`;
+            document.body.style.overflow = 'hidden';
+            modal.classList.add('open');
+            if (native) modal.showModal();
+            else {
+                modal.setAttribute('open', '');
+                Array.from(document.body.children).filter(node => node !== modal && !['SCRIPT', 'STYLE'].includes(node.tagName)).forEach(node => {
+                    loginDialogState.background.push([node, node.getAttribute('inert'), node.getAttribute('aria-hidden')]);
+                    node.setAttribute('inert', ''); node.setAttribute('aria-hidden', 'true');
+                });
+            }
+            const field = modal.querySelector('#adminAuthPanel:not([hidden]) input, #userAuthPanel:not([hidden]) input[required]');
+            (field || loginFocusable()[0] || modal).focus();
+            return;
+        }
         modal.classList.add('open');
         const focusable = modal.querySelector('input:not([hidden]), button:not([hidden]), select, textarea');
         setTimeout(() => focusable?.focus(), 50);
     }
 
     function closeModal(id) {
-        document.getElementById(id)?.classList.remove('open');
+        const modal = document.getElementById(id);
+        if (id === 'loginModal') {
+            if (modal?.open && typeof modal.close === 'function') modal.close();
+            else modal?.removeAttribute('open');
+            finishLoginClose();
+        } else modal?.classList.remove('open');
     }
 
     function setAuthTab(tab) {
         const selected = tab === 'admin' ? 'admin' : 'user';
-        document.querySelectorAll('[data-auth-tab]').forEach(button => button.classList.toggle('active', button.dataset.authTab === selected));
+        document.querySelectorAll('[data-auth-tab]').forEach(button => {
+            const active = button.dataset.authTab === selected;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-selected', String(active));
+            button.tabIndex = active ? 0 : -1;
+        });
         document.getElementById('userAuthPanel').hidden = selected !== 'user';
         document.getElementById('adminAuthPanel').hidden = selected !== 'admin';
         document.getElementById('loginTitle').textContent = selected === 'admin' ? 'Đăng nhập quản trị' : 'Đăng nhập thành viên';
@@ -255,8 +323,8 @@
             state.adminToken = result.adminToken;
             sessionStorage.setItem(config.SESSION_KEY, result.adminToken);
             input.value = '';
-            closeModal('loginModal');
             syncAuthUi();
+            closeModal('loginModal');
             toast('Đăng nhập quản trị thành công.', 'success');
             runPendingAction();
         } catch (error) {
@@ -277,8 +345,8 @@
         state.user = user || { name: result.name || '', email: result.email || '' };
         localStorage.setItem(config.USER_TOKEN_KEY, token);
         localStorage.setItem(config.USER_PROFILE_KEY, JSON.stringify(state.user));
-        closeModal('loginModal');
         syncAuthUi();
+        closeModal('loginModal');
         toast('Đăng nhập thành viên thành công.', 'success');
         runPendingAction();
     }
@@ -592,14 +660,39 @@
         document.getElementById('adminLoginForm')?.addEventListener('submit', adminLogin);
         document.getElementById('guestAuthForm')?.addEventListener('submit', guestAuth);
         document.getElementById('toggleGuestAuth')?.addEventListener('click', toggleGuestAuth);
-        document.querySelectorAll('[data-auth-tab]').forEach(button => button.addEventListener('click', () => setAuthTab(button.dataset.authTab)));
+        document.querySelectorAll('[data-auth-tab]').forEach(button => {
+            button.addEventListener('click', () => setAuthTab(button.dataset.authTab));
+            button.addEventListener('keydown', event => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                event.preventDefault();
+                const tab = event.key === 'Home' ? 'user' : event.key === 'End' ? 'admin' : button.dataset.authTab === 'user' ? 'admin' : 'user';
+                setAuthTab(tab);
+                document.querySelector(`[data-auth-tab="${tab}"]`).focus();
+            });
+        });
+        document.getElementById('loginModal')?.addEventListener('cancel', event => { event.preventDefault(); closeModal('loginModal'); });
+        document.getElementById('loginModal')?.addEventListener('close', () => { if (!document.getElementById('loginModal').open) finishLoginClose(); });
         document.addEventListener('click', event => {
             const closeButton = event.target.closest('[data-close-modal]');
             if (closeButton) closeModal(closeButton.dataset.closeModal);
             if (event.target.classList.contains('modal')) closeModal(event.target.id);
         });
         document.addEventListener('keydown', event => {
+            if (loginDialogState) {
+                if (event.key === 'Escape') { event.preventDefault(); closeModal('loginModal'); return; }
+                // Native dialog handles focus across Google sign-in's iframe too.
+                if (event.key === 'Tab' && !loginDialogState.native) {
+                    const controls = loginFocusable(), first = controls[0], last = controls.at(-1);
+                    if (!controls.length) { event.preventDefault(); document.getElementById('loginModal').focus(); }
+                    else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+                }
+                return;
+            }
             if (event.key === 'Escape') document.querySelectorAll('.modal.open').forEach(modal => closeModal(modal.id));
+        });
+        document.addEventListener('focusin', event => {
+            if (loginDialogState && !loginDialogState.native && !document.getElementById('loginModal').contains(event.target)) (loginFocusable()[0] || document.getElementById('loginModal')).focus();
         });
     }
 
