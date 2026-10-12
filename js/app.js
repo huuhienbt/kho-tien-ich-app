@@ -296,7 +296,8 @@
         try {
             const collectionAction = ['get_prompts', 'get_repairs', 'toggle_favorite', 'sync_favorites', 'admin_get_users', 'admin_set_membership', 'collections_backup_status', 'collections_backup_now'].includes(action)
                 || (['create', 'update', 'delete'].includes(action) && ['prompts', 'repairs'].includes(options.sheetType));
-            const endpoint = action.startsWith('nh_') && config.GROUPS_API_URL ? config.GROUPS_API_URL + '/api'
+            const endpoint = action === 'verify' && config.ADMIN_AUTH_API_URL ? config.ADMIN_AUTH_API_URL + '/api'
+                : action.startsWith('nh_') && config.GROUPS_API_URL ? config.GROUPS_API_URL + '/api'
                 : collectionAction && config.COLLECTIONS_API_URL ? config.COLLECTIONS_API_URL + '/api' : config.API_URL;
             const response = await fetch(endpoint, {
                 method: 'POST',

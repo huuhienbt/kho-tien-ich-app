@@ -10,6 +10,9 @@ test('Prompt/repair data route to D1, authentication/AI/Drive stay on GAS, group
  for(const action of ['get_prompts','get_repairs','toggle_favorite','sync_favorites','admin_set_membership']){await w.App.apiPost(action);assert.equal(calls.at(-1).url,'https://collections.test/api');assert.equal(JSON.parse(calls.at(-1).options.body).adminToken,token);}
  for(const sheetType of ['prompts','repairs'])for(const action of ['create','update','delete']){await w.App.apiPost(action,{}, {sheetType});assert.equal(calls.at(-1).url,'https://collections.test/api');}
  for(const action of ['verify','user_login','google_login','generate_lesson_plan','age_reading','upload']){await w.App.apiPost(action);assert.equal(calls.at(-1).url,'https://gas.test/exec');}
+ w.APP_CONFIG.ADMIN_AUTH_API_URL='https://native-admin.test';
+ await w.App.apiPost('verify',{adminPassword:'test-password'});assert.equal(calls.at(-1).url,'https://native-admin.test/api');assert.equal(JSON.parse(calls.at(-1).options.body).data.adminPassword,'test-password');
+ for(const action of ['user_login','google_login','generate_lesson_plan','upload']){await w.App.apiPost(action);assert.equal(calls.at(-1).url,'https://gas.test/exec');}
  await w.App.apiPost('nh_boot');assert.equal(calls.at(-1).url,'https://groups.test/api');
  for(const type of ['prompts','repairs']){await w.App.apiGet(type);assert.equal(new URL(calls.at(-1).url).origin,'https://collections.test');assert.equal(new URL(calls.at(-1).url).searchParams.get('type'),type);assert.equal(new URL(calls.at(-1).url).searchParams.has('userToken'),false);}
 });

@@ -19,7 +19,7 @@ jobs:
      with:
       node-version: '22'
    - name: Validate preservation and signed Sheets bridge
-     run: node --test tests/sync-nhomhoc-gas.test.mjs tests/collections-bridge.test.mjs
+     run: node --test tests/sync-nhomhoc-gas.test.mjs tests/collections-bridge.test.mjs tests/native-admin-token.test.mjs
    - name: Preserve live files and install bridge
      env:
       GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}

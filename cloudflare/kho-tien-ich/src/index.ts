@@ -1,9 +1,10 @@
 import {authenticate,gas,invalidateUser} from './auth.js';
+import {adminLogin} from './admin-login.js';
 import {backup} from './backup.js';
 import {favoriteIds,items,mask,meta,summary,writeFavorites,writeItem} from './store.js';
 import {boundedText,HttpError,json,text,type Principal} from './util.js';
-const VERSION='9.6.0';
-const ACTIONS=['get_prompts','get_repairs','toggle_favorite','sync_favorites','create','update','delete','admin_get_users','admin_set_membership','collections_backup_status','collections_backup_now'];
+const VERSION='9.7.0';
+const ACTIONS=['verify','get_prompts','get_repairs','toggle_favorite','sync_favorites','create','update','delete','admin_get_users','admin_set_membership','collections_backup_status','collections_backup_now'];
 export default{
  async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
   const url=new URL(request.url),origin=request.headers.get('Origin');
@@ -23,7 +24,9 @@ export default{
    let payload:{action?:unknown,adminToken?:unknown,userToken?:unknown,sheetType?:unknown,data?:unknown};
    try{payload=JSON.parse(await boundedText(request.body,262144));}catch(error){if(error instanceof HttpError)throw error;throw new HttpError(400,'Dữ liệu gửi lên không hợp lệ.');}
    if(!payload||typeof payload!=='object'||Array.isArray(payload)||!ACTIONS.includes(String(payload.action))||payload.data!=null&&(typeof payload.data!=='object'||Array.isArray(payload.data)))throw new HttpError(400,'Lệnh không hợp lệ.');
-   const action=String(payload.action),data=(payload.data||{}) as Record<string,unknown>,p:Principal=await authenticate(request,env,payload);
+   const action=String(payload.action),data=(payload.data||{}) as Record<string,unknown>;
+   if(action==='verify')return decorate(json(await adminLogin(request,env,ctx,data.adminPassword,(payload as Record<string,unknown>).clientId)));
+   const p:Principal=await authenticate(request,env,payload);
    if(action==='get_prompts')return decorate(json({status:'success',data:mask(await items(env.DB,'prompts'),p),favorites:await favoriteIds(env.DB,p),membership:p.membership}));
    if(action==='get_repairs'){
     const rows=await items(env.DB,'repairs'),admin=p.role==='admin';

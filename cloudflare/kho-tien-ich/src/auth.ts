@@ -1,4 +1,5 @@
 import {boundedText,hash,HttpError,type Principal} from './util.js';
+import {verifyNativeAdmin} from '../../shared/admin-token.js';
 type Payload={adminToken?:unknown,userToken?:unknown};
 export async function gas(env:Env,payload:unknown):Promise<Record<string,unknown>>{
   try{const r=await fetch(env.GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),signal:AbortSignal.timeout(25000)});if(!r.ok)throw Error();return JSON.parse(await boundedText(r.body,1048576));}
@@ -6,6 +7,8 @@ export async function gas(env:Env,payload:unknown):Promise<Record<string,unknown
 }
 export async function authenticate(request:Request,env:Env,payload:Payload):Promise<Principal>{
   const token=payload.adminToken||payload.userToken;
+  const native=await verifyNativeAdmin(token,env);
+  if(native!==undefined){if(!native)throw new HttpError(401,'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.');return {...native,membership:'admin'};}
   if(typeof token!=='string'||token.length>4096||token.split('.').length!==2)throw new HttpError(401,'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.');
   const key=await hash(token),now=Math.floor(Date.now()/1000);
   const cached=await env.DB.prepare('SELECT s.sub,s.role,s.membership,s.expires_at FROM collection_sessions s LEFT JOIN user_epochs u ON s.sub=u.sub WHERE s.token_hash=? AND s.expires_at>? AND s.epoch=COALESCE(u.epoch,0)').bind(key,now).first<{sub:string,role:Principal['role'],membership:Principal['membership'],expires_at:number}>();

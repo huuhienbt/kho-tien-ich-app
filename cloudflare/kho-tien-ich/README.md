@@ -1,6 +1,16 @@
 # Kho Prompt và nhật ký sửa chữa – E-GV 9.6
 
-Worker `egv-kho-tien-ich` đọc và xử lý dữ liệu trực tiếp trong D1 `egv-kho-tien-ich`. Nhóm học tiếp tục dùng Worker và database riêng. Đăng nhập, danh sách tài khoản, đổi quyền VIP, AI và tải Drive vẫn dùng Apps Script.
+Worker `egv-kho-tien-ich` đọc và xử lý dữ liệu trực tiếp trong D1 `egv-kho-tien-ich`. Nhóm học tiếp tục dùng Worker và database riêng. Đăng nhập quản trị có luồng Cloudflare riêng; đăng nhập thành viên/Google, danh sách tài khoản, đổi quyền VIP, AI và tải Drive vẫn dùng Apps Script.
+
+## Đăng nhập quản trị trên Cloudflare (9.7)
+
+`ADMIN_AUTH_API_URL` tách luồng `verify` khỏi Apps Script. Lần đăng nhập đúng đầu tiên xác minh mật khẩu hiện tại với Google, rồi lưu mã băm PBKDF2-SHA256 với salt ngẫu nhiên 16 byte, 100.000 vòng và HMAC-SHA256 bằng pepper riêng trong Cloudflare Secret. D1 không lưu mật khẩu gốc, pepper hay khóa ký. Sau đó đăng nhập được xử lý trong Worker; nhóm học và kho dữ liệu xác minh chữ ký tại Worker, không cần gọi Google cho phiên quản trị mới.
+
+PBKDF2 dùng giới hạn tương thích Workers và pepper giữ ngoài database. Đây không phải cấu hình FIPS/OWASP PBKDF2 600.000 vòng. Rate limiter theo IP và bộ đếm D1 chung giới hạn số lần thử. Khóa RSA-SHA256 riêng `ADMIN_AUTH_SIGNING_KEY` chỉ cấp quyền admin cho subject cố định `admin`, đúng origin/issuer/key ID, hạn tối đa 8 giờ; không dùng lại khóa ký bản lưu Sheets. `ADMIN_PASSWORD_PEPPER` là secret độc lập. Khóa công khai được cài ở cả hai Worker và Collections.gs; thành viên và Google giữ verifier cũ.
+
+Sau chuyển đổi, Worker thông báo Apps Script bằng phiên admin đã ký để khóa đường đăng nhập mật khẩu cũ. Thông báo chạy nền và có thể thử lại ở lần đăng nhập đúng kế tiếp nếu Google chưa phản hồi. Phiên HMAC cũ tiếp tục dùng đến khi hết hạn. Giao diện vẫn giữ mật khẩu cũ và cách đăng nhập hiện tại; không yêu cầu nhập mật khẩu trong ChatGPT.
+
+Mã nguồn chỉ chứa khóa công khai. Workflow bảo toàn Apps Script chèn thêm hook nhỏ vào `verifyToken` và giữ các hàm khác nguyên vẹn. Chỉ bật `ADMIN_AUTH_API_URL` sau khi schema, hai secrets, hai Worker và verifier Apps Script đã được kiểm tra. Đổi Script Property `ADMIN_PASSWORD` sau chuyển đổi không đổi mật khẩu native. Để khôi phục qua Google: chủ dự án đặt `EGV_NATIVE_ADMIN_AUTH_ACTIVE=0`, cấu hình mật khẩu Google mới rồi xóa dòng `admin_credentials` trong D1; lần đăng nhập đúng sau đó chuyển đổi lại. Không xóa hoặc thay khóa/pepper khi chưa chuẩn bị việc khôi phục tương ứng.
 
 ## Phân quyền
 

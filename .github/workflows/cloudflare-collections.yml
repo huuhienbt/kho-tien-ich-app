@@ -1,10 +1,10 @@
 name: Check and deploy Prompt and repairs
 on:
  pull_request:
-  paths: ['cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
+  paths: ['cloudflare/shared/**','cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','tests/native-admin-token.test.mjs','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
  push:
   branches: [main]
-  paths: ['cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
+  paths: ['cloudflare/shared/**','cloudflare/kho-tien-ich/**','Collections.gs','js/app.js','js/config.js','tests/collections-*.test.*','tests/native-admin-token.test.mjs','scripts/sync-collections-gas.mjs','.github/workflows/cloudflare-collections.yml']
  workflow_dispatch:
 permissions:
  contents: read
@@ -31,7 +31,7 @@ jobs:
      working-directory: .
      env:
       EGV_QA_DEPENDENCIES: ${{ github.workspace }}/cloudflare/kho-tien-ich
-     run: node --test tests/collections-bridge.test.mjs tests/collections-api.test.cjs tests/sync-nhomhoc-gas.test.mjs
+     run: node --test tests/collections-bridge.test.mjs tests/collections-api.test.cjs tests/native-admin-token.test.mjs tests/sync-nhomhoc-gas.test.mjs
  deploy:
   needs: check
   if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
