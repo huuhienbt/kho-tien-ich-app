@@ -7,10 +7,10 @@
   <title>Quản lý nhóm học – E-GV</title>
   <link rel="stylesheet" href="style.css?v=9.3.0">
   <link rel="stylesheet" href="modern-saas.css?v=9.3.0">
-  <link rel="stylesheet" href="groups.css?v=9.5.2">
+  <link rel="stylesheet" href="groups.css?v=9.5.3">
   <script src="js/config.js?v=9.6.0" defer></script>
   <script src="js/app.js?v=9.6.0" defer></script>
-  <script src="js/groups.js?v=9.5.2" defer></script>
+  <script src="js/groups.js?v=9.5.3" defer></script>
 </head>
 <body class="page-groups">
   <div id="appShell"></div>
@@ -36,13 +36,20 @@
         <section class="nh-stats" aria-label="Tổng hợp kỳ học" id="nhStats"></section>
         <nav class="nh-tabs" aria-label="Chức năng nhóm học">
           <button type="button" data-tab="attendance" aria-pressed="true">Điểm danh</button>
-          <button type="button" id="nhOverviewTab" data-tab="overview" aria-pressed="false" aria-label="Tổng quan điểm danh 8 buổi">8 buổi</button>
           <button type="button" data-tab="students" aria-pressed="false">Học sinh</button>
           <button type="button" data-tab="fees" aria-pressed="false">Học phí</button>
           <button type="button" id="nhFilesTab" data-tab="files" aria-pressed="false" hidden>Tệp</button>
         </nav>
-        <section id="nhAttendance" class="nh-tab-panel"></section>
-        <section id="nhOverview" class="nh-tab-panel" hidden></section>
+        <section id="nhAttendancePanel" class="nh-tab-panel nh-attendance-panel">
+          <div class="nh-attendance-modes" aria-label="Cách xem điểm danh">
+            <button type="button" id="nhAllSessionsMode" data-attendance-mode="overview" aria-pressed="true">Tất cả 8 buổi</button>
+            <button type="button" data-attendance-mode="day" aria-pressed="false">Theo buổi</button>
+          </div>
+          <div id="nhAttendanceToolbar" class="nh-attendance-toolbar"></div>
+          <section id="nhOverview" aria-label="Tất cả học sinh và buổi học"></section>
+          <section id="nhAttendance" aria-label="Điểm danh một buổi" hidden></section>
+          <div class="nh-save-bar"><p id="nhSaveHint"></p><button class="btn btn-primary" type="button" data-action="save-attendance" id="nhSaveAttendance">Lưu điểm danh</button></div>
+        </section>
         <section id="nhStudents" class="nh-tab-panel" hidden></section>
         <section id="nhFees" class="nh-tab-panel" hidden></section>
         <section id="nhFiles" class="nh-tab-panel" hidden></section>

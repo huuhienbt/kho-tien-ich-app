@@ -4,7 +4,8 @@ import {commitChanges,loadSnapshot} from './storage.js';
 import {boundedText,HttpError,todayVietnam} from './util.js';
 import {deleteFile,downloadFile,listFiles,uploadFile} from './files.js';
 import {memberAction,memberActions} from './members.js';
-const VERSION='9.5.2';
+import {transferAction,transferActions} from './transfers.js';
+const VERSION='9.5.3';
 const fileActions=['nh_files_list','nh_file_download','nh_file_delete'];
 function responseJSON(value:unknown,status=200) {return Response.json(value,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
 export default {
@@ -30,8 +31,9 @@ export default {
       let payload:{action?:string,adminToken?:unknown,data?:Record<string,unknown>};
       try {payload=JSON.parse(await boundedText(request.body,524288));}
       catch(error) {if(error instanceof HttpError)throw error;throw new HttpError(400,'Dữ liệu gửi lên không hợp lệ.');}
-      if(!payload||typeof payload!=='object'||!ACTIONS.concat(fileActions,memberActions).includes(String(payload.action))||payload.data&&typeof payload.data!=='object'||Array.isArray(payload.data))throw new HttpError(400,'Lệnh nhóm học không hợp lệ.');
+      if(!payload||typeof payload!=='object'||!ACTIONS.concat(fileActions,memberActions,transferActions).includes(String(payload.action))||payload.data&&typeof payload.data!=='object'||Array.isArray(payload.data))throw new HttpError(400,'Lệnh nhóm học không hợp lệ.');
       const user=await authenticate(request,env,payload.adminToken),data=payload.data||{},action=String(payload.action);
+      if(transferActions.includes(action))return decorate(responseJSON({status:'success',data:await transferAction(env.DB,user,action,data),version:VERSION}));
       if(memberActions.includes(action))return decorate(responseJSON({status:'success',data:await memberAction(env.DB,user,action,data),version:VERSION}));
       if(action==='nh_file_download')return decorate(await downloadFile(env,data.id));
       if(action==='nh_files_list')return decorate(responseJSON({status:'success',data:await listFiles(env,data.groupId)}));
@@ -42,7 +44,7 @@ export default {
       catch(error) {throw new HttpError(400,error instanceof Error?error.message:'Dữ liệu nhóm học không hợp lệ.');}
       await commitChanges(env.DB,snapshot.revision,execution.dirty,action,user.sub,now);
       const result=execution.result;
-      if(action==='nh_boot' && 'features' in result) Object.assign(result,{storage:'cloudflare-d1',version:VERSION,students:snapshot.tables.HocSinh.map(({_row,...student})=>student),features:{...result.features,files:!!env.FILES,memberRemoval:true}});
+      if(action==='nh_boot' && 'features' in result) Object.assign(result,{storage:'cloudflare-d1',version:VERSION,students:snapshot.tables.HocSinh.map(({_row,...student})=>student),features:{...result.features,files:!!env.FILES,memberRemoval:true,memberTransfer:true}});
       return decorate(responseJSON({status:'success',data:result,version:VERSION}));
     } catch(error) {
       if(error instanceof HttpError)return decorate(responseJSON({status:'error',message:error.message},error.status));
