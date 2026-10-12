@@ -7,7 +7,7 @@
   const shortDate = value => dateLabel(value).slice(0,5);
   const periodLabel = value => 'tháng ' + String(value || '').split('-').reverse().join('/');
   const uid = () => window.crypto.randomUUID();
-  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',focusSession:false,profileId:'',files:null,filesLoading:false};
+  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'overview',memberEditInitial:null,profileId:'',files:null,filesLoading:false};
   const statusLabel = {co_mat:'Có mặt',vang:'Vắng',chua_diem_danh:'Chưa điểm danh'};
   const markSymbol = {co_mat:'✓',vang:'×',chua_diem_danh:'·'};
   const message = (text,error=false) => { $('nhFeedback').textContent=text; $('nhFeedback').className='nh-feedback'+(error?' error':''); $('nhFeedback').hidden=!text; };
@@ -31,10 +31,10 @@
   }
   function closeProfile() {if($('nhProfile').open)$('nhProfile').close();state.profileId='';$('nhProfileBody').replaceChildren();$('nhProfileName').textContent='';$('nhProfilePeriod').textContent='';}
   function resetAuth() {
-    state.epoch++;state.boot=null;state.view=null;clearDrafts();state.groupId='';state.month='';state.search='';state.feeSearch='';state.feeFilter='all';state.sessionId='';state.tab='attendance';state.focusSession=false;
+    state.epoch++;state.boot=null;state.view=null;clearDrafts();state.groupId='';state.month='';state.search='';state.feeSearch='';state.feeFilter='all';state.sessionId='';state.tab='attendance';state.attendanceMode='overview';state.memberEditInitial=null;
     $('nhDialog').close();state.submit=null;closeProfile();
     state.files=null;state.filesLoading=false;$('nhFilesTab').hidden=true;
-    ['nhStats','nhAttendance','nhOverview','nhStudents','nhFees','nhFiles','nhGroup','nhGroupCards','nhPeriodInfo'].forEach(id=>$(id).replaceChildren());
+    ['nhSaveHint','nhAttendanceToolbar','nhStats','nhAttendance','nhOverview','nhStudents','nhFees','nhFiles','nhGroup','nhGroupCards','nhPeriodInfo'].forEach(id=>$(id).replaceChildren());
     $('nhWorkspace').hidden=true;$('nhGroupContent').hidden=true;$('nhAddGroup').hidden=true;message('');$('nhGate').hidden=App.isAdmin();busy(false);
     if(App.isAdmin())boot();
   }
@@ -64,7 +64,7 @@
   async function loadView(epoch=state.epoch) {
     const groupId=state.groupId,month=state.month;$('nhGroupContent').hidden=true;$('nhEmpty').hidden=true;
     const data=await call('nh_view',{groupId,month});if(epoch!==state.epoch||groupId!==state.groupId||month!==state.month)return;
-    state.view=data;clearDrafts();closeProfile();state.focusSession=false;
+    state.view=data;clearDrafts();closeProfile();
     const group=state.boot.groups.find(g=>g.ma_nhom===groupId);
     if(group){group.ky_hien_tai=data.period.current;group.buoi_hien_tai=data.currentPeriod.completed;group.so_buoi_ky=data.currentPeriod.size;}
     if(!data.sessions.some(s=>s.ma_buoi===state.sessionId&&s.trang_thai!=='da_huy')){
@@ -117,11 +117,22 @@
     $('nhGroupHint').textContent=[g.nam_hoc,g.thu_trong_tuan?'Thứ '+g.thu_trong_tuan.replaceAll(',',', '):'',g.gio_bat_dau?g.gio_bat_dau+'–'+g.gio_ket_thuc:'',money(g.don_gia_vnd)+(g.cach_tinh_hoc_phi==='theo_buoi'?'/buổi':'/kỳ')].filter(Boolean).join(' · ');
     $('nhPeriodInfo').hidden=!cycle;
     $('nhPeriodInfo').innerHTML=cycle?`<div><span class="nh-eyebrow">Kỳ đang xem</span><strong>${esc(periodLabel(v.month))} <span class="nh-period-count">${v.period.completed}/${v.period.size} buổi đã học</span></strong><p>${v.closed?'Đã chốt học phí. Mở lại kỳ nếu cần sửa điểm danh.':v.period.completed===8?'Đã đủ 8 buổi. Buổi học tiếp theo bắt đầu kỳ mới.':'Học đủ 8 buổi mới chuyển kỳ. Các buổi dự kiến và buổi hủy chưa được tính.'}</p></div><progress value="${v.period.completed}" max="8" aria-label="Số buổi đã học"></progress>`:'';
-    $('nhOverviewTab').textContent=cycle?'8 buổi':'Tổng quan';
-    $('nhPrevMonth').disabled=v.month==='2000-01';$('nhNextMonth').disabled=v.month==='2100-12';paintGroupCards();paintSummary();paintAttendance();paintOverview();paintStudents();paintFees();paintTab();
+    $('nhAllSessionsMode').textContent=cycle?'Tất cả 8 buổi':'Tất cả buổi';
+    $('nhPrevMonth').disabled=v.month==='2000-01';$('nhNextMonth').disabled=v.month==='2100-12';paintGroupCards();paintSummary();paintAttendanceToolbar();paintAttendance();paintOverview();paintStudents();paintFees();paintTab();
   }
-  function paintTab() {const filesEnabled=!!state.boot?.features?.files;$('nhFilesTab').hidden=!filesEnabled;if(state.tab==='files'&&!filesEnabled)state.tab='attendance';Object.entries({attendance:'nhAttendance',overview:'nhOverview',students:'nhStudents',fees:'nhFees',files:'nhFiles'}).forEach(([key,id])=>$(id).hidden=state.tab!==key);document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab)));if(state.tab==='files')paintFiles();}
-
+  function paintAttendanceMode() {
+    $('nhOverview').hidden=state.attendanceMode!=='overview';$('nhAttendance').hidden=state.attendanceMode!=='day';
+    document.querySelectorAll('[data-attendance-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.attendanceMode===state.attendanceMode)));
+  }
+  function paintTab() {
+    const filesEnabled=!!state.boot?.features?.files;$('nhFilesTab').hidden=!filesEnabled;if(state.tab==='files'&&!filesEnabled)state.tab='attendance';
+    Object.entries({attendance:'nhAttendancePanel',students:'nhStudents',fees:'nhFees',files:'nhFiles'}).forEach(([key,id])=>$(id).hidden=state.tab!==key);
+    document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab)));paintAttendanceMode();if(state.tab==='files')paintFiles();
+  }
+  function paintAttendanceToolbar() {
+    const v=state.view,canPlan=v.period.mode==='eight_sessions'&&!v.closed&&slotSessions().length<8&&v.group.trang_thai==='dang_hoc';
+    $('nhAttendanceToolbar').innerHTML=`<button class="btn btn-secondary" type="button" data-action="plan-sessions" ${!canPlan?'disabled':''}>Xếp lịch còn thiếu</button><button class="btn btn-primary" type="button" data-action="new-session" ${v.group.trang_thai!=='dang_hoc'?'disabled':''}>+ Buổi học / học bù</button>`;
+  }
   function paintFiles() {
     if(!state.boot?.features?.files)return;
     const rows=(state.files?.files||[]).map(f=>`<tr><td><strong>${esc(f.name)}</strong><small>${esc(f.note||'')}</small></td><td>${(f.size/1024).toLocaleString('vi-VN',{maximumFractionDigits:0})} KB</td><td>${dateLabel(f.created_at.slice(0,10))}</td><td><div class="nh-file-actions"><button class="btn btn-secondary" type="button" data-file-download="${esc(f.id)}">Tải</button><button class="btn btn-danger" type="button" data-file-delete="${esc(f.id)}">Xóa</button></div></td></tr>`).join('');
@@ -150,36 +161,27 @@
   function isMakeup(s) {const days=(state.view.group.thu_trong_tuan||'').split(',').filter(Boolean).map(d=>d==='CN'?0:Number(d)-1);return !!days.length&&!days.includes(new Date(s.ngay_hoc+'T12:00:00Z').getUTCDay());}
   function sessionState(s) {return s.trang_thai==='da_huy'?'Đã hủy':s.ngay_hoc>state.view.today?'Dự kiến':s.trang_thai==='du_kien'?'Chưa xác nhận':'Đã học';}
   function slotSessions() {const v=state.view,active=v.sessions.filter(s=>s.trang_thai!=='da_huy');if(v.period.mode!=='eight_sessions')return active;const learned=active.filter(s=>s.trang_thai==='da_hoc'&&s.ngay_hoc<=v.today),plans=active.filter(s=>!learned.includes(s)).slice(0,Math.max(0,8-learned.length));return learned.concat(plans).sort((a,b)=>a.ngay_hoc.localeCompare(b.ngay_hoc));}
-  function markCell(m,s) {
-    if(!s)return '<span class="nh-matrix-empty">—</span>';
-    if(!within(m,s.ngay_hoc))return '<span class="nh-matrix-empty" title="Chưa vào hoặc đã nghỉ nhóm">—</span>';
-    const d=getMark(s.ma_buoi,m.ma_hoc_sinh),future=s.ngay_hoc>state.view.today,changed=!!state.drafts[s.ma_buoi]?.[m.ma_hoc_sinh];
-    return `<button type="button" class="nh-cell-mark ${d.status} ${changed?'changed':''} ${future?'future':''}" data-cycle="${esc(s.ma_buoi)}" data-student="${esc(m.ma_hoc_sinh)}" aria-label="${esc(m.ho_ten)}, ${esc(dateLabel(s.ngay_hoc))}: ${future?'Dự kiến':statusLabel[d.status]}${d.note?', có ghi chú':''}" ${!writable(s)?'disabled':''}>${future?'—':markSymbol[d.status]}${d.note?'<span class="nh-note-dot" aria-hidden="true"></span>':''}</button>`;
-  }
+
   function squareCell(m,s) {
     if(!s)return '<span class="nh-square unscheduled" role="img" aria-label="Chưa xếp lịch" title="Chưa xếp lịch"></span>';
     if(!within(m,s.ngay_hoc))return '<span class="nh-square outside" role="img" aria-label="Không thuộc buổi học" title="Chưa vào hoặc đã nghỉ nhóm"></span>';
     const d=getMark(s.ma_buoi,m.ma_hoc_sinh),future=s.ngay_hoc>state.view.today,changed=!!state.drafts[s.ma_buoi]?.[m.ma_hoc_sinh];
     const label=`${m.ho_ten}, ${dateLabel(s.ngay_hoc)}: ${future?'Dự kiến':statusLabel[d.status]}${d.note?', có ghi chú':''}`;
-    return `<button type="button" class="nh-square-mark ${future?'future':d.status} ${changed?'changed':''}" data-cycle="${esc(s.ma_buoi)}" data-student="${esc(m.ma_hoc_sinh)}" aria-label="${esc(label)}" title="${esc(label)}" ${!writable(s)?'disabled':''}><span class="nh-square" aria-hidden="true"></span></button>`;
+    return `<button type="button" class="nh-square-mark ${future?'future':d.status} ${changed?'changed':''}" data-cycle="${esc(s.ma_buoi)}" data-student="${esc(m.ma_hoc_sinh)}" aria-label="${esc(label)}" title="${esc(label)}" ${!writable(s)?'disabled':''}><span class="nh-square" aria-hidden="true"></span>${d.note?'<span class="nh-note-dot" aria-hidden="true"></span>':''}</button>`;
   }
   function paintOverview() {
     const v=state.view,slots=slotSessions(),size=v.period.mode==='eight_sessions'?8:Math.max(1,slots.length),columns=Array.from({length:size},(_,i)=>slots[i]||null),fees=projectedFees();
     const heads=columns.map((s,i)=>`<th scope="col">${s?`<button type="button" class="nh-overview-date" data-session="${esc(s.ma_buoi)}" aria-label="Điểm danh buổi ${i+1}, ${esc(dateLabel(s.ngay_hoc))}"><span>${i+1}</span><small>${shortDate(s.ngay_hoc)}</small></button>`:`<span>${i+1}</span><small class="nh-overview-unset">—</small>`}</th>`).join('');
     const rows=v.roster.map(m=>{const f=fees.find(f=>f.studentId===m.ma_hoc_sinh);return `<tr class="nh-student-entry" data-student-name="${esc(normalize(m.ho_ten))}"><th scope="row" class="nh-overview-name">${studentButton(m)}</th>${columns.map(s=>`<td class="nh-overview-cell" data-cell-session="${esc(s?.ma_buoi||'')}" data-cell-student="${esc(m.ma_hoc_sinh)}">${squareCell(m,s)}</td>`).join('')}<td class="nh-overview-count"><strong data-overview-count="${esc(m.ma_hoc_sinh)}" data-size="${size}" title="Có mặt ${f.attended} buổi, vắng ${f.absent||0} buổi">${f.attended}/${size}</strong></td></tr>`;}).join('');
-    $('nhOverview').innerHTML=`<div class="nh-card nh-overview-card"><div class="nh-card-heading"><div><h2>${v.period.mode==='eight_sessions'?'Tổng quan 8 buổi':'Tổng quan điểm danh'}</h2><p>${esc(v.group.ten_nhom)} · Kỳ ${esc(periodLabel(v.month))} · ${v.roster.length} học sinh</p></div></div><label class="nh-overview-search"><span>Tìm học sinh</span><input id="nhOverviewSearch" class="form-control" placeholder="Tên học sinh…" value="${esc(state.search)}"></label><div class="nh-square-legend"><span><i class="nh-square co_mat" aria-hidden="true"></i>Có mặt</span><span><i class="nh-square vang" aria-hidden="true"></i>Vắng</span><span><i class="nh-square" aria-hidden="true"></i>Chưa điểm danh</span><span><i class="nh-square future" aria-hidden="true"></i>Dự kiến</span></div><div class="nh-table-wrap nh-overview-wrap" tabindex="0" role="region" aria-label="Tổng quan điểm danh tất cả học sinh"><table class="nh-table nh-overview-table"><thead><tr><th scope="col" class="nh-overview-name">Học sinh</th>${heads}<th scope="col" class="nh-overview-count" aria-label="Số buổi có mặt">Có mặt</th></tr></thead><tbody>${rows}</tbody></table></div><p class="nh-search-empty" id="nhOverviewEmpty" hidden>Không tìm thấy học sinh.</p><p class="nh-caption nh-overview-caption">Bấm ô vuông để đổi điểm danh; bấm ngày để mở từng buổi.</p><div class="nh-save-bar"><p id="nhOverviewSaveHint"></p><button class="btn btn-primary" type="button" data-action="save-attendance" id="nhSaveOverview">Lưu điểm danh</button></div></div>`;
+    $('nhOverview').innerHTML=`<div class="nh-card nh-overview-card"><div class="nh-card-heading"><div><h2>${v.period.mode==='eight_sessions'?'Tổng quan 8 buổi':'Tổng quan điểm danh'}</h2><p>${esc(v.group.ten_nhom)} · Kỳ ${esc(periodLabel(v.month))} · ${v.roster.length} học sinh</p></div></div><label class="nh-overview-search"><span>Tìm học sinh</span><input id="nhOverviewSearch" class="form-control" placeholder="Tên học sinh…" value="${esc(state.search)}"></label><div class="nh-square-legend"><span><i class="nh-square co_mat" aria-hidden="true"></i>Có mặt</span><span><i class="nh-square vang" aria-hidden="true"></i>Vắng</span><span><i class="nh-square" aria-hidden="true"></i>Chưa điểm danh</span><span><i class="nh-square future" aria-hidden="true"></i>Dự kiến</span></div><div class="nh-table-wrap nh-overview-wrap" tabindex="0" role="region" aria-label="Tổng quan điểm danh tất cả học sinh"><table class="nh-table nh-overview-table"><thead><tr><th scope="col" class="nh-overview-name">Học sinh</th>${heads}<th scope="col" class="nh-overview-count" aria-label="Số buổi có mặt">Có mặt</th></tr></thead><tbody>${rows}</tbody></table></div><p class="nh-search-empty" id="nhOverviewEmpty" hidden>Không tìm thấy học sinh.</p><p class="nh-caption nh-overview-caption">Bấm ô vuông để đổi điểm danh; bấm ngày để mở từng buổi.</p></div>`;
     applyStudentFilter();updateDraftUi();
   }
   function paintAttendance() {
-    const v=state.view,s=selectedSession(),slots=slotSessions(),size=v.period.mode==='eight_sessions'?8:Math.max(1,slots.length),columns=Array.from({length:size},(_,i)=>slots[i]||null);
-    const extra=v.sessions.filter(b=>!slots.some(s=>s.ma_buoi===b.ma_buoi)),fees=projectedFees();
-    const heads=columns.map((b,i)=>b?`<th scope="col"><button type="button" class="nh-date-head" data-session="${esc(b.ma_buoi)}"><small>Buổi ${i+1}</small><strong>${shortDate(b.ngay_hoc)}</strong><span>${b.ngay_hoc.slice(0,4)}</span></button>${isMakeup(b)?'<span class="nh-makeup">Học bù</span>':''}<small class="nh-session-state">${sessionState(b)}</small></th>`:`<th scope="col"><small>Buổi ${i+1}</small><span class="nh-empty-date">Chưa xếp</span></th>`).join('');
-    const rows=v.roster.map(m=>{const f=fees.find(f=>f.studentId===m.ma_hoc_sinh);return `<tr class="nh-student-entry" data-student-name="${esc(normalize(m.ho_ten))}" data-roster="${esc(m.ma_hoc_sinh)}"><th scope="row" class="nh-sticky-name">${studentButton(m)}<small>${esc(m.lop)}${!f.rate?' · Miễn học phí':''}</small></th>${columns.map(b=>`<td data-cell-session="${esc(b?.ma_buoi||'')}" data-cell-student="${esc(m.ma_hoc_sinh)}">${markCell(m,b)}</td>`).join('')}<td class="nh-row-summary"><strong data-attended="${esc(m.ma_hoc_sinh)}">${f.attended}</strong><small data-absent="${esc(m.ma_hoc_sinh)}">${f.absent||0} vắng</small></td></tr>`;}).join('');
-    const options=v.sessions.filter(b=>b.trang_thai!=='da_huy').map(b=>`<option value="${esc(b.ma_buoi)}" ${b.ma_buoi===state.sessionId?'selected':''}>${esc(dateLabel(b.ngay_hoc))}${b.thu_tu_ky?' · Buổi '+b.thu_tu_ky:''}${isMakeup(b)?' · Học bù':''} · ${sessionState(b)}</option>`).join('');
-    let one='<div class="nh-empty-inline">Chưa có buổi học. Thêm buổi hoặc xếp lịch để bắt đầu điểm danh.</div>';
-    if(s){const students=v.roster.filter(m=>within(m,s.ngay_hoc));one=`<div class="nh-single-heading"><div><h3>${dateLabel(s.ngay_hoc)}</h3><p>${sessionState(s)}${isMakeup(s)?' · Học bù':''} · ${students.length} học sinh</p></div><button type="button" class="nh-link" data-action="edit-session" ${v.closed?'disabled':''}>Sửa buổi</button></div>${s.trang_thai==='du_kien'&&s.ngay_hoc<=v.today?'<p class="nh-inline-info">Lưu điểm danh Có mặt/Vắng để xác nhận buổi này đã học.</p>':''}${s.ngay_hoc>v.today?'<p class="nh-inline-info">Chưa đến ngày học. Buổi này chưa tính vào số buổi đã học và học phí.</p>':''}<div class="nh-quick-actions"><button type="button" class="btn btn-secondary" data-action="all-present" ${!writable(s)?'disabled':''}>✓ Tất cả có mặt</button><span id="nhDraftCount" class="nh-caption"></span></div><div class="nh-mobile-roster">${students.map(m=>{const d=getMark(s.ma_buoi,m.ma_hoc_sinh);return `<article class="nh-student-entry nh-mobile-student" data-student-name="${esc(normalize(m.ho_ten))}"><div class="nh-mobile-student-top">${studentButton(m)}<button type="button" class="nh-link" data-mark-note="${esc(s.ma_buoi)}" data-student="${esc(m.ma_hoc_sinh)}" ${!writable(s)?'disabled':''}>${d.note?'Có ghi chú':'Ghi chú'}</button></div><div class="nh-mark-controls" data-mobile-marks="${esc(m.ma_hoc_sinh)}">${Object.entries(statusLabel).map(([key,label])=>`<button type="button" data-mark="${key}" data-student="${esc(m.ma_hoc_sinh)}" aria-pressed="${d.status===key}" ${!writable(s)?'disabled':''}>${label}</button>`).join('')}</div></article>`;}).join('')}</div>${!students.length?'<p class="nh-muted">Chưa có học sinh thuộc buổi này.</p>':''}`;}
-    const canPlan=v.period.mode==='eight_sessions'&&!v.closed&&slots.length<8&&v.group.trang_thai==='dang_hoc';
-    $('nhAttendance').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Điểm danh kỳ ${esc(periodLabel(v.month))}</h2><p>Bấm ô để đổi: Có mặt → Vắng → Chưa điểm danh. Bấm tên để xem chi tiết.</p></div><div class="nh-actions"><button class="btn btn-secondary" type="button" data-action="plan-sessions" ${!canPlan?'disabled':''}>Xếp lịch còn thiếu</button><button class="btn btn-primary" type="button" data-action="new-session" ${v.group.trang_thai!=='dang_hoc'?'disabled':''}>+ Buổi học / học bù</button></div></div><div class="nh-attendance-tools"><label class="nh-search-label"><span>Tìm học sinh</span><input id="nhSearch" class="form-control" placeholder="Tên học sinh…" value="${esc(state.search)}"></label><label class="nh-session-select"><span>Chọn buổi</span><select id="nhSessionSelect" class="form-control" ${!options?'disabled':''}>${options||'<option>Chưa có buổi</option>'}</select></label><button class="btn btn-secondary nh-matrix-quick" type="button" data-action="all-present" ${!writable(s)?'disabled':''}>✓ Có mặt cả buổi</button><button class="btn btn-secondary nh-mode-button" type="button" data-action="toggle-mode">${state.focusSession?'Xem toàn kỳ':'Xem từng buổi'}</button></div><div class="nh-legend"><span><b class="green">✓</b> Có mặt</span><span><b class="red">×</b> Vắng</span><span><b class="neutral">·</b> Chưa điểm danh</span><span><b class="blue">—</b> Dự kiến / chưa tham gia</span><span class="nh-makeup">Học bù</span></div><div class="nh-matrix ${state.focusSession?'focus-session':''}"><div class="nh-table-wrap" tabindex="0" role="region" aria-label="Bảng điểm danh 8 buổi"><table class="nh-table nh-matrix-table"><thead><tr><th scope="col" class="nh-sticky-name">Học sinh</th>${heads}<th scope="col">Có mặt</th></tr></thead><tbody>${rows}</tbody></table></div></div><div class="nh-single-session ${state.focusSession?'force-show':''}">${one}</div>${extra.length?`<details class="nh-extra-sessions"><summary>${extra.length} buổi hủy hoặc dự kiến cần kiểm tra</summary><div>${extra.map(b=>`<button type="button" class="nh-extra-session" data-session="${esc(b.ma_buoi)}">${dateLabel(b.ngay_hoc)} <span>${sessionState(b)}</span></button>`).join('')}</div></details>`:''}<p class="nh-search-empty" id="nhSearchEmpty" hidden>Không tìm thấy học sinh.</p><div class="nh-save-bar"><p id="nhSaveHint"></p><button class="btn btn-primary" type="button" data-action="save-attendance" id="nhSaveAttendance">Lưu điểm danh</button></div></div>`;
+    const v=state.view,s=selectedSession();
+    const options=v.sessions.map(b=>`<option value="${esc(b.ma_buoi)}" ${b.ma_buoi===state.sessionId?'selected':''}>${esc(dateLabel(b.ngay_hoc))}${b.thu_tu_ky?' · Buổi '+b.thu_tu_ky:''}${isMakeup(b)?' · Học bù':''} · ${sessionState(b)}</option>`).join('');
+    let one='<p class="nh-empty-inline">Chưa có buổi học. Thêm buổi hoặc xếp lịch để bắt đầu điểm danh.</p>';
+    if(s){const students=v.roster.filter(m=>within(m,s.ngay_hoc));one=`<div class="nh-single-heading"><div><h3>${dateLabel(s.ngay_hoc)}</h3><p>${sessionState(s)}${isMakeup(s)?' · Học bù':''} · ${students.length} học sinh</p></div><button type="button" class="nh-link" data-action="edit-session" ${v.closed?'disabled':''}>Sửa buổi</button></div>${s.trang_thai==='du_kien'&&s.ngay_hoc<=v.today?'<p class="nh-inline-info">Lưu điểm danh Có mặt/Vắng để xác nhận buổi này đã học.</p>':''}${s.ngay_hoc>v.today?'<p class="nh-inline-info">Chưa đến ngày học. Buổi này chưa tính vào số buổi đã học và học phí.</p>':''}<div class="nh-quick-actions"><button type="button" class="btn btn-secondary" data-action="all-present" ${!writable(s)?'disabled':''}>✓ Tất cả có mặt</button><span id="nhDraftCount" class="nh-caption"></span></div><div class="nh-mobile-roster">${students.map(m=>{const d=getMark(s.ma_buoi,m.ma_hoc_sinh);return `<article class="nh-student-entry nh-mobile-student" data-student-name="${esc(normalize(m.ho_ten))}"><div class="nh-mobile-student-top">${studentButton(m)}<button type="button" class="nh-link" data-mark-note="${esc(s.ma_buoi)}" data-student="${esc(m.ma_hoc_sinh)}" ${!writable(s)?'disabled':''}>${d.note?'Có ghi chú':'Ghi chú'}</button></div><div class="nh-mark-controls">${Object.entries(statusLabel).map(([key,label])=>`<button type="button" data-mark="${key}" data-student="${esc(m.ma_hoc_sinh)}" aria-pressed="${d.status===key}" ${!writable(s)?'disabled':''}>${label}</button>`).join('')}</div></article>`;}).join('')}</div>${!students.length?'<p class="nh-muted">Chưa có học sinh thuộc buổi này.</p>':''}`;}
+    $('nhAttendance').innerHTML=`<div class="nh-card"><div class="nh-attendance-tools"><label class="nh-session-select"><span>Chọn buổi</span><select id="nhSessionSelect" class="form-control" ${!options?'disabled':''}>${options||'<option>Chưa có buổi</option>'}</select></label><label class="nh-search-label"><span>Tìm học sinh</span><input id="nhSearch" class="form-control" placeholder="Tên học sinh…" value="${esc(state.search)}"></label></div>${one}<p class="nh-search-empty" id="nhSearchEmpty" hidden>Không tìm thấy học sinh.</p></div>`;
     applyStudentFilter();updateDraftUi();
   }
   function setDraft(sessionId,studentId,patch) {
@@ -193,14 +195,14 @@
     if(!$('nhSaveAttendance'))return;const changed=Object.values(state.drafts).reduce((n,rows)=>n+Object.keys(rows).length,0);
     $('nhSaveHint').textContent=state.dirty?`${changed} ô điểm danh chưa lưu · Học phí đang tạm tính theo thay đổi.`:state.view.closed?'Kỳ đã chốt. Mở lại ở mục Học phí để sửa.':'Điểm danh đã đồng bộ.';
     $('nhSaveAttendance').disabled=!state.dirty||state.view.closed;
-    if($('nhOverviewSaveHint'))$('nhOverviewSaveHint').textContent=$('nhSaveHint').textContent;
-    if($('nhSaveOverview'))$('nhSaveOverview').disabled=!state.dirty||state.view.closed;
+
+
     const s=selectedSession();if($('nhDraftCount')&&s){const marks=state.view.roster.filter(m=>within(m,s.ngay_hoc)).map(m=>getMark(s.ma_buoi,m.ma_hoc_sinh));$('nhDraftCount').textContent=`Có mặt ${marks.filter(d=>d.status==='co_mat').length} · Vắng ${marks.filter(d=>d.status==='vang').length}`;}
     const close=$('nhFees').querySelector('[data-action="close"]');if(close)close.disabled=state.dirty||state.view.period.mode==='eight_sessions'&&state.view.period.completed<8;
   }
   function refreshAfterMark(sessionId,studentId) {
     const s=state.view.sessions.find(b=>b.ma_buoi===sessionId),m=state.view.roster.find(r=>r.ma_hoc_sinh===studentId),d=getMark(sessionId,studentId);
-    document.querySelectorAll('[data-cell-session]').forEach(cell=>{if(cell.dataset.cellSession===sessionId&&cell.dataset.cellStudent===studentId)cell.innerHTML=cell.classList.contains('nh-overview-cell')?squareCell(m,s):markCell(m,s);});
+    document.querySelectorAll('[data-cell-session]').forEach(cell=>{if(cell.dataset.cellSession===sessionId&&cell.dataset.cellStudent===studentId)cell.innerHTML=squareCell(m,s);});
     if(sessionId===state.sessionId)document.querySelectorAll('[data-mark]').forEach(b=>{if(b.dataset.student===studentId)b.setAttribute('aria-pressed',String(b.dataset.mark===d.status));});
     const f=projectedFees().find(f=>f.studentId===studentId);document.querySelectorAll('[data-attended]').forEach(e=>{if(e.dataset.attended===studentId)e.textContent=f.attended;});document.querySelectorAll('[data-absent]').forEach(e=>{if(e.dataset.absent===studentId)e.textContent=(f.absent||0)+' vắng';});
     document.querySelectorAll('[data-overview-count]').forEach(e=>{if(e.dataset.overviewCount===studentId){e.textContent=f.attended+'/'+e.dataset.size;e.title=`Có mặt ${f.attended} buổi, vắng ${f.absent||0} buổi`;}});
@@ -212,8 +214,8 @@
     ['nhSearch','nhOverviewSearch'].forEach(id=>{if($(id)&&$(id).value!==state.search)$(id).value=state.search;});
   }
   function paintStudents() {
-    const v=state.view;
-    $('nhStudents').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Học sinh trong kỳ</h2><p>Ngày vào và ngày nghỉ xác định danh sách từng buổi.</p></div><button type="button" class="btn btn-primary" data-action="add-students" ${v.group.trang_thai!=='dang_hoc'?'disabled':''}>+ Thêm học sinh</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Học sinh</th><th>Ngày vào</th><th>Ngày nghỉ</th><th>Đơn giá riêng</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>${v.roster.map(m=>`<tr><td>${studentButton(m)}<small>${esc(m.lop)}</small></td><td>${dateLabel(m.ngay_vao)}</td><td>${dateLabel(m.ngay_nghi)||'Đang học'}${m.ngay_nghi&&m.ngay_nghi<v.today?'<small>Đã nghỉ nhóm</small>':''}</td><td>${m.don_gia_rieng_vnd===''?'Theo nhóm':money(m.don_gia_rieng_vnd)}</td><td>${esc(m.ghi_chu)}</td><td><div class="nh-member-actions"><button type="button" class="nh-link" data-member="${esc(m.ma_thanh_vien)}">Sửa</button>${state.boot?.features?.memberRemoval?`<button type="button" class="nh-link nh-remove-member" data-remove-member="${esc(m.ma_thanh_vien)}" aria-label="Xóa ${esc(m.ho_ten)} khỏi nhóm">Xóa khỏi nhóm</button>`:''}</div></td></tr>`).join('')}</tbody></table></div>${!v.roster.length?'<p class="nh-muted">Chưa có học sinh trong kỳ này.</p>':''}</div>`;
+    const v=state.view,g=v.group,unit=g.cach_tinh_hoc_phi==='theo_buoi'?'/buổi':'/kỳ';
+    $('nhStudents').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Học sinh trong kỳ</h2><p>Bấm Sửa để cập nhật thông tin, chuyển nhóm hoặc xóa khỏi nhóm.</p></div><button type="button" class="btn btn-primary" data-action="add-students" ${g.trang_thai!=='dang_hoc'?'disabled':''}>+ Thêm học sinh</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Học sinh</th><th>Ngày vào</th><th>Ngày học cuối</th><th>Mức phí áp dụng</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>${v.roster.map(m=>`<tr><td>${studentButton(m)}<small>${esc(m.lop)}</small></td><td>${dateLabel(m.ngay_vao)}</td><td>${dateLabel(m.ngay_nghi)||'Chưa đặt'}<small>${m.ngay_nghi?(m.ngay_nghi<v.today?'Đã nghỉ nhóm':'Học đến hết ngày này'):'Đang học'}</small></td><td>${m.don_gia_rieng_vnd===''?'Theo nhóm':Number(m.don_gia_rieng_vnd)===0?'Miễn học phí':'Mức riêng'}<small>${money(m.don_gia_rieng_vnd===''?g.don_gia_vnd:m.don_gia_rieng_vnd)}${unit}</small></td><td>${esc(m.ghi_chu)}</td><td><button type="button" class="nh-link" data-member="${esc(m.ma_thanh_vien)}">Sửa</button></td></tr>`).join('')}</tbody></table></div>${!v.roster.length?'<p class="nh-muted">Chưa có học sinh trong kỳ này.</p>':''}</div>`;
   }
   function receiptRows(receipts,names,individual=false) {return receipts.slice().sort((a,b)=>b.ngay_dong.localeCompare(a.ngay_dong)).map(p=>`<tr class="${p.trang_thai==='da_huy'?'nh-void-receipt':''}"><td data-label="Ngày đóng">${dateLabel(p.ngay_dong)}</td>${individual?'':`<td data-label="Học sinh">${esc(names[p.ma_hoc_sinh]||p.ma_hoc_sinh)}</td>`}<td class="nh-number" data-label="Số tiền">${money(p.so_tien_vnd)}</td><td data-label="Phương thức">${esc({tien_mat:'Tiền mặt',chuyen_khoan:'Chuyển khoản',khac:'Khác'}[p.phuong_thuc]||'')}</td><td data-label="Ghi chú">${esc(p.ghi_chu)||'—'}</td><td><span class="nh-pill ${p.trang_thai==='da_huy'?'neutral':'green'}">${p.trang_thai==='da_huy'?'Đã hủy':'Đã thu'}</span></td><td>${p.trang_thai==='da_thu'?`<button type="button" class="nh-link" data-void="${esc(p.ma_thu)}">Hủy</button>`:''}</td></tr>`).join('');}
   function paintFees() {
@@ -236,7 +238,7 @@
   }
   function openForm(title,html,handler,submit='Lưu') {
     $('nhDialogTitle').textContent=title; $('nhFormFields').innerHTML=`<div class="nh-form-grid">${html}</div>`;
-    $('nhFormError').hidden=true; $('nhSubmit').textContent=submit;$('nhSubmit').className='btn btn-primary';state.submit=handler; $('nhDialog').showModal();
+    state.memberEditInitial=null;$('nhFormError').hidden=true; $('nhSubmit').textContent=submit;$('nhSubmit').className='btn btn-primary';state.submit=handler; $('nhDialog').showModal();
   }
   function groupForm(isNew=false) {
     const g=isNew?{}:state.view.group,id=g.ma_nhom||uid();
@@ -274,10 +276,32 @@
       },'Thêm học sinh');
   }
   function memberForm(id) {
-    const m=state.view.roster.find(x=>x.ma_thanh_vien===id);if(!m)return;
-    openForm(m.ho_ten,field('Họ tên','name',m.ho_ten,'text','required maxlength="120"')+field('Lớp','className',m.lop,'text','maxlength="40"')+field('Ngày vào','joinDate',m.ngay_vao,'date','required')+field('Ngày nghỉ (để trống nếu còn học)','leaveDate',m.ngay_nghi,'date')+
-      `<label class="wide">Đơn giá riêng (đồng)<input class="form-control" name="rate" type="number" min="0" max="1000000000" step="1" value="${esc(m.don_gia_rieng_vnd)}" placeholder="Để trống: theo đơn giá nhóm"><small>Nhập 0 nếu miễn học phí. Áp dụng cùng cách tính của nhóm cho các kỳ chưa chốt.</small></label><label class="wide">Ghi chú<textarea class="form-control" name="note" maxlength="500">${esc(m.ghi_chu)}</textarea></label>`,
+    const m=state.view.roster.find(x=>x.ma_thanh_vien===id);if(!m)return;const g=state.view.group,unit=g.cach_tinh_hoc_phi==='theo_buoi'?'/buổi':'/kỳ';
+    openForm('Sửa học sinh · '+m.ho_ten,field('Họ tên','name',m.ho_ten,'text','required maxlength="120"')+field('Lớp','className',m.lop,'text','maxlength="40"')+field('Ngày vào nhóm','joinDate',m.ngay_vao,'date','required')+
+      `<label>Ngày học cuối trong nhóm<input class="form-control" name="leaveDate" type="date" value="${esc(m.ngay_nghi)}"><small>Để trống: đang học. Có ngày: em còn thuộc nhóm đến hết ngày đó.</small></label>`+
+      `<label class="wide">Đơn giá riêng (đồng)<input class="form-control" name="rate" type="number" min="0" max="1000000000" step="1" value="${esc(m.don_gia_rieng_vnd)}" placeholder="Để trống: ${esc(money(g.don_gia_vnd)+unit)}"><small>Theo nhóm: dùng mức ${money(g.don_gia_vnd)}${unit}. Nhập số tiền để dùng mức riêng; nhập 0 nếu miễn học phí. Các kỳ đã chốt giữ mức cũ.</small></label><label class="wide">Ghi chú<textarea class="form-control" name="note" maxlength="500">${esc(m.ghi_chu)}</textarea></label>`+
+      `<div class="nh-member-operations wide">${state.boot?.features?.memberTransfer?`<button type="button" class="btn btn-secondary" data-transfer-member="${esc(id)}">Chuyển nhóm</button>`:''}${state.boot?.features?.memberRemoval?`<button type="button" class="btn btn-danger" data-remove-member="${esc(id)}">Xóa khỏi nhóm</button>`:''}</div>`,
       f=>call('nh_member_save',{groupId:state.groupId,memberId:id,...f}));
+    state.memberEditInitial=JSON.stringify(Object.fromEntries(new FormData($('nhForm'))));
+  }
+  function switchMemberForm(handler) {
+    if(state.memberEditInitial&&state.memberEditInitial!==JSON.stringify(Object.fromEntries(new FormData($('nhForm'))))&&!window.confirm('Thông tin đang sửa chưa được lưu. Bỏ thay đổi này để mở thao tác khác?'))return;
+    $('nhDialog').close();state.submit=null;state.memberEditInitial=null;handler();
+  }
+  async function transferMemberForm(memberId,targetOverride='') {
+    const epoch=state.epoch,groupId=state.groupId,groups=state.boot.groups.filter(g=>g.ma_nhom!==groupId&&g.trang_thai==='dang_hoc');
+    if(!groups.length)return message('Chưa có nhóm đang học khác để chuyển. Thêm hoặc mở lại nhóm đích trước.',true);
+    const targetGroupId=targetOverride||groups[0].ma_nhom;busy(true,'Đang kiểm tra chuyển nhóm…');let p;
+    try {p=await call('nh_member_transfer_preview',{groupId,memberId,targetGroupId});}
+    catch(error){if(epoch===state.epoch)message(error.message,true);return;}
+    finally {if(epoch===state.epoch)busy(false);}
+    if(epoch!==state.epoch||groupId!==state.groupId)return;
+    const transferId=uid(),unit=p.targetMode==='theo_buoi'?'/buổi':'/kỳ';
+    const price=p.reusesMembership?'<p class="nh-caption wide">Nhóm đích đã có học sinh này. Giữ hồ sơ, ngày vào và học phí hiện có; không tạo học sinh trùng.</p>':p.sourceRate!==''?`<label class="wide">Học phí ở nhóm mới<select class="form-control" name="rateMode"><option value="keep" ${p.rateMode==='keep'?'selected':''}>Giữ mức riêng (${Number(p.sourceRate)===0?'miễn học phí':money(p.sourceRate)+unit})</option><option value="group" ${p.rateMode==='group'?'selected':''}>Theo nhóm mới (${money(p.targetRate)}${unit})</option></select></label>`:`<p class="nh-caption wide">Học phí theo nhóm mới: <strong>${money(p.targetRate)}${unit}</strong>.</p>`;
+    openForm('Chuyển nhóm · '+p.name,`<label class="wide">Nhóm chuyển đến<select class="form-control" name="targetGroupId" data-transfer-target="${esc(memberId)}">${groups.map(g=>`<option value="${esc(g.ma_nhom)}" ${g.ma_nhom===targetGroupId?'selected':''}>${esc(g.ten_nhom)}</option>`).join('')}</select></label>`+
+      field('Ngày bắt đầu nhóm mới','date',p.defaultDate,'date',`required min="${esc(p.minDate)}" max="2100-12-31"`)+price+
+      `<p class="nh-inline-info wide">Nhóm cũ học đến ngày trước ngày chuyển. Điểm danh, học phí và khoản đã đóng ở nhóm cũ được giữ nguyên; không cộng sang nhóm mới.</p>`,
+      async f=>{const result=await call('nh_member_transfer',{groupId,memberId,targetGroupId:f.targetGroupId,date:f.date,rateMode:f.rateMode||p.rateMode,transferId,revision:p.revision});state.groupId=result.targetGroupId;state.sessionId='';state.search='';state.month=state.boot.groups.find(g=>g.ma_nhom===state.groupId)?.ky_hien_tai||result.date.slice(0,7);$('nhMonth').value=state.month;paintGroupSelect();return result;},'Xác nhận chuyển nhóm');
   }
   async function removeMemberForm(memberId) {
     const epoch=state.epoch,groupId=state.groupId;busy(true,'Đang kiểm tra lịch sử học sinh…');
@@ -371,21 +395,22 @@
     const button=event.target.closest('button');if(!button||button.disabled||state.busy)return;
     if(button.dataset.profile)return openProfile(button.dataset.profile);
     if(button.dataset.tab){state.tab=button.dataset.tab;paintTab();return;}
+    if(button.dataset.attendanceMode){state.attendanceMode=button.dataset.attendanceMode;paintAttendanceMode();return;}
     if(button.dataset.fileDownload)return fileAction(button.dataset.fileDownload);
     if(button.dataset.fileDelete)return fileAction(button.dataset.fileDelete,true);
-    if(button.dataset.session){state.sessionId=button.dataset.session;state.focusSession=true;state.tab='attendance';paintAttendance();paintTab();return;}
+    if(button.dataset.session){state.sessionId=button.dataset.session;state.attendanceMode='day';state.tab='attendance';paintAttendance();paintTab();return;}
     if(button.dataset.cycle){const panel=button.closest('.nh-tab-panel'),sessionId=button.dataset.cycle,id=button.dataset.student,old=getMark(sessionId,id).status,next={chua_diem_danh:'co_mat',co_mat:'vang',vang:'chua_diem_danh'}[old];setDraft(sessionId,id,{status:next});refreshAfterMark(sessionId,id);panel.querySelectorAll('[data-cycle]').forEach(b=>{if(b.dataset.cycle===sessionId&&b.dataset.student===id)b.focus({preventScroll:true});});return;}
     if(button.dataset.mark){const id=button.dataset.student;setDraft(state.sessionId,id,{status:button.dataset.mark});refreshAfterMark(state.sessionId,id);return;}
     if(button.dataset.markNote)return noteForm(button.dataset.markNote,button.dataset.student);
     if(button.dataset.member)return externalEdit(()=>memberForm(button.dataset.member));
-    if(button.dataset.removeMember)return externalEdit(()=>removeMemberForm(button.dataset.removeMember));
+    if(button.dataset.removeMember)return switchMemberForm(()=>removeMemberForm(button.dataset.removeMember));
+    if(button.dataset.transferMember)return switchMemberForm(()=>transferMemberForm(button.dataset.transferMember));
     if(button.dataset.receive)return externalEdit(()=>receiptForm(button.dataset.receive));
     if(button.dataset.void)return externalEdit(()=>voidForm(button.dataset.void));
     const action=button.dataset.action;
     if(action==='upload-file')return uploadFile();
     if(action==='reload-files')return loadFiles().catch(error=>message(error.message,true));
     if(action==='save-attendance')return saveAttendance();
-    if(action==='toggle-mode'){state.focusSession=!state.focusSession;paintAttendance();return;}
     if(action==='all-present'){const s=selectedSession();if(!writable(s))return;state.view.roster.filter(m=>within(m,s.ngay_hoc)).forEach(m=>setDraft(s.ma_buoi,m.ma_hoc_sinh,{status:'co_mat'}));paintAttendance();paintOverview();paintSummary();paintFees();updateDraftUi();return;}
     const actions={'add-students':studentsForm,'new-session':()=>sessionForm(false),'edit-session':()=>sessionForm(true),'plan-sessions':planForm,'close':()=>monthForm(false),'reopen':()=>monthForm(true)};
     if(actions[action])externalEdit(actions[action]);
@@ -404,7 +429,8 @@
     $('nhOverview').addEventListener('contextmenu',event=>{const b=event.target.closest('[data-cycle]');if(b&&!b.disabled){event.preventDefault();noteForm(b.dataset.cycle,b.dataset.student);}});
     $('nhFees').addEventListener('input',event=>{if(event.target.id==='nhFeeSearch'){state.feeSearch=event.target.value;applyFeeFilter();}});
     $('nhFees').addEventListener('change',event=>{if(event.target.id==='nhFeeFilter'){state.feeFilter=event.target.value;applyFeeFilter();}});
-    $('nhForm').addEventListener('submit',submitForm);
+    $('nhForm').addEventListener('submit',submitForm);$('nhForm').addEventListener('click',onClick);
+    $('nhForm').addEventListener('change',event=>{if(event.target.dataset.transferTarget){const id=event.target.dataset.transferTarget,target=event.target.value;$('nhDialog').close();state.submit=null;transferMemberForm(id,target);}});
     ['nhCloseDialog','nhCancelDialog'].forEach(id=>$(id).addEventListener('click',()=>{if(!state.busy){$('nhDialog').close();state.submit=null;}}));$('nhDialog').addEventListener('cancel',e=>{if(state.busy)e.preventDefault();});
     $('nhCloseProfile').addEventListener('click',closeProfile);$('nhProfile').addEventListener('close',()=>{state.profileId='';});
     window.addEventListener('app:auth-change',resetAuth);window.addEventListener('beforeunload',event=>{if(state.dirty){event.preventDefault();event.returnValue='';}});resetAuth();
