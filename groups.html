@@ -7,10 +7,10 @@
   <title>Quản lý nhóm học – E-GV</title>
   <link rel="stylesheet" href="style.css?v=9.8.1">
   <link rel="stylesheet" href="modern-saas.css?v=9.3.0">
-  <link rel="stylesheet" href="groups.css?v=9.9.0">
+  <link rel="stylesheet" href="groups.css?v=9.11.0">
   <script src="js/config.js?v=9.7.0" defer></script>
   <script src="js/app.js?v=9.10.0" defer></script>
-  <script src="js/groups.js?v=9.9.0" defer></script>
+  <script src="js/groups.js?v=9.11.0" defer></script>
 </head>
 <body class="page-groups">
   <div id="appShell"></div>
@@ -22,6 +22,15 @@
     <section class="panel nh-gate" id="nhGate"><h2>Đăng nhập quản trị để quản lý nhóm học</h2><p>Thông tin học sinh, điểm danh và học phí chỉ dành cho quản trị.</p><button class="btn btn-primary" type="button" id="nhLogin">Đăng nhập quản trị</button></section>
     <p class="nh-feedback" id="nhFeedback" role="status" aria-live="polite" hidden></p>
     <div id="nhWorkspace" hidden>
+      <section class="panel nh-rent-panel" id="nhRentPanel" aria-labelledby="nhRentTitle" hidden>
+        <header class="nh-rent-heading"><h2 id="nhRentTitle">Tiền thuê phòng dạy</h2><span class="nh-rent-status" id="nhRentStatus"></span></header>
+        <div class="nh-rent-main">
+          <div class="nh-rent-progress"><strong id="nhRentCount"></strong><span>buổi chưa thanh toán</span><progress id="nhRentProgress" max="16" value="0" aria-label="Tiến độ 16 buổi thuê phòng"></progress><p id="nhRentGroups"></p></div>
+          <div class="nh-rent-amount"><strong id="nhRentAmount">1.000.000đ</strong><span>mỗi 16 buổi</span><p id="nhRentDate"></p></div>
+          <div class="nh-rent-action"><button type="button" class="btn btn-primary" id="nhRentPay" disabled>Ghi nhận đã đóng</button><p id="nhRentHint" role="status" aria-live="polite"></p></div>
+        </div>
+        <details id="nhRentDetails" class="nh-rent-details"><summary>Buổi đã dạy &amp; lịch sử đóng tiền</summary><p class="nh-caption">Cộng buổi của các nhóm, liên tục qua các tháng. Chỉ tính buổi đã xác nhận đã học; không tính theo số học sinh có mặt.</p><div class="nh-rent-detail-grid"><section><h3>Buổi chưa thanh toán</h3><div id="nhRentSessions"></div></section><section><h3>Lịch sử đóng tiền</h3><div id="nhRentHistory"></div></section></div></details>
+      </section>
       <nav id="nhGroupCards" class="nh-group-cards" aria-label="Chọn nhóm học"></nav>
       <details class="panel nh-backup-panel" id="nhBackupPanel" hidden>
         <summary><span class="nh-backup-dot" aria-hidden="true"></span><strong id="nhBackupState">Bản sao trên Drive</strong><span id="nhBackupSummary"></span></summary>

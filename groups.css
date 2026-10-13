@@ -251,3 +251,60 @@
 .nh-backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .nh-backup-actions .btn { min-height: 40px; font-size: .75rem; }
 @media(max-width:600px) { .nh-backup-panel summary { flex-wrap: wrap; gap: 6px 9px; } #nhBackupSummary { flex-basis: 100%; padding-left: 17px; order: 2; } .nh-backup-body dl { display: grid; gap: 12px; } .nh-backup-actions .btn { min-height: 44px; } }
+
+/* Tiền phòng cộng chung các nhóm, độc lập với kỳ học đang chọn. */
+.nh-rent-panel { grid-column: 1/-1; margin: 0 0 12px; padding: 16px; border-left: 4px solid #3b82f6; min-width: 0; }
+.nh-rent-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.nh-rent-heading h2 { margin: 0; font-size: 1rem; }
+.nh-rent-status { border-radius: 20px; background: #eff6ff; color: #1d4ed8; padding: 5px 9px; font-size: .7rem; font-weight: 650; }
+.nh-rent-main { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr); align-items: center; gap: 24px; }
+.nh-rent-progress > strong { font-size: 1.5rem; letter-spacing: -.03em; }
+.nh-rent-progress > span { margin-left: 8px; font-size: .75rem; color: #64748b; }
+.nh-rent-progress progress { display: block; width: 100%; height: 7px; margin: 9px 0; accent-color: #2563eb; }
+.nh-rent-progress p,.nh-rent-amount p,.nh-rent-action p { font-size: .72rem; line-height: 1.5; color: #64748b; margin: 7px 0 0; }
+.nh-rent-amount > strong { display: block; font-size: 1.35rem; }
+.nh-rent-amount > span { font-size: .72rem; color: #64748b; }
+.nh-rent-action .btn { width: 100%; min-height: 42px; padding: 8px 12px; font-size: .75rem; }
+.nh-rent-panel[data-state='soon'] { border-left-color: #d97706; }
+.nh-rent-panel[data-state='soon'] .nh-rent-status { color: #92400e; background: #fffbeb; }
+.nh-rent-panel[data-state='due'] { border-left-color: #dc2626; }
+.nh-rent-panel[data-state='due'] .nh-rent-status { color: #b91c1c; background: #fef2f2; }
+.nh-rent-panel[data-state='due'] #nhRentDate { color: #b91c1c; font-weight: 650; }
+.nh-rent-panel[data-state='paid'] { border-left-color: #16a34a; }
+.nh-rent-panel[data-state='paid'] .nh-rent-status { color: #166534; background: #f0fdf4; }
+.nh-rent-details { border-top: 1px solid #edf1f6; padding-top: 10px; margin-top: 12px; }
+.nh-rent-details > summary,.nh-rent-payment summary { cursor: pointer; font-size: .75rem; color: #475569; }
+.nh-rent-detail-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; }
+.nh-rent-detail-grid h3 { font-size: .85rem; margin: 12px 0; }
+#nhRentSessions,#nhRentHistory { max-height: 340px; overflow: auto; overscroll-behavior: contain; }
+.nh-rent-sessions { list-style: none; padding: 0; margin: 0; }
+.nh-rent-sessions li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: .75rem; }
+.nh-rent-order { color: #64748b; min-width: 22px; }
+.nh-rent-sessions li strong { min-width: 48px; }
+.nh-rent-sessions small { display: block; font-size: .6rem; font-weight: 400; color: #64748b; }
+.nh-rent-boundary { margin-left: auto; color: #b91c1c; font-weight: 650; white-space: nowrap; }
+.nh-rent-payment { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; font-size: .75rem; }
+.nh-rent-payment > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+.nh-rent-payment > div > span { color: #166534; }
+.nh-rent-payment.voided > div > span { color: #64748b; }
+.nh-rent-payment > details { margin-top: 7px; }
+.nh-rent-payment ul { padding-left: 16px; line-height: 1.65; }
+.nh-rent-payment p { margin: 8px 0; color: #64748b; overflow-wrap: anywhere; }
+.nh-rent-payment .nh-link { color: #b91c1c; min-height: 36px; }
+@media(min-width:1100px) {
+  .nh-rent-panel { margin: 0; }
+  #nhBackupPanel { grid-column: 1/-1; order: 1; margin: 0; }
+  .nh-group-cards,.nh-toolbar { order: 2; }
+  #nhEmpty,#nhGroupContent { order: 3; }
+}
+@media(max-width:600px) {
+  .nh-rent-panel { padding: 14px; }
+  .nh-rent-heading { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .nh-rent-heading h2 { font-size: .95rem; }
+  .nh-rent-main { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 14px; }
+  .nh-rent-progress > span { display: block; margin: 2px 0 0; }
+  .nh-rent-amount > strong { font-size: 1.15rem; }
+  .nh-rent-action { grid-column: 1/-1; }
+  .nh-rent-action .btn,.nh-rent-payment .nh-link { min-height: 44px; }
+  .nh-rent-detail-grid { grid-template-columns: minmax(0,1fr); gap: 4px; }
+}

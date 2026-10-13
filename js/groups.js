@@ -7,7 +7,7 @@
   const shortDate = value => dateLabel(value).slice(0,5);
   const periodLabel = value => 'tháng ' + String(value || '').split('-').reverse().join('/');
   const uid = () => window.crypto.randomUUID();
-  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'overview',memberEditInitial:null,profileId:'',files:null,filesLoading:false,backup:null,backupTimer:0,backupDeadline:0,backupLoading:false};
+  const state = {boot:null,view:null,rent:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'overview',memberEditInitial:null,profileId:'',files:null,filesLoading:false,backup:null,backupTimer:0,backupDeadline:0,backupLoading:false};
   const statusLabel = {co_mat:'Có mặt',vang:'Vắng',chua_diem_danh:'Chưa điểm danh'};
   const markSymbol = {co_mat:'✓',vang:'×',chua_diem_danh:'·'};
   const message = (text,error=false) => { $('nhFeedback').textContent=text; $('nhFeedback').className='nh-feedback'+(error?' error':''); $('nhFeedback').hidden=!text; };
@@ -15,9 +15,39 @@
     const epoch=state.epoch;
     const result=await App.apiPost(action,data,{userAuth:true,timeoutMs:60000,timeoutMessage:'Chưa nhận được phản hồi. Tải lại để kiểm tra dữ liệu trước khi nhập lại.'});
     if(epoch!==state.epoch)throw new Error('Phiên làm việc đã thay đổi.');
+    if(result.data?.roomRent){state.rent=result.data.roomRent;paintRent();}
     if(state.boot?.features?.driveBackup&&action!=='nh_boot'&&!action.endsWith('_preview')&&!action.startsWith('nh_file'))refreshBackup(!['nh_view'].includes(action));
     return result.data;
   };
+  function paintRent() {
+    const r=state.rent,panel=$('nhRentPanel');panel.hidden=!App.isAdmin()||!r;if(panel.hidden)return;
+    panel.dataset.state=r.state;
+    const labels={due:'Đến hạn đóng tiền',soon:'Sắp đến hạn',paid:'Đã đóng kỳ trước',collecting:'Đang tích lũy'};
+    $('nhRentStatus').textContent=labels[r.state]||labels.collecting;
+    $('nhRentCount').textContent=r.unpaid+'/16';$('nhRentProgress').value=Math.min(16,r.unpaid);
+    $('nhRentGroups').textContent=r.groups.map(g=>g.name+': '+g.completed+' buổi').join(' · ');
+    $('nhRentAmount').textContent=money(r.amount);
+    $('nhRentDate').textContent=r.dueDate?'Đủ 16 buổi ngày '+dateLabel(r.dueDate):r.forecastDate?'Dự kiến đủ: '+dateLabel(r.forecastDate):'Chưa xếp đủ lịch để dự kiến ngày đóng';
+    $('nhRentHint').textContent=state.dirty?'Lưu điểm danh trước khi ghi nhận tiền phòng.':r.pendingCycles>1?r.pendingCycles+' kỳ chưa đóng · Tổng '+money(r.dueAmount)+'. Ghi nhận lần lượt từng kỳ.':r.unpaid>=16?r.carryAfterPayment?'Sau khi đóng, '+r.carryAfterPayment+' buổi chuyển tiếp sang kỳ sau.':'Đã đủ 16 buổi. Ghi nhận khi thầy đã đóng tiền phòng.':'Còn '+r.remaining+' buổi đã dạy để đến hạn.';
+    $('nhRentPay').disabled=state.busy||state.dirty||r.unpaid<16;
+    $('nhRentSessions').innerHTML=r.sessions.length?`<ol class="nh-rent-sessions">${r.sessions.map((s,i)=>`<li><span class="nh-rent-order">${i+1}</span><strong>${esc(shortDate(s.date))}<small>${esc(s.date.slice(0,4))}</small></strong><span>${esc(s.groupName)}</span>${i===15?'<span class="nh-rent-boundary">Đủ 16</span>':''}</li>`).join('')}</ol>`:'<p class="nh-empty-inline">Chưa có buổi chưa thanh toán.</p>';
+    $('nhRentHistory').innerHTML=r.payments.length?r.payments.map(p=>`<article class="nh-rent-payment ${p.trang_thai==='da_huy'?'voided':''}"><div><strong>${money(p.so_tien_vnd)}</strong><span>${p.trang_thai==='da_huy'?'Đã hủy':'Đã đóng'} · ${esc(dateLabel(p.ngay_dong))}</span></div><details><summary>16 buổi: ${esc(shortDate(p.sessions[0]?.date))} – ${esc(dateLabel(p.sessions.at(-1)?.date))}</summary><ul>${p.sessions.map(s=>`<li>${esc(dateLabel(s.date))} · ${esc(s.groupName)}</li>`).join('')}</ul></details>${p.ghi_chu?`<p>${esc(p.ghi_chu)}</p>`:''}${p.trang_thai==='da_dong'?`<button type="button" class="nh-link" data-rent-void="${esc(p.ma_dong)}" ${state.busy||state.dirty?'disabled':''}>Hủy ghi nhận</button>`:''}</article>`).join(''):'<p class="nh-empty-inline">Chưa ghi nhận đóng tiền phòng.</p>';
+  }
+  function rentPaymentForm() {
+    if(!App.isAdmin()||state.dirty||!state.rent||state.rent.unpaid<16)return;
+    const r=state.rent,id=uid(),revision=r.revision;
+    openForm('Ghi nhận đã đóng tiền phòng',`<p class="nh-inline-info wide">${r.sessions.slice(0,16).map(s=>s.groupId).filter((id,i,a)=>a.indexOf(id)===i).map(id=>{const g=r.groups.find(g=>g.id===id);return esc(g?.name||id)+': '+r.sessions.slice(0,16).filter(s=>s.groupId===id).length+' buổi';}).join(' · ')}. Đủ 16 buổi ngày <strong>${esc(dateLabel(r.dueDate))}</strong>.</p>`+
+      field('Số tiền (đồng)','amount',r.amount,'number','required readonly')+field('Ngày đã đóng','date',r.today,'date',`required min="${esc(r.dueDate)}" max="${esc(r.today)}"`)+
+      `<label class="wide">Ghi chú<textarea class="form-control" name="note" maxlength="500" placeholder="Ví dụ: chuyển khoản cho chủ phòng"></textarea></label>`,
+      f=>call('nh_room_rent_save',{id,revision,...f}),'Ghi nhận đã đóng');
+  }
+  function rentVoidForm(id) {
+    if(!App.isAdmin()||state.dirty||!state.rent)return;
+    const revision=state.rent.revision;
+    openForm('Hủy ghi nhận tiền phòng','<p class="nh-inline-info wide">Khoản đóng vẫn được giữ trong lịch sử với trạng thái Đã hủy. 16 buổi liên quan trở lại số buổi chưa thanh toán.</p><label class="wide">Lý do hủy<textarea class="form-control" name="reason" maxlength="250" required></textarea></label>',
+      f=>call('nh_room_rent_void',{id,revision,...f}),'Hủy ghi nhận');
+    $('nhSubmit').className='btn btn-danger';
+  }
   const backupTime=value=>value&&Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'medium'}).format(new Date(value)):'Chưa có';
   function paintBackup() {
     const data=state.backup,panel=$('nhBackupPanel');panel.hidden=!App.isAdmin()||!data;if(panel.hidden)return;
@@ -68,11 +98,14 @@
   function busy(on,text='Đang tải dữ liệu…') {
     state.busy=on;$('nhBusy').hidden=!on;$('nhBusyText').textContent=text;$('nhWorkspace').setAttribute('aria-busy',String(on));
     $('nhForm').querySelectorAll('button,input,select,textarea').forEach(el=>el.disabled=on);
+    paintRent();
   }
   function closeProfile() {if($('nhProfile').open)$('nhProfile').close();state.profileId='';$('nhProfileBody').replaceChildren();$('nhProfileName').textContent='';$('nhProfilePeriod').textContent='';}
   function resetAuth() {
     window.clearTimeout(state.backupTimer);state.backup=null;state.backupTimer=0;state.backupDeadline=0;state.backupLoading=false;
     $('nhBackupPanel').hidden=true;$('nhBackupDrive').hidden=true;$('nhBackupDrive').removeAttribute('href');['nhBackupState','nhBackupSummary','nhBackupSuccess','nhBackupChecked','nhBackupHint'].forEach(id=>$(id).textContent='');
+    state.rent=null;$('nhRentPanel').hidden=true;$('nhRentDetails').open=false;['nhRentCount','nhRentStatus','nhRentGroups','nhRentDate','nhRentHint','nhRentSessions','nhRentHistory'].forEach(id=>$(id).replaceChildren());
+    $('nhRentProgress').value=0;$('nhRentPay').disabled=true;delete $('nhRentPanel').dataset.state;
     state.epoch++;state.boot=null;state.view=null;clearDrafts();state.groupId='';state.month='';state.search='';state.feeSearch='';state.feeFilter='all';state.sessionId='';state.tab='attendance';state.attendanceMode='overview';state.memberEditInitial=null;
     $('nhDialog').close();state.submit=null;closeProfile();
     state.files=null;state.filesLoading=false;$('nhFilesTab').hidden=true;
@@ -243,6 +276,7 @@
   }
   function updateDraftUi() {
     paintBackup();
+    paintRent();
     if(!$('nhSaveAttendance'))return;const changed=Object.values(state.drafts).reduce((n,rows)=>n+Object.keys(rows).length,0);
     $('nhSaveHint').textContent=state.dirty?`${changed} ô điểm danh chưa lưu · Học phí đang tạm tính theo thay đổi.`:state.view.closed?'Kỳ đã chốt. Mở lại ở mục Học phí để sửa.':'Điểm danh đã đồng bộ.';
     $('nhSaveAttendance').disabled=!state.dirty||state.view.closed;
@@ -414,6 +448,7 @@
     busy(true,'Đang lưu dữ liệu…');$('nhSubmit').textContent='Đang lưu…';$('nhFormError').hidden=true;
     try {
       const result=await handler(values);if(epoch!==state.epoch)return;$('nhDialog').close();state.submit=null;
+      if(result?.roomRent){paintRent();message(result.message||'Đã cập nhật tiền phòng.');return;}
       if(result?.local){paintAttendance();paintOverview();paintFees();paintSummary();updateDraftUi();return;}
       try{await loadView(epoch);if(epoch===state.epoch)message(result?.message||'Đã lưu dữ liệu.');}
       catch(error){if(epoch===state.epoch){message('Đã lưu, nhưng chưa tải lại được dữ liệu. Bấm Tải lại. '+error.message,true);paintEmpty('Dữ liệu đã lưu. Bấm Tải lại để xem kết quả.');}}
@@ -444,6 +479,7 @@
   function externalEdit(handler) {if(!discard())return;clearDrafts();closeProfile();paint();handler();}
   function onClick(event) {
     const button=event.target.closest('button');if(!button||button.disabled||state.busy)return;
+    if(button.dataset.rentVoid)return rentVoidForm(button.dataset.rentVoid);
     if(button.dataset.profile)return openProfile(button.dataset.profile);
     if(button.dataset.tab){state.tab=button.dataset.tab;paintTab();return;}
     if(button.dataset.attendanceMode){state.attendanceMode=button.dataset.attendanceMode;paintAttendanceMode();return;}
@@ -468,6 +504,7 @@
   }
   document.addEventListener('DOMContentLoaded',()=>{
     App.init('groups');$('nhLogin').addEventListener('click',()=>App.openLogin('admin'));
+    $('nhRentPay').addEventListener('click',()=>{if(!state.busy)rentPaymentForm();});$('nhRentHistory').addEventListener('click',onClick);
     $('nhBackupNow').addEventListener('click',backupNow);document.addEventListener('visibilitychange',()=>{if(document.hidden){window.clearTimeout(state.backupTimer);state.backupTimer=0;}else{state.backupDeadline=0;refreshBackup(false);}});
     $('nhAddGroup').addEventListener('click',()=>externalEdit(()=>groupForm(true)));$('nhEditGroup').addEventListener('click',()=>externalEdit(()=>groupForm(false)));
     $('nhReload').addEventListener('click',()=>state.groupId?reload():boot());$('nhGroup').addEventListener('change',()=>changeGroup($('nhGroup').value));

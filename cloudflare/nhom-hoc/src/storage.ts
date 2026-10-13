@@ -9,7 +9,8 @@ export async function loadSnapshot(db: D1Database, action: string, groupId?: str
   for (const name of names) {
     if (action === 'nh_boot' && ['DiemDanh','ThuHocPhi','HocPhiKy'].includes(name)) { statements.push(db.prepare('SELECT 1 WHERE 0')); continue; }
     let predicate = '', params: string[] = [];
-    if (groupId && ['BuoiHoc','ThuHocPhi','HocPhiKy'].includes(name)) {predicate=' WHERE ma_nhom=?';params=[groupId];}
+    // Overview and room rent need both groups. Attendance and tuition stay scoped.
+    if (groupId && ['BuoiHoc','ThuHocPhi','HocPhiKy'].includes(name) && !(name==='BuoiHoc'&&action==='nh_view') && !action.startsWith('nh_room_rent_')) {predicate=' WHERE ma_nhom=?';params=[groupId];}
     if (groupId && name==='DiemDanh') {predicate=' WHERE ma_buoi IN (SELECT ma_buoi FROM BuoiHoc WHERE ma_nhom=?)';params=[groupId];}
     statements.push(db.prepare(`SELECT ${schema[name].join(',')} FROM ${name}${predicate} ORDER BY rowid LIMIT 10001`).bind(...params));
   }

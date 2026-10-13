@@ -6,7 +6,7 @@ import {deleteFile,downloadFile,listFiles,uploadFile} from './files.js';
 import {memberAction,memberActions} from './members.js';
 import {transferAction,transferActions} from './transfers.js';
 import {backup,backupStatus,startBackup} from './backup.js';
-const VERSION='9.9.0';
+const VERSION='9.11.0';
 const backupActions=['nh_backup_status','nh_backup_now'];
 const fileActions=['nh_files_list','nh_file_download','nh_file_delete'];
 function responseJSON(value:unknown,status=200) {return Response.json(value,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}

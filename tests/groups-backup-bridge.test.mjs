@@ -28,7 +28,7 @@ export function mirrorFixture() {
   return {...h,book,sheetId,props,writes,privateKey,publicKey,keyId,tables,envelope,run:payload=>JSON.parse(JSON.stringify(ctx.egvCollectionsBridge_(payload)))};
 }
 
-test('Signed group mirror preserves all seven tables, literal text, other sheets and stable save time',()=>{
+test('Signed group mirror preserves all eight tables, literal text, other sheets and stable save time',()=>{
   const h=mirrorFixture(),tables=h.tables(),other=JSON.stringify(h.sheets.get('Unrelated'));
   tables.HocSinh[0].ghi_chu='=SUM(A1:A3)';tables.HocSinh[1].ghi_chu='+literal text';
   tables.BuoiHoc[0].ghi_chu='-Ghi chú nguyên vẹn';

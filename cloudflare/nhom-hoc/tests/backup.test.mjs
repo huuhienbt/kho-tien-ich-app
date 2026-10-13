@@ -20,7 +20,7 @@ test('Real D1 snapshot → private Service binding → signed GAS mirror: leases
     }}
   ]}));t.after(()=>mf.dispose());
   const db=await mf.getD1Database('DB','groups');
-  for(const name of ['0001_groups.sql','0002_drive_backup.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
+  for(const name of ['0001_groups.sql','0002_drive_backup.sql','0003_room_rent.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
   const tables=gas.tables();await db.batch(Object.entries(tables).filter(([,rows])=>rows.length).map(([name,rows])=>{const columns=NH_SCHEMA[name];return db.prepare(`INSERT INTO ${name}(${columns.join(',')}) SELECT ${columns.map(column=>`json_extract(value,'$.${column}')`).join(',')} FROM json_each(?)`).bind(JSON.stringify(rows));}));
   await db.prepare('UPDATE nh_meta SET revision=38 WHERE id=1').run();
   const now=Math.floor(Date.now()/1000),claims={sub:'admin',role:'admin',iss:'egv-cloudflare-admin',aud:cfg.vars.APP_ORIGIN,kid:'test-key',iat:now,exp:now+3600,nonce:crypto.randomUUID()};
@@ -50,4 +50,11 @@ test('Real D1 snapshot → private Service binding → signed GAS mirror: leases
   for(let i=0;i<100&&!release;i++)await new Promise(resolve=>setTimeout(resolve,10));assert(release);
   assert.equal((await call('nh_backup_status')).body.data.state,'syncing');block=false;release();await settle();
   assert.equal((await call('nh_backup_status')).body.data.backupRevision,41);assert(gas.tables().ThuHocPhi.some(row=>row.ma_thu==='automatic'));
+  // The additional rent ledger shares the signed, verified Drive mirror.
+  const added=Array.from({length:6},(_,i)=>({ma_buoi:'rent-'+i,ma_nhom:'g35',ngay_hoc:'2026-09-'+(i===5?17:10+i),gio_bat_dau:'',gio_ket_thuc:'',trang_thai:'da_hoc',ghi_chu:''})),columns=NH_SCHEMA.BuoiHoc;
+  await db.batch([db.prepare(`INSERT INTO BuoiHoc(${columns.join(',')}) SELECT ${columns.map(c=>`json_extract(value,'$.${c}')`).join(',')} FROM json_each(?)`).bind(JSON.stringify(added)),db.prepare('UPDATE nh_meta SET revision=42 WHERE id=1')]);
+  const rent=(await call('nh_boot')).body.data.roomRent;assert.equal(rent.unpaid,18);
+  assert.equal((await call('nh_room_rent_save',token,{id:'room-paid',revision:rent.revision,date:rent.today,amount:1000000,note:'=literal room payment note'})).http,200);await settle();
+  assert.equal((await call('nh_backup_status')).body.data.backupRevision,43);
+  const mirror=gas.tables().TienThuePhong;assert.equal(mirror.length,1);assert.equal(mirror[0].ma_dong,'room-paid');assert.equal(mirror[0].so_buoi,16);assert.equal(mirror[0].so_tien_vnd,1000000);assert.equal(mirror[0].ghi_chu,'=literal room payment note');
 });

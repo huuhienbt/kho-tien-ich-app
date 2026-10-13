@@ -1,5 +1,5 @@
-/* E-GV v9.4 — Điểm danh và học phí theo kỳ 8 buổi. Dùng cùng Code.gs. */
-const NH_VERSION = '9.5.0';
+/* E-GV — Điểm danh, học phí và tiền thuê phòng. Dùng cùng Code.gs. */
+const NH_VERSION = '9.11.0';
 const NH_SCHEMA = {
   NhomHoc: ['ma_nhom','ten_nhom','nam_hoc','thu_trong_tuan','gio_bat_dau','gio_ket_thuc','giao_vien_id','cach_tinh_hoc_phi','don_gia_vnd','trang_thai','ghi_chu','so_buoi_moi_ky','ky_bat_dau'],
   HocSinh: ['ma_hoc_sinh','ho_ten','lop','trang_thai','ghi_chu'],
@@ -7,7 +7,8 @@ const NH_SCHEMA = {
   BuoiHoc: ['ma_buoi','ma_nhom','ngay_hoc','gio_bat_dau','gio_ket_thuc','trang_thai','ghi_chu'],
   DiemDanh: ['ma_buoi','ma_hoc_sinh','trang_thai','ghi_chu','nguoi_cap_nhat_id','cap_nhat_luc'],
   ThuHocPhi: ['ma_thu','ma_nhom','ma_hoc_sinh','ky_thu','so_tien_vnd','ngay_dong','phuong_thuc','trang_thai','nguoi_thu_id','ghi_chu'],
-  HocPhiKy: ['ma_chot','ma_nhom','ma_hoc_sinh','ky_thu','so_buoi','cach_tinh','don_gia_vnd','phai_thu_vnd','trang_thai','nguoi_chot_id','chot_luc']
+  HocPhiKy: ['ma_chot','ma_nhom','ma_hoc_sinh','ky_thu','so_buoi','cach_tinh','don_gia_vnd','phai_thu_vnd','trang_thai','nguoi_chot_id','chot_luc'],
+  TienThuePhong: ['ma_dong','buoi_da_tinh','so_buoi','so_tien_vnd','ngay_dong','trang_thai','nguoi_dong_id','cap_nhat_luc','ghi_chu']
 };
 
 function nhBook_() {
@@ -190,7 +191,63 @@ function nhBoot_(ctx) {
   return {groups:groups.map(function(g){
     const current=nhCurrentPeriod_(ctx,g),period=nhPeriod_(ctx,g,current);
     return Object.assign(nhPublic_(g),{ky_hien_tai:current,buoi_hien_tai:period.completed,so_buoi_ky:period.size});
-  }),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions',features:{attendanceBatch:true,plannedSessions:true,schedule:true}};
+  }),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions',roomRent:nhRoomRent_(ctx),features:{attendanceBatch:true,plannedSessions:true,schedule:true,roomRent:true}};
+}
+
+// A rent payment reserves exactly 16 class IDs. Extra classes carry forward,
+// independently of calendar months, tuition periods and student attendance.
+function nhRentIds_(payment) {
+  const ids=JSON.parse(payment.buoi_da_tinh);
+  if(!Array.isArray(ids)||ids.length!==16||new Set(ids).size!==16||ids.some(function(id){return typeof id!=='string'||!id;}))throw new Error('Lịch sử tiền phòng cần được kiểm tra.');
+  return ids;
+}
+function nhRoomRent_(ctx) {
+  const today=nhToday_(),groups=nhRows_(ctx,'NhomHoc'),all=nhRows_(ctx,'BuoiHoc'),payments=nhRows_(ctx,'TienThuePhong'),paid=new Set();
+  const names={};groups.forEach(function(g){names[g.ma_nhom]=g.ten_nhom;});
+  payments.filter(function(p){return p.trang_thai==='da_dong';}).forEach(function(p){nhRentIds_(p).forEach(function(id){if(paid.has(id))throw new Error('Có buổi học bị tính tiền phòng hai lần.');paid.add(id);});});
+  const sort=function(a,b){return a.ngay_hoc.localeCompare(b.ngay_hoc)||a.ma_nhom.localeCompare(b.ma_nhom)||a.ma_buoi.localeCompare(b.ma_buoi);};
+  const learned=all.filter(function(b){return b.trang_thai==='da_hoc'&&b.ngay_hoc<=today;}).sort(sort);
+  const learnedIds=new Set(learned.map(function(b){return b.ma_buoi;}));
+  const unpaid=learned.filter(function(b){return !paid.has(b.ma_buoi);}),next=unpaid.slice(0,16);
+  const planned=all.filter(function(b){return b.trang_thai!=='da_huy'&&b.ngay_hoc>=today&&!paid.has(b.ma_buoi)&&!learnedIds.has(b.ma_buoi);});
+  const prediction=unpaid.concat(planned).sort(sort),active=payments.filter(function(p){return p.trang_thai==='da_dong';});
+  const session=function(b){return {id:b.ma_buoi,date:b.ngay_hoc,groupId:b.ma_nhom,groupName:names[b.ma_nhom]||b.ma_nhom};};
+  const byId={};all.forEach(function(b){byId[b.ma_buoi]=b;});
+  const history=payments.map(function(p){return Object.assign(nhPublic_(p),{sessions:nhRentIds_(p).map(function(id){return byId[id]?session(byId[id]):{id:id,date:'',groupName:'Buổi học không còn trong lịch'};})});}).sort(function(a,b){return b.cap_nhat_luc.localeCompare(a.cap_nhat_luc)||b.ma_dong.localeCompare(a.ma_dong);});
+  return {size:16,amount:1000000,today:today,unpaid:unpaid.length,completedTotal:learned.length,paidSessions:paid.size,
+    pendingCycles:Math.floor(unpaid.length/16),dueAmount:Math.floor(unpaid.length/16)*1000000,remaining:Math.max(0,16-unpaid.length),carryAfterPayment:Math.max(0,unpaid.length-16),
+    dueDate:unpaid.length>=16?next[15].ngay_hoc:'',forecastDate:unpaid.length<16&&prediction.length>=16?prediction[15].ngay_hoc:'',
+    state:unpaid.length>=16?'due':unpaid.length>=14?'soon':active.length?'paid':'collecting',
+    groups:groups.map(function(g){return {id:g.ma_nhom,name:g.ten_nhom,completed:unpaid.filter(function(b){return b.ma_nhom===g.ma_nhom;}).length};}),
+    sessions:unpaid.map(session),payments:history,revision:nhHash_([learned.map(function(b){return [b.ma_buoi,b.ma_nhom,b.ngay_hoc];}),payments.map(nhPublic_)])};
+}
+function nhSaveRoomRent_(ctx,data) {
+  if(!ctx.admin)throw new Error('Chỉ quản trị được ghi nhận tiền phòng.');
+  const id=nhId_(data.id),date=nhDate_(data.date),amount=nhMoney_(data.amount),note=nhText_(data.note),rows=nhRows_(ctx,'TienThuePhong');
+  if(date>nhToday_())throw new Error('Ngày đã đóng tiền không được ở tương lai.');
+  if(amount!==1000000)throw new Error('Tiền phòng là 1.000.000đ cho mỗi 16 buổi.');
+  const old=rows.find(function(p){return p.ma_dong===id;});
+  if(old){
+    if(old.trang_thai!=='da_dong'||old.ngay_dong!==date||Number(old.so_tien_vnd)!==amount||old.ghi_chu!==note)throw new Error('Mã khoản đóng đã được sử dụng với thông tin khác.');
+    return {roomRent:nhRoomRent_(ctx),repeated:true,message:'Khoản đóng tiền phòng này đã được lưu.'};
+  }
+  const rent=nhRoomRent_(ctx);
+  if(!data.revision||rent.revision!==data.revision)throw new Error('Số buổi hoặc tiền phòng vừa thay đổi. Tải lại trước khi ghi nhận.');
+  if(rent.unpaid<16)throw new Error('Chưa đủ 16 buổi đã dạy để đóng tiền phòng.');
+  if(date<rent.dueDate)throw new Error('Ngày đóng phải từ ngày đủ 16 buổi: '+rent.dueDate+'.');
+  nhWrite_(ctx,'TienThuePhong',[{ma_dong:id,buoi_da_tinh:JSON.stringify(rent.sessions.slice(0,16).map(function(b){return b.id;})),so_buoi:16,so_tien_vnd:amount,ngay_dong:date,trang_thai:'da_dong',nguoi_dong_id:String(ctx.user.sub),cap_nhat_luc:new Date().toISOString(),ghi_chu:note}]);
+  return {roomRent:nhRoomRent_(ctx),message:'Đã ghi nhận đóng 1.000.000đ tiền phòng cho 16 buổi.'};
+}
+function nhVoidRoomRent_(ctx,data) {
+  if(!ctx.admin)throw new Error('Chỉ quản trị được sửa tiền phòng.');
+  const row=nhRows_(ctx,'TienThuePhong').find(function(p){return p.ma_dong===nhId_(data.id);}),reason=nhText_(data.reason,250);
+  if(!row)throw new Error('Không tìm thấy khoản đóng tiền phòng.');
+  if(row.trang_thai==='da_huy')return {roomRent:nhRoomRent_(ctx),repeated:true};
+  if(!reason)throw new Error('Nhập lý do hủy lần ghi nhận.');
+  if(!data.revision||nhRoomRent_(ctx).revision!==data.revision)throw new Error('Tiền phòng vừa thay đổi. Tải lại trước khi sửa.');
+  Object.assign(row,{trang_thai:'da_huy',cap_nhat_luc:new Date().toISOString(),ghi_chu:nhText_((row.ghi_chu?row.ghi_chu+' · ':'')+'Hủy: '+reason)});
+  nhWrite_(ctx,'TienThuePhong',[row]);
+  return {roomRent:nhRoomRent_(ctx),message:'Đã hủy lần ghi nhận; 16 buổi được đưa về số buổi chưa thanh toán.'};
 }
 
 function nhView_(ctx,group,month) {
@@ -225,7 +282,7 @@ function nhView_(ctx,group,month) {
   sessions.forEach(function(b){b.revision=nhHash_([b,marks.filter(function(m){return m.ma_buoi===b.ma_buoi;}),roster.map(function(m){return [m.ma_hoc_sinh,m.ngay_vao,m.ngay_nghi];})]);});
   const currentPeriod=period.current===month?period:nhPeriod_(ctx,group,period.current);
   const view={group:nhPublic_(group),month:month,period:{mode:period.mode,size:period.size,completed:period.completed,current:period.current,start:start,end:end},currentPeriod:{month:period.current,completed:currentPeriod.completed,size:currentPeriod.size},roster:roster,sessions:sessions,marks:marks,receipts:receipts,fees:fees,closed:bills.length>0,today:nhToday_()};
-  view.revision=nhHash_(view);return view;
+  view.revision=nhHash_(view);view.roomRent=nhRoomRent_(ctx);return view;
 }
 
 function handleNhomHoc(payload) {
@@ -236,7 +293,7 @@ function handleNhomHoc(payload) {
   // Verify existing signed admin sessions without opening the spreadsheet.
   if(action==='nh_auth')return createResponse({status:'success',data:{role:'admin',sub:String(principal.sub),exp:Number(principal.exp)},version:NH_VERSION});
   if(nhCloudflareActive_())return createResponse({status:'error',code:'NH_MIGRATED',message:'Nhóm học đã chuyển sang Cloudflare. Tải lại E-GV để sử dụng phiên bản mới.'});
-  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month'];
+  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month','nh_room_rent_save','nh_room_rent_void'];
   if(allowed.indexOf(action)===-1)throw new Error('Lệnh nhóm học không hợp lệ.');
   const write=['nh_boot','nh_view','nh_schedule_preview'].indexOf(action)===-1;
   const lock=write?LockService.getScriptLock():null;
@@ -245,6 +302,8 @@ function handleNhomHoc(payload) {
     const ctx={book:nhBook_(),tables:{},user:principal,admin:principal.role==='admin'};
     let result;
     if(action==='nh_boot') result=nhBoot_(ctx);
+    else if(action==='nh_room_rent_save') result=nhSaveRoomRent_(ctx,data);
+    else if(action==='nh_room_rent_void') result=nhVoidRoomRent_(ctx,data);
     else if(action==='nh_group_save') result=nhSaveGroup_(ctx,data);
     else {
       const group=nhGroup_(ctx,nhId_(data.groupId));
@@ -363,6 +422,7 @@ function nhSaveSession_(ctx,group,data) {
   const cycle=nhCycle_(group);if(cycle && !existing && date<cycle.start+'-01')throw new Error('Ngày học phải từ kỳ bắt đầu '+cycle.start+' trở đi.');
   const item=Object.assign({},existing||{});
   Object.assign(item,{ma_buoi:id,ma_nhom:group.ma_nhom,ngay_hoc:date,gio_bat_dau:from,gio_ket_thuc:to,trang_thai:data.cancelled?'da_huy':date>nhToday_()||data.planned?'du_kien':'da_hoc',ghi_chu:nhText_(data.note)});
+  if(existing&&item.trang_thai!=='da_hoc'&&nhRows_(ctx,'TienThuePhong').some(function(p){return p.trang_thai==='da_dong'&&nhRentIds_(p).indexOf(id)!==-1;}))throw new Error('Buổi này đã tính trong tiền phòng đã đóng. Hủy lần ghi nhận tiền phòng liên quan trước khi hủy hoặc chuyển buổi sang dự kiến.');
   const after=nhSessionPeriods_(ctx,group,sessions.filter(function(b){return b.ma_buoi!==id;}).concat([item]));
   const period=after.find(function(b){return b.ma_buoi===id;}).ky_hoc;
   nhAssertOpen_(ctx,group,period);nhAssertPeriodChangesOpen_(ctx,group,before,after);
