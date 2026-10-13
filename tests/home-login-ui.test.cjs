@@ -10,17 +10,18 @@ const token = role => Buffer.from(JSON.stringify({ role, exp: Math.floor(Date.no
 
 function homeFixture(t) {
     const dom=new JSDOM(source('index.html'),{url:'https://e-gv.test',runScripts:'outside-only'}),w=dom.window,d=w.document,calls=[];
-    t.after(()=>w.close());let role='guest';
+    t.after(()=>w.close());let role='guest';const reads=[];
     w.App={init(){},getUser:()=>({name:'Tên thành viên'}),isAuthenticated:()=>role!=='guest',isAdmin:()=>role==='admin',
-      apiGet:async type=>({data:type==='prompts'?[{},{}]:[],summary:{pending:3,watch:1}}),apiPost:async action=>{calls.push(action);throw Error('Homepage must not fetch private groups');}};
+      apiGet:async type=>{reads.push(type);return {data:{prompts:2,pending:3,watch:1}};},apiPost:async action=>{calls.push(action);throw Error('Homepage must not fetch private groups');}};
     w.eval(source('js/index.js'));
-    return {w,d,calls,setRole(value){role=value;w.dispatchEvent(new w.Event('app:auth-change'));}};
+    return {w,d,calls,reads,setRole(value){role=value;w.dispatchEvent(new w.Event('app:auth-change'));}};
 }
 
 test('Homepage never loads or renders private group overview, including for administrators',async t=>{
     const h=homeFixture(t);await settle();
     for(const role of ['guest','member','google','vip','admin']){h.setRole(role);await settle();assert.equal(h.calls.length,0);assert.equal(h.d.getElementById('homeAdminOverview'),null);assert.equal(h.d.getElementById('homeGroupsShortcut'),null);}
     assert.equal(h.d.querySelectorAll('.dash-card').length,6);assert.equal(h.d.getElementById('statPrompts').textContent,'2');
+    assert.deepEqual(h.reads,['overview']);
 });
 test('Homepage keeps account greetings and public overview after login and logout',async t=>{
     const h=homeFixture(t);await settle();h.setRole('member');assert.match(h.d.getElementById('heroTitle').textContent,/Tên thành viên/);

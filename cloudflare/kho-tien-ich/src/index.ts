@@ -1,10 +1,10 @@
 import {authenticate,gas,invalidateUser} from './auth.js';
 import {adminLogin} from './admin-login.js';
 import {backup} from './backup.js';
-import {favoriteIds,items,mask,meta,summary,writeFavorites,writeItem} from './store.js';
+import {favoriteIds,items,mask,meta,overview,summary,writeFavorites,writeItem} from './store.js';
 import {boundedText,HttpError,json,text,type Principal} from './util.js';
 export {GroupsSheetsBridge} from './groups-backup.js';
-const VERSION='9.7.0';
+const VERSION='9.10.0';
 const ACTIONS=['verify','get_prompts','get_repairs','toggle_favorite','sync_favorites','create','update','delete','admin_get_users','admin_set_membership','collections_backup_status','collections_backup_now'];
 export default{
  async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
@@ -17,6 +17,7 @@ export default{
    if(!['/','/api'].includes(url.pathname))throw new HttpError(404,'Không tìm thấy chức năng.');
    await meta(env.DB);
    if(request.method==='GET'){
+    if(url.searchParams.get('type')==='overview')return decorate(json({status:'success',data:await overview(env.DB)}));
     const type=url.searchParams.get('type');if(type==='prompts')return decorate(json({status:'success',data:mask(await items(env.DB,'prompts'),null)}));
     if(type==='repairs')return decorate(json({status:'success',data:[],summary:summary(await items(env.DB,'repairs'),false),accessLevel:'public',restricted:true}));
     throw new HttpError(400,'Loại dữ liệu không hợp lệ.');

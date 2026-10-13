@@ -144,7 +144,8 @@
                             <button class="auth-switch" id="toggleGuestAuth" type="button">Chưa có tài khoản? Đăng ký</button>
                             <div class="auth-divider"><span>hoặc</span></div>
                             <div class="google-button-wrap" id="googleSignInButton"></div>
-                            <p class="auth-config-note" id="googleConfigNote" hidden>Chưa cấu hình Google Client ID.</p>
+                            <p class="auth-config-note" id="googleConfigNote" role="status" aria-live="polite" hidden>Chưa cấu hình Google Client ID.</p>
+                            <button class="auth-switch" id="googleRetry" type="button" hidden>Thử tải lại đăng nhập Google</button>
                             <button class="btn btn-secondary auth-cancel" type="button" data-close-modal="loginModal">Hủy</button>
                         </section>
                         <section id="adminAuthPanel" role="tabpanel" aria-labelledby="adminAuthTab" hidden>
@@ -259,6 +260,7 @@
             }
             const field = modal.querySelector('#adminAuthPanel:not([hidden]) input, #userAuthPanel:not([hidden]) input[required]');
             (field || loginFocusable()[0] || modal).focus();
+            if (!document.getElementById('userAuthPanel').hidden) setupGoogleSignIn();
             return;
         }
         modal.classList.add('open');
@@ -286,10 +288,10 @@
         document.getElementById('userAuthPanel').hidden = selected !== 'user';
         document.getElementById('adminAuthPanel').hidden = selected !== 'admin';
         document.getElementById('loginTitle').textContent = selected === 'admin' ? 'Đăng nhập quản trị' : 'Đăng nhập thành viên';
+        if (loginDialogState && selected === 'user') setupGoogleSignIn();
     }
 
     function openLogin(tab = 'user') {
-        warmUpServer();
         setAuthTab(tab);
         openModal('loginModal');
     }
@@ -427,6 +429,7 @@
 
     async function guestAuth(event) {
         event.preventDefault();
+        const form = event.currentTarget;
         const button = document.getElementById('guestAuthSubmit');
         const data = {
             name: document.getElementById('guestName').value.trim(),
@@ -445,7 +448,7 @@
                 timeoutMessage: 'Máy chủ đăng nhập phản hồi quá lâu. Vui lòng thử lại.'
             });
             saveUserSession(result);
-            event.currentTarget.reset();
+            form.reset();
         } catch (error) {
             toast(error.message || 'Không thể xác thực tài khoản.', 'error');
         } finally {
@@ -516,36 +519,8 @@
         }
     }
 
-    function warmUpServer() {
-        if (!config.API_URL) return;
-        const storageKey = 'egv_server_warm_at';
-        const lastWarmAt = Number(localStorage.getItem(storageKey) || 0);
-        if (Date.now() - lastWarmAt < 4 * 60 * 1000) return;
-        localStorage.setItem(storageKey, String(Date.now()));
-
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timer = controller ? window.setTimeout(() => controller.abort(), 10000) : 0;
-        try {
-            const url = new URL(config.API_URL);
-            url.searchParams.set('type', 'health');
-            url.searchParams.set('_', String(Math.floor(Date.now() / 240000)));
-            fetch(url.href, { cache: 'no-store', signal: controller?.signal })
-                .catch(() => localStorage.removeItem(storageKey))
-                .finally(() => { if (timer) window.clearTimeout(timer); });
-        } catch (_) {
-            if (timer) window.clearTimeout(timer);
-            localStorage.removeItem(storageKey);
-        }
-    }
-
-    function scheduleServerWarmUp() {
-        const start = () => window.setTimeout(warmUpServer, 350);
-        if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(start, { timeout: 1200 });
-        else start();
-    }
-
     function initializeGoogleButton() {
-        if (state.googleInitialized || !window.google?.accounts?.id || !config.GOOGLE_CLIENT_ID) return;
+        if (state.googleInitialized || !loginDialogState || document.getElementById('userAuthPanel').hidden || !window.google?.accounts?.id || !config.GOOGLE_CLIENT_ID) return;
         window.google.accounts.id.initialize({ client_id: config.GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
         window.google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
             type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with', width: 320, locale: 'vi'
@@ -553,19 +528,55 @@
         state.googleInitialized = true;
     }
 
+    let googleScript = null;
+    let googleLoadTimer = 0;
+
     function setupGoogleSignIn() {
+        if (!loginDialogState || document.getElementById('userAuthPanel').hidden) return;
         const note = document.getElementById('googleConfigNote');
+        const retry = document.getElementById('googleRetry');
+        const button = document.getElementById('googleSignInButton');
         if (!config.GOOGLE_CLIENT_ID) {
-            if (note) note.hidden = false;
+            note.hidden = false;
+            note.textContent = 'Chưa cấu hình Google Client ID.';
             return;
         }
-        if (window.google?.accounts?.id) return initializeGoogleButton();
+        if (state.googleInitialized) return;
+        if (window.google?.accounts?.id) {
+            try { initializeGoogleButton(); note.hidden = true; retry.hidden = true; }
+            catch (_) { note.hidden = false; note.textContent = 'Không tải được đăng nhập Google. Vui lòng thử lại.'; retry.hidden = false; }
+            return;
+        }
+        if (googleScript) return;
         const script = document.createElement('script');
+        googleScript = script;
+        note.hidden = false;
+        note.textContent = 'Đang tải đăng nhập Google…';
+        retry.hidden = true;
+        button.setAttribute('aria-busy', 'true');
+        const fail = () => {
+            if (googleScript !== script) return;
+            window.clearTimeout(googleLoadTimer);
+            googleScript = null;
+            script.remove();
+            button.removeAttribute('aria-busy');
+            note.hidden = false;
+            note.textContent = 'Không tải được đăng nhập Google. Vui lòng thử lại.';
+            retry.hidden = false;
+        };
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
         script.defer = true;
-        script.onload = initializeGoogleButton;
-        script.onerror = () => { if (note) { note.hidden = false; note.textContent = 'Không tải được dịch vụ đăng nhập Google.'; } };
+        script.onload = () => {
+            if (googleScript !== script) return;
+            window.clearTimeout(googleLoadTimer);
+            button.removeAttribute('aria-busy');
+            if (!window.google?.accounts?.id) return fail();
+            try { initializeGoogleButton(); note.hidden = true; retry.hidden = true; }
+            catch (_) { fail(); }
+        };
+        script.onerror = fail;
+        googleLoadTimer = window.setTimeout(fail, 12000);
         document.head.appendChild(script);
     }
 
@@ -610,10 +621,11 @@
 
     async function apiGet(type, options = {}) {
         const collectionType = ['prompts', 'repairs'].includes(type);
+        if (type === 'overview' && !config.COLLECTIONS_API_URL) throw new Error('Chưa cấu hình máy chủ thống kê.');
         if (collectionType && config.COLLECTIONS_API_URL && options.includeAuth && isAuthenticated()) return apiPost(type === 'prompts' ? 'get_prompts' : 'get_repairs', {}, { userAuth: true });
-        const url = new URL(collectionType && config.COLLECTIONS_API_URL ? config.COLLECTIONS_API_URL + '/api' : config.API_URL);
+        const url = new URL((collectionType || type === 'overview') && config.COLLECTIONS_API_URL ? config.COLLECTIONS_API_URL + '/api' : config.API_URL);
         url.searchParams.set('type', type);
-        if (options.includeAuth && state.userToken) url.searchParams.set('userToken', state.userToken);
+        if (type !== 'overview' && options.includeAuth && state.userToken) url.searchParams.set('userToken', state.userToken);
         const response = await fetch(url.href);
         if (!response.ok) throw new Error('Máy chủ không phản hồi.');
         const result = await response.json();
@@ -661,6 +673,7 @@
         document.getElementById('adminLoginForm')?.addEventListener('submit', adminLogin);
         document.getElementById('guestAuthForm')?.addEventListener('submit', guestAuth);
         document.getElementById('toggleGuestAuth')?.addEventListener('click', toggleGuestAuth);
+        document.getElementById('googleRetry')?.addEventListener('click', setupGoogleSignIn);
         document.querySelectorAll('[data-auth-tab]').forEach(button => {
             button.addEventListener('click', () => setAuthTab(button.dataset.authTab));
             button.addEventListener('keydown', event => {
@@ -703,9 +716,7 @@
         renderShell(activePage);
         ensureGlobalUi();
         bindGlobalEvents();
-        setupGoogleSignIn();
         syncAuthUi();
-        scheduleServerWarmUp();
     }
 
     window.App = Object.freeze({

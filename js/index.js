@@ -18,11 +18,11 @@
     window.addEventListener('app:auth-change', renderGreeting);
     async function loadOverview() {
         try {
-            const [promptResult, repairResult] = await Promise.all([App.apiGet('prompts'), App.apiGet('repairs')]);
-            $('statPrompts').textContent = Array.isArray(promptResult.data) ? promptResult.data.length : '—';
-            const summary = repairResult?.summary || {};
-            $('statPending').textContent = Number.isFinite(Number(summary.pending)) ? Number(summary.pending) : '—';
-            $('statWatch').textContent = Number.isFinite(Number(summary.watch)) ? Number(summary.watch) : '—';
+            const counts = (await App.apiGet('overview')).data;
+            for (const [id, key] of [['statPrompts', 'prompts'], ['statPending', 'pending'], ['statWatch', 'watch']]) {
+                const value = counts?.[key];
+                $(id).textContent = Number.isSafeInteger(value) && value >= 0 ? value : '—';
+            }
         } catch (_) {
             ['statPrompts', 'statPending', 'statWatch'].forEach(id => { $(id).textContent = '—'; });
         }
