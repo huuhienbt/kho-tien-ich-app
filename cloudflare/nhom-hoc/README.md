@@ -76,3 +76,12 @@ Giữ URL Worker ổn định. `js/config.js` dùng `GROUPS_API_URL` riêng; `AP
 Có thể export D1 bằng `wrangler d1 export egv-nhom-hoc --remote --output=<đường-dẫn-riêng-tư>`. Không đặt file export trong GitHub công khai. Giữ bảng Drive gốc để đối chiếu. Sau khi chuyển, cập nhật trên E-GV/D1; sửa bảng Drive không cập nhật D1.
 
 Không nhập lại snapshot cũ lên D1 đang có thay đổi mới. Khi chuyển ban đầu, khóa API ghi Drive trước, đọc lại nguồn, đối chiếu số hàng và tổng học phí, rồi mới bật URL Worker trên giao diện.
+# Bản sao nhóm học trên Drive
+
+Cloudflare D1 là nguồn dữ liệu đang dùng. Sau các lần ghi, Worker sao lưu trong nền; Cron `*/10 * * * *` tiếp tục kiểm tra kể cả khi đóng website. Cả 7 bảng nghiệp vụ được chụp cùng một D1 batch và gửi qua Service binding `SHEETS_BRIDGE` tới named entrypoint `GroupsSheetsBridge` của `egv-kho-tien-ich`. Khóa ký đang có ở Worker kho tiện ích được giữ nguyên, không sao chép sang Worker nhóm học hoặc trình duyệt.
+
+Apps Script sử dụng file đã cấu hình trong `EGV_NH_DATA_ID`, giữ nguyên các tab khác, kiểm tra cấu trúc trước khi ghi, bảo vệ chữ bắt đầu như công thức và đối chiếu toàn bộ dữ liệu sau khi ghi. Snapshot cũ hoặc cùng revision nhưng khác nội dung bị từ chối. Nếu bản Drive bị chỉnh, lần kiểm tra sau sẽ sửa lại theo Cloudflare. Không nhập ngược chỉnh sửa Drive vào D1.
+
+Trong Nhóm học, quản trị thấy trạng thái bản Drive, lần lưu thành công, lần kiểm tra gần nhất, nút **Sao lưu ngay** và **Xem bản Drive**. Điểm danh còn chưa lưu không được tính là đã sao lưu. Lỗi Drive không chặn việc lưu dữ liệu vào Cloudflare; hệ thống giữ lần thành công trước và thử lại. Một lease D1 ngăn nhiều tác vụ đồng thời; nếu dữ liệu mới xuất hiện trong lúc sao lưu, giao diện tiếp tục báo chờ đến khi revision mới được xác nhận.
+
+Triển khai theo thứ tự: cài bridge Apps Script từ `Collections.gs`, triển khai named entrypoint ở Worker kho tiện ích, áp dụng migration `0002_drive_backup.sql`, triển khai Worker nhóm học và Cron. Chạy kiểm tra Worker và UI trước khi dùng bản mới.

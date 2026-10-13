@@ -7,7 +7,7 @@
   const shortDate = value => dateLabel(value).slice(0,5);
   const periodLabel = value => 'tháng ' + String(value || '').split('-').reverse().join('/');
   const uid = () => window.crypto.randomUUID();
-  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'overview',memberEditInitial:null,profileId:'',files:null,filesLoading:false};
+  const state = {boot:null,view:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'overview',memberEditInitial:null,profileId:'',files:null,filesLoading:false,backup:null,backupTimer:0,backupDeadline:0,backupLoading:false};
   const statusLabel = {co_mat:'Có mặt',vang:'Vắng',chua_diem_danh:'Chưa điểm danh'};
   const markSymbol = {co_mat:'✓',vang:'×',chua_diem_danh:'·'};
   const message = (text,error=false) => { $('nhFeedback').textContent=text; $('nhFeedback').className='nh-feedback'+(error?' error':''); $('nhFeedback').hidden=!text; };
@@ -15,8 +15,46 @@
     const epoch=state.epoch;
     const result=await App.apiPost(action,data,{userAuth:true,timeoutMs:60000,timeoutMessage:'Chưa nhận được phản hồi. Tải lại để kiểm tra dữ liệu trước khi nhập lại.'});
     if(epoch!==state.epoch)throw new Error('Phiên làm việc đã thay đổi.');
+    if(state.boot?.features?.driveBackup&&action!=='nh_boot'&&!action.endsWith('_preview')&&!action.startsWith('nh_file'))refreshBackup(!['nh_view'].includes(action));
     return result.data;
   };
+  const backupTime=value=>value&&Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'medium'}).format(new Date(value)):'Chưa có';
+  function paintBackup() {
+    const data=state.backup,panel=$('nhBackupPanel');panel.hidden=!App.isAdmin()||!data;if(panel.hidden)return;
+    const labels={synced:'Drive đã cập nhật',pending:'Đang chờ sao lưu',syncing:'Đang sao lưu',error:'Bản Drive cần kiểm tra',unconfigured:'Chưa bật bản sao lưu'};
+    panel.dataset.state=data.state;$('nhBackupState').textContent=labels[data.state]||labels.error;
+    $('nhBackupSummary').textContent=data.lastSuccessAt?'Lần lưu: '+backupTime(data.lastSuccessAt):'Chưa có bản lưu thành công';
+    $('nhBackupSuccess').textContent=backupTime(data.lastSuccessAt);$('nhBackupChecked').textContent=backupTime(data.lastCheckedAt);
+    $('nhBackupHint').textContent=state.dirty?'Điểm danh đang chỉnh chưa được lưu. Lưu điểm danh trước khi sao lưu.':data.state==='synced'?'Bản Drive đã được đọc lại và đối chiếu với dữ liệu đã lưu trên Cloudflare.':data.state==='syncing'?'Đang kiểm tra và cập nhật bản Drive. Thầy vẫn có thể quản lý nhóm học.':data.state==='pending'?'Có dữ liệu đang chờ sao lưu. Hệ thống sẽ tự thử lại, kể cả khi đóng trang.':data.state==='unconfigured'?'Kết nối sao lưu chưa sẵn sàng. Dữ liệu vẫn được lưu trên Cloudflare.':'Chưa hoàn tất kiểm tra hoặc sao lưu trên Drive. Dữ liệu Cloudflare vẫn được giữ; hệ thống sẽ tự thử lại.';
+    $('nhBackupNow').disabled=state.dirty||state.backupLoading||data.state==='syncing'||data.state==='unconfigured';
+    const id=typeof data.spreadsheetId==='string'&&/^[\w-]{20,150}$/.test(data.spreadsheetId)?data.spreadsheetId:'';
+    $('nhBackupDrive').hidden=!id;if(id)$('nhBackupDrive').href='https://docs.google.com/spreadsheets/d/'+id+'/edit';else $('nhBackupDrive').removeAttribute('href');
+  }
+  function queueBackupPoll() {
+    window.clearTimeout(state.backupTimer);state.backupTimer=0;
+    if(!App.isAdmin()||document.hidden||!['pending','syncing'].includes(state.backup?.state)) {state.backupDeadline=0;return;}
+    if(!state.backupDeadline)state.backupDeadline=Date.now()+60000;
+    if(Date.now()<state.backupDeadline)state.backupTimer=window.setTimeout(()=>refreshBackup(false),4000);
+  }
+  async function refreshBackup(afterWrite=false) {
+    if(!App.isAdmin()||!state.boot?.features?.driveBackup||state.backupLoading)return;
+    const epoch=state.epoch;state.backupLoading=true;if(afterWrite)state.backupDeadline=0;paintBackup();
+    try{
+      const result=await App.apiPost('nh_backup_status',{}, {auth:true,timeoutMs:15000});
+      if(epoch!==state.epoch||!App.isAdmin())return;state.backup=result.data;
+    }catch(_){if(epoch===state.epoch&&App.isAdmin())state.backup={...state.backup,state:'error'};}
+    finally{if(epoch===state.epoch){state.backupLoading=false;paintBackup();queueBackupPoll();}}
+  }
+  async function backupNow() {
+    if(!App.isAdmin()||state.backupLoading)return;
+    if(state.dirty){paintBackup();$('nhBackupPanel').open=true;return;}
+    const epoch=state.epoch;state.backupLoading=true;paintBackup();
+    try{
+      const result=await App.apiPost('nh_backup_now',{}, {auth:true,timeoutMs:15000});
+      if(epoch!==state.epoch||!App.isAdmin())return;state.backup=result.data;state.backupDeadline=0;
+    }catch(_){if(epoch===state.epoch&&App.isAdmin())state.backup={...state.backup,state:'error'};}
+    finally{if(epoch===state.epoch){state.backupLoading=false;paintBackup();queueBackupPoll();}}
+  }
   const within = (m,date) => m.ngay_vao<=date && (!m.ngay_nghi || m.ngay_nghi>=date);
   // Liên kết từ trang chủ chỉ chọn màn hình; không tạo hoặc sửa dữ liệu.
   const launch = new URLSearchParams(window.location.search);
@@ -33,6 +71,8 @@
   }
   function closeProfile() {if($('nhProfile').open)$('nhProfile').close();state.profileId='';$('nhProfileBody').replaceChildren();$('nhProfileName').textContent='';$('nhProfilePeriod').textContent='';}
   function resetAuth() {
+    window.clearTimeout(state.backupTimer);state.backup=null;state.backupTimer=0;state.backupDeadline=0;state.backupLoading=false;
+    $('nhBackupPanel').hidden=true;$('nhBackupDrive').hidden=true;$('nhBackupDrive').removeAttribute('href');['nhBackupState','nhBackupSummary','nhBackupSuccess','nhBackupChecked','nhBackupHint'].forEach(id=>$(id).textContent='');
     state.epoch++;state.boot=null;state.view=null;clearDrafts();state.groupId='';state.month='';state.search='';state.feeSearch='';state.feeFilter='all';state.sessionId='';state.tab='attendance';state.attendanceMode='overview';state.memberEditInitial=null;
     $('nhDialog').close();state.submit=null;closeProfile();
     state.files=null;state.filesLoading=false;$('nhFilesTab').hidden=true;
@@ -50,7 +90,7 @@
         if(['attendance','fees'].includes(launch.get('tab')))state.tab=launch.get('tab');
         state.sessionId=launch.get('session')||'';state.attendanceMode=state.sessionId?'day':'overview';
       }
-      state.boot=data;$('nhWorkspace').hidden=false;
+      state.boot=data;state.backup=data.backup||null;paintBackup();queueBackupPoll();$('nhWorkspace').hidden=false;
       paintGroupSelect();state.month=state.month||(data.groups.find(g=>g.ma_nhom===state.groupId)?.ky_hien_tai||data.today.slice(0,7));$('nhMonth').value=state.month;paintGroupCards();
       if(!data.features?.attendanceBatch){paintEmpty('Cập nhật NhomHoc.gs bản 9.4 trong Apps Script rồi triển khai bản mới để dùng bảng điểm danh này.');message('Máy chủ nhóm học cần được cập nhật lên bản 9.4.',true);return;}
       $('nhAddGroup').hidden=!data.admin;
@@ -122,6 +162,7 @@
     $('nhStats').innerHTML=stats.map(([label,value,hint],i)=>`<article class="nh-stat stat-${i}"><span>${label}</span><strong>${esc(value)}</strong><small>${hint}</small></article>`).join('');
   }
   function paint() {
+    paintBackup();
     const v=state.view;if(!v)return;$('nhEmpty').hidden=true;$('nhGroupContent').hidden=false;$('nhEditGroup').hidden=false;const g=v.group,cycle=v.period.mode==='eight_sessions';
     $('nhGroupHint').textContent=[g.nam_hoc,g.thu_trong_tuan?'Thứ '+g.thu_trong_tuan.replaceAll(',',', '):'',g.gio_bat_dau?g.gio_bat_dau+'–'+g.gio_ket_thuc:'',money(g.don_gia_vnd)+(g.cach_tinh_hoc_phi==='theo_buoi'?'/buổi':'/kỳ')].filter(Boolean).join(' · ');
     $('nhPeriodInfo').hidden=!cycle;
@@ -201,6 +242,7 @@
     state.dirty=Object.keys(state.drafts).length>0;
   }
   function updateDraftUi() {
+    paintBackup();
     if(!$('nhSaveAttendance'))return;const changed=Object.values(state.drafts).reduce((n,rows)=>n+Object.keys(rows).length,0);
     $('nhSaveHint').textContent=state.dirty?`${changed} ô điểm danh chưa lưu · Học phí đang tạm tính theo thay đổi.`:state.view.closed?'Kỳ đã chốt. Mở lại ở mục Học phí để sửa.':'Điểm danh đã đồng bộ.';
     $('nhSaveAttendance').disabled=!state.dirty||state.view.closed;
@@ -426,6 +468,7 @@
   }
   document.addEventListener('DOMContentLoaded',()=>{
     App.init('groups');$('nhLogin').addEventListener('click',()=>App.openLogin('admin'));
+    $('nhBackupNow').addEventListener('click',backupNow);document.addEventListener('visibilitychange',()=>{if(document.hidden){window.clearTimeout(state.backupTimer);state.backupTimer=0;}else{state.backupDeadline=0;refreshBackup(false);}});
     $('nhAddGroup').addEventListener('click',()=>externalEdit(()=>groupForm(true)));$('nhEditGroup').addEventListener('click',()=>externalEdit(()=>groupForm(false)));
     $('nhReload').addEventListener('click',()=>state.groupId?reload():boot());$('nhGroup').addEventListener('change',()=>changeGroup($('nhGroup').value));
     $('nhGroupCards').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b)changeGroup(b.dataset.group);});

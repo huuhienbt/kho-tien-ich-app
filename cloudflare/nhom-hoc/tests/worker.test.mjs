@@ -60,7 +60,7 @@ test('real Worker + D1 + R2: admin verification, transactions, concurrent writes
   t.after(()=>mf.dispose());
   const db=await mf.getD1Database('DB');
   const migration=fs.readFileSync(new URL('../migrations/0001_groups.sql',import.meta.url),'utf8');
-  await db.exec(migration.replaceAll('\n',' '));
+  await db.exec(migration.replaceAll('\n',' '));await db.exec(fs.readFileSync(new URL('../migrations/0002_drive_backup.sql',import.meta.url),'utf8').replaceAll('\n',' '));
   const h=ledgerFixture(),tables=seed(h);
   await db.batch(Object.entries(tables).filter(([,rows])=>rows.length).map(([name,rows])=>db.prepare(insertSQL(name)).bind(JSON.stringify(rows))));
   await db.prepare("INSERT INTO nh_teachers(id,name,status) VALUES('u1','Giáo viên','active')").run();

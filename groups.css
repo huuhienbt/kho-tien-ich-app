@@ -231,3 +231,23 @@
 .nh-files-panel td small{display:block;color:#64748b;margin-top:4px}
 .nh-file-actions{display:flex;gap:6px}
 @media(max-width:850px){.nh-file-upload{grid-template-columns:1fr}.nh-files-head{align-items:flex-start}.nh-file-actions{flex-direction:column}}
+
+/* Trạng thái bản sao Drive, chỉ dành cho quản trị. */
+.nh-backup-panel { margin: 10px 0 14px; padding: 0; overflow: hidden; }
+.nh-backup-panel summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; cursor: pointer; font-size: .78rem; list-style: none; }
+.nh-backup-panel summary::-webkit-details-marker { display: none; }
+.nh-backup-panel summary::after { content: '⌄'; margin-left: auto; color: #64748b; }
+.nh-backup-panel[open] summary::after { transform: rotate(180deg); }
+.nh-backup-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: #d97706; }
+.nh-backup-panel[data-state='synced'] .nh-backup-dot { background: #16a34a; }
+.nh-backup-panel[data-state='error'] .nh-backup-dot { background: #dc2626; }
+.nh-backup-panel[data-state='unconfigured'] .nh-backup-dot { background: #64748b; }
+#nhBackupSummary { color: #64748b; font-size: .7rem; }
+.nh-backup-body { padding: 0 16px 16px; border-top: 1px solid #edf1f6; }
+.nh-backup-body p { color: #64748b; font-size: .75rem; margin: 12px 0; }
+.nh-backup-body dl { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 12px 0; }
+.nh-backup-body dt { color: #64748b; font-size: .7rem; }
+.nh-backup-body dd { margin: 3px 0 0; font-size: .8rem; font-weight: 650; }
+.nh-backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.nh-backup-actions .btn { min-height: 40px; font-size: .75rem; }
+@media(max-width:600px) { .nh-backup-panel summary { flex-wrap: wrap; gap: 6px 9px; } #nhBackupSummary { flex-basis: 100%; padding-left: 17px; order: 2; } .nh-backup-body dl { display: grid; gap: 12px; } .nh-backup-actions .btn { min-height: 44px; } }

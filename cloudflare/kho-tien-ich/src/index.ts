@@ -3,6 +3,7 @@ import {adminLogin} from './admin-login.js';
 import {backup} from './backup.js';
 import {favoriteIds,items,mask,meta,summary,writeFavorites,writeItem} from './store.js';
 import {boundedText,HttpError,json,text,type Principal} from './util.js';
+export {GroupsSheetsBridge} from './groups-backup.js';
 const VERSION='9.7.0';
 const ACTIONS=['verify','get_prompts','get_repairs','toggle_favorite','sync_favorites','create','update','delete','admin_get_users','admin_set_membership','collections_backup_status','collections_backup_now'];
 export default{

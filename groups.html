@@ -7,10 +7,10 @@
   <title>Quản lý nhóm học – E-GV</title>
   <link rel="stylesheet" href="style.css?v=9.8.1">
   <link rel="stylesheet" href="modern-saas.css?v=9.3.0">
-  <link rel="stylesheet" href="groups.css?v=9.5.3">
+  <link rel="stylesheet" href="groups.css?v=9.9.0">
   <script src="js/config.js?v=9.7.0" defer></script>
   <script src="js/app.js?v=9.8.1" defer></script>
-  <script src="js/groups.js?v=9.8.0" defer></script>
+  <script src="js/groups.js?v=9.9.0" defer></script>
 </head>
 <body class="page-groups">
   <div id="appShell"></div>
@@ -23,6 +23,15 @@
     <p class="nh-feedback" id="nhFeedback" role="status" aria-live="polite" hidden></p>
     <div id="nhWorkspace" hidden>
       <nav id="nhGroupCards" class="nh-group-cards" aria-label="Chọn nhóm học"></nav>
+      <details class="panel nh-backup-panel" id="nhBackupPanel" hidden>
+        <summary><span class="nh-backup-dot" aria-hidden="true"></span><strong id="nhBackupState">Bản sao trên Drive</strong><span id="nhBackupSummary"></span></summary>
+        <div class="nh-backup-body">
+          <p>Cloudflare → Google Drive · Tự động sau khi lưu, kiểm tra định kỳ mỗi 10 phút.</p>
+          <dl><div><dt>Lần lưu thành công</dt><dd id="nhBackupSuccess">Chưa có</dd></div><div><dt>Lần kiểm tra gần nhất</dt><dd id="nhBackupChecked">Chưa có</dd></div></dl>
+          <p id="nhBackupHint" role="status" aria-live="polite"></p>
+          <div class="nh-backup-actions"><button type="button" class="btn btn-secondary" id="nhBackupNow">Sao lưu ngay</button><a class="btn btn-secondary" id="nhBackupDrive" target="_blank" rel="noopener noreferrer" hidden>Xem bản Drive ↗</a></div>
+        </div>
+      </details>
       <section class="panel nh-toolbar" aria-label="Chọn nhóm và kỳ học">
         <label class="nh-group-select">Nhóm học<select id="nhGroup" class="form-control"></select></label>
         <label>Kỳ học<div class="nh-month-picker"><button type="button" id="nhPrevMonth" aria-label="Xem kỳ trước">‹</button><input id="nhMonth" class="form-control" type="month" min="2000-01" max="2100-12"><button type="button" id="nhNextMonth" aria-label="Xem kỳ sau">›</button></div></label>

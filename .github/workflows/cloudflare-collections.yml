@@ -31,7 +31,7 @@ jobs:
      working-directory: .
      env:
       EGV_QA_DEPENDENCIES: ${{ github.workspace }}/cloudflare/kho-tien-ich
-     run: node --test tests/collections-bridge.test.mjs tests/collections-api.test.cjs tests/native-admin-token.test.mjs tests/sync-nhomhoc-gas.test.mjs
+     run: node --test tests/collections-bridge.test.mjs tests/groups-backup-bridge.test.mjs tests/collections-api.test.cjs tests/native-admin-token.test.mjs tests/sync-nhomhoc-gas.test.mjs
  deploy:
   needs: check
   if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
