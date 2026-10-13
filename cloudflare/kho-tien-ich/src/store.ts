@@ -4,6 +4,15 @@ type Table='prompts'|'repairs';
 type Meta={revision:number,initialized:number,backup_revision:number,last_backup_at:string,backup_error:string};
 export async function meta(db:D1Database):Promise<Meta>{const m=await db.prepare('SELECT revision,initialized,backup_revision,last_backup_at,backup_error FROM collection_meta WHERE id=1').first<Meta>();if(!m?.initialized)throw new HttpError(503,'Kho dữ liệu đang được chuyển. Vui lòng thử lại sau.');return m;}
 export async function items(db:D1Database,table:Table):Promise<Item[]>{return (await db.prepare(`SELECT record FROM ${table} ORDER BY position DESC`).all<{record:string}>()).results.map(r=>JSON.parse(r.record));}
+// Public counts only: aggregate in D1 without loading any Prompt or repair records.
+export async function overview(db:D1Database):Promise<{prompts:number,pending:number,watch:number}>{
+ const counts=await db.prepare(`SELECT (SELECT COUNT(*) FROM prompts) AS prompts,
+  COALESCE(SUM(CASE WHEN json_extract(record,'$.status')='Đã hoàn thành' THEN 0 ELSE 1 END),0) AS pending,
+  COALESCE(SUM(CASE WHEN json_extract(record,'$.status')='Cần theo dõi' THEN 1 ELSE 0 END),0) AS watch FROM repairs`)
+  .first<{prompts:number,pending:number,watch:number}>();
+ if(!counts)throw new HttpError(503,'Chưa tải được thống kê.');
+ return counts;
+}
 export function vip(p:Principal|null):boolean{return p?.role==='admin'||p?.membership==='vip';}
 export function mask(items:Item[],p:Principal|null):Item[]{return items.map(i=>String(i.access).trim().toLowerCase()==='vip'&&!vip(p)?{...i,content:'',locked:true}:i);}
 export function summary(rows:Item[],admin:boolean):Record<string,number>{const result:Record<string,number>={total:rows.length,pending:rows.filter(i=>i.status!=='Đã hoàn thành').length,watch:rows.filter(i=>i.status==='Cần theo dõi').length};if(admin)result.cost=rows.reduce((n,i)=>n+(Number(String(i.cost||'').replace(/[^0-9-]/g,''))||0),0);return result;}

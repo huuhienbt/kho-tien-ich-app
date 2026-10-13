@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
+const cfg=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url)));
+test('Public overview contains fresh counts only, handles empty/missing-status rows and never calls Apps Script',async t=>{
+ let upstream=0;
+ const mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname,compatibilityDate:cfg.compatibility_date,compatibilityFlags:cfg.compatibility_flags,d1Databases:['DB'],bindings:{APP_ORIGIN:cfg.vars.APP_ORIGIN,GAS_URL:'https://gas.test/exec'},outboundService:()=>{upstream++;throw Error('Overview must use D1 only');}}));t.after(()=>mf.dispose());
+ const db=await mf.getD1Database('DB');await db.exec(fs.readFileSync(new URL('../migrations/0001_collections.sql',import.meta.url),'utf8').replace(/\n/g,' '));
+ const request=()=>mf.dispatchFetch('https://worker.test/api?type=overview',{headers:{Origin:cfg.vars.APP_ORIGIN}});
+ assert.equal((await request()).status,503);await db.prepare('UPDATE collection_meta SET initialized=1 WHERE id=1').run();
+ assert.deepEqual(await (await request()).json(),{status:'success',data:{prompts:0,pending:0,watch:0}});
+ for(let i=0;i<2;i++)await db.prepare('INSERT INTO prompts(id,record,position) VALUES(?,?,?)').bind('p'+i,JSON.stringify({id:'p'+i,title:'PRIVATE TITLE',content:'PRIVATE CONTENT'.repeat(2000),access:i?'vip':'normal'}),i).run();
+ for(const [i,status] of ['Đã hoàn thành','Cần theo dõi','',undefined,'Đã hoàn thành '].entries())await db.prepare('INSERT INTO repairs(id,record,position) VALUES(?,?,?)').bind('r'+i,JSON.stringify({id:'r'+i,status,cost:500000,note:'PRIVATE NOTE'}),i).run();
+ const response=await request(),body=await response.text();assert(response.ok);assert.equal(response.headers.get('Access-Control-Allow-Origin'),cfg.vars.APP_ORIGIN);assert.match(response.headers.get('Cache-Control'),/no-store/);
+ assert.deepEqual(JSON.parse(body),{status:'success',data:{prompts:2,pending:4,watch:1}});assert(body.length<120);assert(!body.includes('PRIVATE'));
+ assert.equal((await db.prepare('SELECT revision FROM collection_meta WHERE id=1').first()).revision,0);
+ await db.prepare('UPDATE repairs SET record=? WHERE id=?').bind(JSON.stringify({id:'r1',status:'Đã hoàn thành'}),'r1').run();
+ assert.deepEqual((await (await request()).json()).data,{prompts:2,pending:3,watch:0});assert.equal(upstream,0);
+ const forbidden=await mf.dispatchFetch('https://worker.test/api?type=overview',{headers:{Origin:'https://evil.test'}});assert.equal(forbidden.status,403);assert.equal(forbidden.headers.get('Access-Control-Allow-Origin'),null);
+});
