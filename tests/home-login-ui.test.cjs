@@ -8,20 +8,63 @@ const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;
 const settle = async () => { for (let i = 0; i < 12; i++) await new Promise(resolve => setImmediate(resolve)); };
 const token = role => Buffer.from(JSON.stringify({ role, exp: Math.floor(Date.now()/1000) + 3600 })).toString('base64url') + '.test-signature';
 
-function homeFixture(t) {
-    const dom=new JSDOM(source('index.html'),{url:'https://e-gv.test',runScripts:'outside-only'}),w=dom.window,d=w.document,calls=[];
-    t.after(()=>w.close());let role='guest';
-    w.App={init(){},getUser:()=>({name:'Tên thành viên'}),isAuthenticated:()=>role!=='guest',isAdmin:()=>role==='admin',
-      apiGet:async type=>({data:type==='prompts'?[{},{}]:[],summary:{pending:3,watch:1}}),apiPost:async action=>{calls.push(action);throw Error('Homepage must not fetch private groups');}};
+function homeFixture(t, role = 'guest', hook) {
+    const dom = new JSDOM(source('index.html'), { url: 'https://e-gv.test', runScripts: 'outside-only' });
+    const w = dom.window, d = w.document, calls = [];
+    t.after(() => w.close());
+    const group = id => ({ ma_nhom:id, ten_nhom:id==='a'?'Thứ 2–4':'Thứ 3–5', trang_thai:'dang_hoc', ky_hien_tai:'2026-09' });
+    const view = id => ({
+        today:'2026-10-12', period:{ completed:7, size:8 }, closed:id==='b',
+        roster:[{ma_hoc_sinh:'s1',ngay_vao:'2026-09-01',ngay_nghi:''},{ma_hoc_sinh:'s2',ngay_vao:'2026-09-01',ngay_nghi:'2026-10-01'}],
+        sessions:[{ma_buoi:'past',ngay_hoc:'2026-10-08',trang_thai:'da_hoc'},{ma_buoi:'today',ngay_hoc:'2026-10-12',trang_thai:'du_kien'},{ma_buoi:'future',ngay_hoc:'2026-10-15',trang_thai:'du_kien'},{ma_buoi:'cancelled',ngay_hoc:'2026-10-01',trang_thai:'da_huy'}],
+        marks:[{ma_buoi:'past',ma_hoc_sinh:'s1',trang_thai:'co_mat'}],
+        fees:[{studentId:'s1',balance:id==='a'?125000:0},{studentId:'s2',balance:-62500},{studentId:'free',balance:0}]
+    });
+    let currentRole = role, currentToken = 'admin-one';
+    w.App = {
+        init(){}, escapeHTML, getUser:()=>({name:'Tên thành viên'}), isAuthenticated:()=>currentRole!=='guest', isAdmin:()=>currentRole==='admin', getAdminToken:()=>currentRole==='admin'?currentToken:'',
+        apiGet:async type => ({data:type==='prompts'?[{},{}]:[], summary:{pending:3,watch:1}}),
+        apiPost:async (action,data,options) => {
+            calls.push({action,data,options});
+            const overridden = hook?.(action,data);
+            if (overridden !== undefined) return overridden;
+            return {data:action==='nh_boot'?{today:'2026-10-12',groups:[group('a'),group('b')]}:view(data.groupId)};
+        }
+    };
     w.eval(source('js/index.js'));
-    return {w,d,calls,setRole(value){role=value;w.dispatchEvent(new w.Event('app:auth-change'));}};
+    return {w,d,calls,setRole(value){currentRole=value;currentToken='admin-two';w.dispatchEvent(new w.Event('app:auth-change'));}};
 }
 
-test('Homepage never loads or renders private group overview, including for administrators',async t=>{
-    const h=homeFixture(t);await settle();
-    for(const role of ['guest','member','google','vip','admin']){h.setRole(role);await settle();assert.equal(h.calls.length,0);assert.equal(h.d.getElementById('homeAdminOverview'),null);assert.equal(h.d.getElementById('homeGroupsShortcut'),null);}
-    assert.equal(h.d.querySelectorAll('.dash-card').length,6);assert.equal(h.d.getElementById('statPrompts').textContent,'2');
+test('Homepage exposes current-period attendance and fees only to administrators', async t => {
+    const h = homeFixture(t); await settle();
+    assert.equal(h.calls.length,0); assert.equal(h.d.getElementById('homeAdminOverview').hidden,true);
+    assert.equal(h.d.querySelectorAll('.dash-card').length,6);
+    for (const role of ['member','google','vip']) { h.setRole(role); await settle(); assert.equal(h.calls.length,0); assert.equal(h.d.getElementById('homeAdminOverview').hidden,true); }
+    h.setRole('admin'); await settle();
+    assert.deepEqual(h.calls.map(c=>c.action),['nh_boot','nh_view','nh_view']);
+    assert(h.calls.every(c=>c.options.auth===true));
+    const cards = h.d.querySelectorAll('.home-group-card'); assert.equal(cards.length,2);
+    assert.match(cards[0].textContent,/Còn 1 học sinh chưa điểm danh/);
+    assert.equal(cards[0].querySelector('.home-group-metrics dd').textContent,'1');
+    assert.match(cards[0].textContent,/125\.000đ/); // Credit for another student must not offset the debt.
+    assert.equal(cards[1].querySelector('.home-group-metrics dd').textContent,'0'); // Closed period is not editable.
+    const attendance = new URL(cards[0].querySelector('.home-group-actions a').href);
+    assert.equal(attendance.searchParams.get('group'),'a'); assert.equal(attendance.searchParams.get('month'),'2026-09'); assert.equal(attendance.searchParams.get('session'),'today');
+    const fees = new URL(cards[0].querySelector('.home-group-actions a:last-child').href); assert.equal(fees.searchParams.get('tab'),'fees');
+    assert.equal(h.d.getElementById('homeGroupsShortcut').hidden,false);
+    h.setRole('guest'); assert.equal(h.d.getElementById('homeGroupCards').textContent,''); assert.equal(h.d.getElementById('homeAdminOverview').hidden,true);
 });
+
+test('Homepage ignores stale privileged responses after logout and reports unavailable data', async t => {
+    let release;
+    const h = homeFixture(t,'admin',(action,data)=>action==='nh_view'&&data.groupId==='a'?new Promise(resolve=>release=resolve):undefined);
+    await settle(); h.setRole('guest'); release({data:{}}); await settle();
+    assert.equal(h.d.getElementById('homeAdminOverview').hidden,true); assert.equal(h.d.getElementById('homeGroupCards').childElementCount,0);
+    const failed = homeFixture(t,'admin',action=>action==='nh_view'?Promise.reject(new Error('offline')):undefined); await settle();
+    assert.equal(failed.d.querySelectorAll('.home-group-unavailable').length,2);
+    assert.equal(failed.d.querySelectorAll('.home-group-metrics').length,0); assert.match(failed.d.getElementById('homeGroupsStatus').textContent,/chưa tải được/);
+});
+
 test('Homepage keeps account greetings and public overview after login and logout',async t=>{
     const h=homeFixture(t);await settle();h.setRole('member');assert.match(h.d.getElementById('heroTitle').textContent,/Tên thành viên/);
     h.setRole('admin');assert.match(h.d.getElementById('heroTitle').textContent,/thầy Hiển/);h.setRole('guest');assert.doesNotMatch(h.d.getElementById('heroTitle').textContent,/Hiển/);
