@@ -1,0 +1,1 @@
+Nhóm học sao lưu một chiều Cloudflare → Google Sheets bằng Service binding riêng tới GroupsSheetsBridge. Khóa ký đang có ở Worker kho tiện ích được giữ nguyên và không được sao chép sang Worker nhóm học. GAS xác minh chữ ký, kiểm tra đầy đủ 7 bảng trước khi ghi, đọc lại để kiểm chứng checksum và giữ các trang khác trong file.

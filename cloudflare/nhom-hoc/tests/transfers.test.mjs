@@ -8,7 +8,7 @@ const config=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.
 test('group transfers preserve payments, attendance, exemptions and identity; atomic writes and edit-dialog flow',async t=>{
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname,compatibilityDate:config.compatibility_date,compatibilityFlags:config.compatibility_flags,bindings:config.vars,d1Databases:['DB'],outboundService:async request=>{const p=await request.json();return Response.json(p.adminToken==='signed.admin'?{status:'success',data:{role:'admin',sub:'admin',exp:Math.floor(Date.now()/1000)+3600}}:{status:'error'});}}));
   t.after(()=>mf.dispose());const db=await mf.getD1Database('DB');
-  await db.exec(fs.readFileSync(new URL('../migrations/0001_groups.sql',import.meta.url),'utf8').replaceAll('\n',' '));
+  await db.exec(fs.readFileSync(new URL('../migrations/0001_groups.sql',import.meta.url),'utf8').replaceAll('\n',' '));await db.exec(fs.readFileSync(new URL('../migrations/0002_drive_backup.sql',import.meta.url),'utf8').replaceAll('\n',' '));
   await db.batch([
     db.prepare("INSERT INTO NhomHoc(ma_nhom,ten_nhom,cach_tinh_hoc_phi,don_gia_vnd,trang_thai) VALUES('g1','Thứ 2–4','theo_buoi',62500,'dang_hoc'),('g2','Thứ 3–5','theo_buoi',70000,'dang_hoc'),('g3','Nhóm đã lưu','theo_buoi',62500,'luu_tru')"),
     db.prepare("INSERT INTO HocSinh(ma_hoc_sinh,ho_ten,trang_thai) VALUES('paid','Em đã đóng tiền','dang_hoc'),('free','Em miễn học phí','dang_hoc'),('empty','Em chưa học','dang_hoc'),('duplicate','Em đã có ở nhóm mới','dang_hoc'),('race','Em thử đồng thời','dang_hoc')"),

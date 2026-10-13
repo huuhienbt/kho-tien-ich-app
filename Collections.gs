@@ -76,6 +76,7 @@ function egvCollectionsSigned_(payload){
   const lock=LockService.getScriptLock();lock.waitLock(15000);
   try{
     const props=PropertiesService.getScriptProperties();
+    if(request.op==='nh_backup')return createResponse({status:'success',data:egvNhMirror_(request)});
     if(request.op==='activate_export'){
       const tables=egvCollectionsRead_();
       props.setProperty('EGV_COLLECTIONS_ACTIVE','1');
@@ -128,6 +129,88 @@ function egvCollectionsPlans_(tables){
       });return row;
     });return {sheet:sheet,headers:headers,rows:rows,previousRows:old.length};
   });
+}
+
+/** Group mirror: the signed caller supplies a complete, consistent D1 snapshot. */
+function egvNhMirrorRead_(book){
+  const tables={};
+  Object.keys(NH_SCHEMA).forEach(name=>{
+    const columns=NH_SCHEMA[name],sheet=book.getSheetByName(name);
+    if(!sheet||sheet.getLastRow()<1)throw new Error('NH_MIRROR_SHEET_MISSING');
+    const values=sheet.getRange(1,1,sheet.getLastRow(),columns.length).getValues();
+    if(columns.some((column,index)=>values[0][index]!==column))throw new Error('NH_MIRROR_HEADERS');
+    tables[name]=values.slice(1).filter(row=>row.some(value=>value!==''&&value!=null)).map(row=>{
+      const record={};columns.forEach((column,index)=>{
+        let value=row[index];
+        if(value instanceof Date)value=/(?:cap_nhat|chot)_luc/.test(column)?value.toISOString():Utilities.formatDate(value,'Asia/Ho_Chi_Minh',/gio_/.test(column)?'HH:mm':/^ky_/.test(column)?'yyyy-MM':'yyyy-MM-dd');
+        record[column]=value==null?'':value;
+      });return record;
+    });
+  });return tables;
+}
+function egvNhMirror_(request){
+  if(!Number.isSafeInteger(request.revision)||request.revision<0||typeof NH_SCHEMA!=='object'||!request.tables||typeof request.tables!=='object'||Array.isArray(request.tables))throw new Error('NH_MIRROR_INVALID');
+  const names=Object.keys(NH_SCHEMA),incoming=Object.keys(request.tables),tables={};
+  if(incoming.length!==names.length||incoming.some(name=>names.indexOf(name)===-1))throw new Error('NH_MIRROR_TABLES');
+  // Validate every table before changing any sheet, including literal formula-like text.
+  names.forEach(name=>{
+    const columns=NH_SCHEMA[name],rows=request.tables[name],ids=new Set();
+    if(!Array.isArray(rows)||rows.length>10000)throw new Error('NH_MIRROR_ROWS');
+    tables[name]=rows.map(item=>{
+      if(!item||typeof item!=='object'||Array.isArray(item)||Object.keys(item).length!==columns.length||columns.some(column=>!Object.prototype.hasOwnProperty.call(item,column)))throw new Error('NH_MIRROR_COLUMNS');
+      const record={};columns.forEach(column=>{
+        const value=item[column];if(typeof value!=='string'&&typeof value!=='number'||typeof value==='number'&&!Number.isSafeInteger(value)||typeof value==='string'&&value.length>45000)throw new Error('NH_MIRROR_CELL');
+        record[column]=value;
+      });
+      const id=name==='DiemDanh'?JSON.stringify([record.ma_buoi,record.ma_hoc_sinh]):String(record[columns[0]]);
+      if(!id||ids.has(id))throw new Error('NH_MIRROR_IDS');ids.add(id);return record;
+    });
+  });
+  const props=PropertiesService.getScriptProperties(),sheetId=getSetting('EGV_NH_DATA_ID',true).trim();
+  if(!/^[\w-]{20,150}$/.test(sheetId))throw new Error('NH_MIRROR_DESTINATION');
+  const priorSheet=props.getProperty('EGV_NH_BACKUP_SHEET_ID');
+  if(priorSheet&&priorSheet!==sheetId)throw new Error('NH_MIRROR_DESTINATION_CHANGED');
+  const revision=Number(props.getProperty('EGV_NH_BACKUP_REVISION')||-1),serialized=JSON.stringify(tables);
+  const checksum=egvCollectionsHex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,serialized,Utilities.Charset.UTF_8));
+  if(request.revision<revision)throw new Error('NH_MIRROR_STALE');
+  if(request.revision===revision&&props.getProperty('EGV_NH_BACKUP_CHECKSUM')&&props.getProperty('EGV_NH_BACKUP_CHECKSUM')!==checksum)throw new Error('NH_MIRROR_CONFLICT');
+  const book=SpreadsheetApp.openById(sheetId);
+  if(book.getId()!==sheetId)throw new Error('NH_MIRROR_DESTINATION');
+  let savedAt=props.getProperty('EGV_NH_BACKUP_AT')||'';
+  if(request.revision===revision&&savedAt){
+    try{
+      if(JSON.stringify(egvNhMirrorRead_(book))===serialized)return {revision:revision,checksum:checksum,savedAt:savedAt,checkedAt:new Date().toISOString(),spreadsheetId:sheetId,written:false};
+    }catch(error){/* Repair a changed/missing mirror using the same committed snapshot. */}
+  }
+  const plans=names.map(name=>{
+    const columns=NH_SCHEMA[name],sheet=book.getSheetByName(name);
+    if(sheet&&sheet.getLastRow()){
+      const headers=sheet.getRange(1,1,1,sheet.getMaxColumns()).getValues()[0];
+      if(columns.some((column,index)=>headers[index]&&headers[index]!==column)||headers.slice(columns.length).some(value=>String(value||'').trim()))throw new Error('NH_MIRROR_HEADERS');
+    }
+    return {name:name,columns:columns,sheet:sheet,previousRows:sheet?Math.max(0,sheet.getLastRow()-1):0,rows:tables[name].map(item=>columns.map(column=>item[column]))};
+  });
+  plans.forEach(plan=>{
+    const sheet=plan.sheet||book.insertSheet(plan.name),width=plan.columns.length,rows=plan.rows;
+    if(sheet.getMaxColumns()<width)sheet.insertColumnsAfter(sheet.getMaxColumns(),width-sheet.getMaxColumns());
+    if(sheet.getMaxRows()<rows.length+1)sheet.insertRowsAfter(sheet.getMaxRows(),rows.length+1-sheet.getMaxRows());
+    sheet.getRange(1,1,1,width).setValues([plan.columns]);sheet.setFrozenRows(1);
+    if(rows.length){
+      plan.columns.forEach((column,index)=>{
+        if(rows.some(row=>typeof row[index]==='string'&&row[index]!==''))sheet.getRange(2,index+1,rows.length,1).setNumberFormat('@');
+      });
+      sheet.getRange(2,1,rows.length,width).setValues(rows.map(row=>row.map(value=>typeof value==='string'&&/^[=+@-]/.test(value)?'':value)));
+      rows.forEach((row,r)=>row.forEach((value,c)=>{
+        if(typeof value==='string'&&/^[=+@-]/.test(value))sheet.getRange(r+2,c+1).setRichTextValue(SpreadsheetApp.newRichTextValue().setText(value).build());
+      }));
+    }
+    if(plan.previousRows>rows.length)sheet.getRange(rows.length+2,1,plan.previousRows-rows.length,width).clearContent();
+  });
+  SpreadsheetApp.flush();
+  if(JSON.stringify(egvNhMirrorRead_(book))!==serialized)throw new Error('NH_MIRROR_READBACK');
+  savedAt=new Date().toISOString();
+  props.setProperties({EGV_NH_BACKUP_SHEET_ID:sheetId,EGV_NH_BACKUP_REVISION:String(request.revision),EGV_NH_BACKUP_CHECKSUM:checksum,EGV_NH_BACKUP_AT:savedAt});
+  return {revision:request.revision,checksum:checksum,savedAt:savedAt,checkedAt:savedAt,spreadsheetId:sheetId,written:true};
 }
 
 /** Native tokens grant admin only; member tokens keep their existing verifier. */

@@ -73,7 +73,31 @@
             "period": 60
           }
         }
-      ]
+      ],
+      "services": [
+        {
+          "binding": "SHEETS_BRIDGE",
+          "service": "egv-kho-tien-ich",
+          "entrypoint": "GroupsSheetsBridge"
+        }
+      ],
+      "triggers": {
+        "crons": [
+          "*/10 * * * *"
+        ]
+      }
     }
+  },
+  "services": [
+    {
+      "binding": "SHEETS_BRIDGE",
+      "service": "egv-kho-tien-ich",
+      "entrypoint": "GroupsSheetsBridge"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/10 * * * *"
+    ]
   }
 }
