@@ -19,6 +19,14 @@ Trong tab **Học sinh**, quản trị chọn **Sửa → Xóa khỏi nhóm**. A
 
 Chỉ còn một tab **Điểm danh** với chế độ **Tất cả 8 buổi** (ô vuông màu) và **Theo buổi** (chọn ngày, Tất cả có mặt, ghi chú). Hai chế độ dùng chung tìm học sinh, bản điểm danh chưa lưu, tạm tính học phí và một nút Lưu; đổi chế độ không bỏ các thay đổi. Xếp lịch còn thiếu và thêm buổi/học bù nằm trên thanh công cụ chung.
 
+## Tiền thuê phòng dạy
+
+Thẻ chung ở đầu Nhóm học cộng các buổi **đã học** của cả hai nhóm, độc lập với kỳ học đang chọn. Cứ 16 buổi là một khoản 1.000.000đ; không yêu cầu mỗi nhóm đúng 8 buổi, không tính theo số học sinh có mặt. Buổi dự kiến, chưa xác nhận và đã hủy không được cộng. Ngày dự kiến lấy từ lịch đã xếp, ngày đến hạn lấy từ buổi đã học thứ 16 chưa thanh toán. 14–15 buổi báo sắp đến hạn, từ 16 báo đến hạn.
+
+Quản trị ghi nhận ngày đã đóng và ghi chú. `TienThuePhong` giữ đúng 16 mã buổi cho mỗi khoản đóng, nên 18 buổi chỉ thanh toán 16 và chuyển 2 buổi tiếp. Có thể hủy lần ghi nhận nhầm với lý do; lịch sử vẫn còn. Buổi đã tính trong khoản đóng đang hiệu lực được bảo vệ khỏi hủy/chuyển sang dự kiến. Thử lại cùng mã thanh toán không tạo khoản trùng; giao dịch đồng thời dùng cơ chế kiểm tra phiên bản và transaction hiện có. Không tự tạo giao dịch tiền phòng hoặc suy đoán khoản đã đóng trước khi tính năng này được thêm.
+
+Triển khai nâng cấp: cập nhật `NhomHoc.gs` trong Web App Apps Script trước để mirror hiểu bảng thứ 8; áp dụng `0003_room_rent.sql`, rồi triển khai Worker nhóm học. Migration thêm bảng và tăng revision cấu trúc đúng một lần, giữ nguyên dữ liệu 7 bảng cũ. Khoản đóng được sao lưu cùng snapshot đã ký và đọc lại đối chiếu trên Drive. Không cần khóa ký mới hoặc nâng gói Cloudflare.
+
 ## Giới hạn để ưu tiên miễn phí
 
 Không có nâng cấp gói hoặc dịch vụ AI trả phí trong Worker này. Workers Free: 100.000 yêu cầu/ngày, CPU 10 ms/lần. D1 Free: 5 triệu hàng đọc/ngày, 100.000 hàng ghi/ngày, 5 GB tổng dung lượng. R2 Standard có mức miễn phí 10 GB/tháng, 1 triệu thao tác Class A và 10 triệu Class B/tháng; vượt mức R2 có thể phát sinh phí.
@@ -78,7 +86,7 @@ Có thể export D1 bằng `wrangler d1 export egv-nhom-hoc --remote --output=<�
 Không nhập lại snapshot cũ lên D1 đang có thay đổi mới. Khi chuyển ban đầu, khóa API ghi Drive trước, đọc lại nguồn, đối chiếu số hàng và tổng học phí, rồi mới bật URL Worker trên giao diện.
 # Bản sao nhóm học trên Drive
 
-Cloudflare D1 là nguồn dữ liệu đang dùng. Sau các lần ghi, Worker sao lưu trong nền; Cron `*/10 * * * *` tiếp tục kiểm tra kể cả khi đóng website. Cả 7 bảng nghiệp vụ được chụp cùng một D1 batch và gửi qua Service binding `SHEETS_BRIDGE` tới named entrypoint `GroupsSheetsBridge` của `egv-kho-tien-ich`. Khóa ký đang có ở Worker kho tiện ích được giữ nguyên, không sao chép sang Worker nhóm học hoặc trình duyệt.
+Cloudflare D1 là nguồn dữ liệu đang dùng. Sau các lần ghi, Worker sao lưu trong nền; Cron `*/10 * * * *` tiếp tục kiểm tra kể cả khi đóng website. Cả 8 bảng nghiệp vụ được chụp cùng một D1 batch và gửi qua Service binding `SHEETS_BRIDGE` tới named entrypoint `GroupsSheetsBridge` của `egv-kho-tien-ich`. Khóa ký đang có ở Worker kho tiện ích được giữ nguyên, không sao chép sang Worker nhóm học hoặc trình duyệt.
 
 Apps Script sử dụng file đã cấu hình trong `EGV_NH_DATA_ID`, giữ nguyên các tab khác, kiểm tra cấu trúc trước khi ghi, bảo vệ chữ bắt đầu như công thức và đối chiếu toàn bộ dữ liệu sau khi ghi. Snapshot cũ hoặc cùng revision nhưng khác nội dung bị từ chối. Nếu bản Drive bị chỉnh, lần kiểm tra sau sẽ sửa lại theo Cloudflare. Không nhập ngược chỉnh sửa Drive vào D1.
 

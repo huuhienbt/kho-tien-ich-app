@@ -35,6 +35,7 @@ jobs:
           node tests/nhom-hoc-cycle.test.cjs
           node tests/nhom-hoc-ledger.test.cjs
           node tests/nhom-hoc-ui.test.cjs
+          node --test tests/nhom-hoc-room-rent-ui.test.cjs tests/nhom-hoc-backup-ui.test.cjs
           node --test tests/nh-cloudflare-api.test.cjs tests/nhom-hoc-auth-bridge.test.cjs
   deploy:
     needs: check
