@@ -308,3 +308,55 @@
   .nh-rent-action .btn,.nh-rent-payment .nh-link { min-height: 44px; }
   .nh-rent-detail-grid { grid-template-columns: minmax(0,1fr); gap: 4px; }
 }
+
+/* Học phí trên điện thoại: tên, trạng thái và ba số tiền trong một hàng gọn. */
+.nh-fee-mobile-meta,.nh-fee-action-short { display: none; }
+.nh-receipt-period { grid-column: 1/-1; }
+@media(max-width:850px) {
+  #nhFees .nh-fees-card { padding: 12px 10px; }
+  .nh-fees-card > .nh-card-heading { align-items: flex-start; flex-wrap: nowrap; gap: 8px; margin-bottom: 10px; }
+  .nh-fees-card > .nh-card-heading > div { min-width: 0; }
+  .nh-fees-card > .nh-card-heading h2 { font-size: 15px; line-height: 1.4; }
+  .nh-fees-card > .nh-card-heading p { font-size: 10px; line-height: 1.45; }
+  .nh-fees-card > .nh-card-heading > .btn { flex: 0 0 auto; font-size: 10px; min-height: 40px; padding: 6px 8px; }
+  .nh-fee-tools { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap: 8px; margin: 10px 0; }
+  .nh-fee-tools label { min-width: 0; gap: 4px; font-size: 10px; }
+  .nh-fee-tools .form-control { width: 100%; min-width: 0; min-height: 42px; padding: 7px 8px; font-size: 16px; }
+  .nh-fees-table,.nh-fees-table tbody { display: block; width: 100%; }
+  .nh-fees-table thead { display: none; }
+  .nh-fees-table tbody { display: grid; gap: 5px; }
+  .nh-fees-table .nh-fee-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)) 44px; gap: 5px 6px; padding: 8px; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 9px; background: #fff; }
+  .nh-fees-table .nh-fee-row[data-fee-state='unpaid'] { border-left-color: #e11d48; }
+  .nh-fees-table .nh-fee-row[data-fee-state='partial'] { border-left-color: #d97706; }
+  .nh-fees-table .nh-fee-row[data-fee-state='paid'] { border-left-color: #16a34a; }
+  .nh-fees-table .nh-fee-row[data-fee-state='credit'] { border-left-color: #2563eb; }
+  .nh-fees-table .nh-fee-row > td { display: block; border: 0; padding: 0!important; min-width: 0; text-align: left!important; white-space: normal!important; }
+  .nh-fees-table .nh-fee-row > .nh-fee-student { grid-column: 1/4; grid-row: 1; padding-bottom: 0!important; border-bottom: 0; }
+  .nh-fees-table .nh-student-name { display: block; width: 100%; min-height: 26px; font-size: 13px; line-height: 1.35; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+  .nh-fees-table .nh-fee-extra { display: none; }
+  .nh-fee-mobile-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 7px; margin: 1px 0 3px; font-size: 10px; line-height: 1.4; color: #64748b; }
+  .nh-fee-mobile-meta .nh-pill { font-size: 9px; line-height: 1.3; padding: 2px 5px; }
+  .nh-fees-table .nh-fee-row > .nh-fee-present,.nh-fees-table .nh-fee-row > .nh-fee-absent,.nh-fees-table .nh-fee-row > .nh-fee-state { display: none; }
+  .nh-fees-table .nh-fee-due { grid-column: 1; grid-row: 2; }
+  .nh-fees-table .nh-fee-paid { grid-column: 2; grid-row: 2; }
+  .nh-fees-table .nh-fee-balance { grid-column: 3; grid-row: 2; }
+  .nh-fees-table .nh-fee-row > .nh-number { font-size: 12px; line-height: 1.4; letter-spacing: -.025em; font-weight: 650; overflow-wrap: anywhere; }
+  .nh-fees-table .nh-fee-row > .nh-number::before { content: attr(data-label); display: block; color: #64748b; font-size: 9px; line-height: 1.4; letter-spacing: 0; font-weight: 400; margin-bottom: 2px; }
+  .nh-fees-table .nh-fee-credit-prefix { display: none; }
+  .nh-fees-table .nh-fee-row > .nh-fee-action { display: flex; grid-column: 4; grid-row: 1/3; align-items: center; justify-content: center; }
+  .nh-fees-table .nh-receive { display: flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; min-height: 44px; padding: 5px; border-radius: 8px; font-size: 11px; }
+  .nh-fee-action-full { display: none; }
+  .nh-fee-action-short { display: inline; }
+  .nh-dialog[data-kind='receipt'] { padding: 16px; max-height: 90dvh; }
+  .nh-dialog[data-kind='receipt'] header { gap: 8px; margin-bottom: 12px; }
+  .nh-dialog[data-kind='receipt'] h2 { font-size: 17px; line-height: 1.4; }
+  .nh-dialog[data-kind='receipt'] .nh-close { flex-shrink: 0; width: 40px; height: 40px; }
+  .nh-dialog[data-kind='receipt'] .nh-form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .nh-dialog[data-kind='receipt'] .nh-form-grid label { min-width: 0; gap: 5px; font-size: 11px; }
+  .nh-dialog[data-kind='receipt'] .nh-form-grid > label:nth-of-type(3) { grid-column: 1/-1; }
+  .nh-dialog[data-kind='receipt'] .form-control { min-width: 0; width: 100%; min-height: 42px; padding: 8px; font-size: 16px; }
+  .nh-dialog[data-kind='receipt'] .nh-caption { font-size: 10px; line-height: 1.4; }
+  .nh-dialog[data-kind='receipt'] textarea.form-control { min-height: 62px; }
+  .nh-dialog[data-kind='receipt'] footer { margin-top: 12px; }
+  .nh-dialog[data-kind='receipt'] footer .btn { min-height: 44px; font-size: 12px; padding: 8px 12px; }
+}
