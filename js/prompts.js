@@ -287,12 +287,12 @@
                 </div>
                 ${body}
                 <div class="card-footer">
-                    <div>${locked ? '<span class="vip-note">Cần tài khoản VIP</span>' : '<button class="btn btn-ghost btn-sm" type="button" data-action="expand">Xem đầy đủ ↓</button>'}</div>
+                    <div>${locked ? '<span class="vip-note">Cần tài khoản VIP</span>' : `<button class="btn btn-ghost btn-sm" type="button" data-action="expand" aria-expanded="false" aria-controls="prompt-content-${id}"><span class="collection-action-full">Xem đầy đủ ↓</span><span class="collection-action-short">Chi tiết ↓</span></button>`}</div>
                     <div class="prompt-action-group">
-                        ${locked ? '' : '<button class="btn btn-secondary btn-sm" type="button" data-action="copy">📋 Sao chép</button>'}
-                        ${locked || !authenticated ? '' : '<button class="btn btn-use btn-sm" type="button" data-action="use">↗ Sử dụng</button>'}
-                        <button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit">✏️ Sửa</button>
-                        <button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete">🗑️ Xóa</button>
+                        ${locked ? '' : '<button class="btn btn-secondary btn-sm" type="button" data-action="copy" aria-label="Sao chép Prompt"><span class="collection-action-full">📋 Sao chép</span><span class="collection-action-short">Chép</span></button>'}
+                        ${locked || !authenticated ? '' : '<button class="btn btn-use btn-sm" type="button" data-action="use" aria-label="Sử dụng Prompt"><span class="collection-action-full">↗ Sử dụng</span><span class="collection-action-short">Dùng</span></button>'}
+                        <button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit" aria-label="Sửa Prompt" title="Sửa Prompt"><span aria-hidden="true">✏️</span><span class="collection-admin-label"> Sửa</span></button>
+                        <button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete" aria-label="Xóa Prompt" title="Xóa Prompt"><span aria-hidden="true">🗑️</span><span class="collection-admin-label"> Xóa</span></button>
                     </div>
                 </div>
             </article>`;
@@ -530,7 +530,9 @@
         if (actionButton.dataset.action === 'expand') {
             const box = card.querySelector('.prompt-box');
             const expanded = box.classList.toggle('expanded');
-            actionButton.textContent = expanded ? 'Thu gọn ↑' : 'Xem đầy đủ ↓';
+            actionButton.setAttribute('aria-expanded', String(expanded));
+            actionButton.querySelector('.collection-action-full').textContent = expanded ? 'Thu gọn ↑' : 'Xem đầy đủ ↓';
+            actionButton.querySelector('.collection-action-short').textContent = expanded ? 'Thu gọn ↑' : 'Chi tiết ↓';
         }
         if (actionButton.dataset.action === 'favorite') {
             await toggleFavorite(id);

@@ -150,7 +150,7 @@
                     <h2 class="card-title">${App.escapeHTML(item.task || 'Chưa nhập công việc')}</h2>
                     <span class="status-badge ${statusClass(item.status)}">${App.escapeHTML(item.status || 'Chưa rõ')}</span>
                 </div>
-                <div class="repair-grid">
+                <div class="repair-grid" id="repair-details-${id}">
                     <div class="repair-detail"><span class="repair-detail-label">Ngày ghi nhận</span><span class="repair-detail-value">${App.escapeHTML(formatDate(item.date))}</span></div>
                     <div class="repair-detail"><span class="repair-detail-label">Lớp/phòng</span><span class="repair-detail-value">${App.escapeHTML(item.location || '—')}</span></div>
                     <div class="repair-detail"><span class="repair-detail-label">Chi phí</span><span class="repair-detail-value">${App.escapeHTML(formatMoney(item.cost))}</span></div>
@@ -160,8 +160,8 @@
                 </div>
                 ${item.note ? `<p class="repair-note">📝 ${App.escapeHTML(item.note)}</p>` : ''}
                 <div class="card-footer">
-                    <div>${imageUrl ? `<a class="btn btn-secondary btn-sm" href="${App.escapeHTML(imageUrl)}" target="_blank" rel="noopener noreferrer">📎 Xem ảnh</a>` : `<span class="platform-label">Người báo: ${App.escapeHTML(item.reporter || '—')}</span>`}</div>
-                    <div style="display:flex;gap:7px"><button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit">✏️ Sửa</button><button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete">🗑️ Xóa</button></div>
+                    <div class="repair-overview-actions"><button class="btn btn-ghost btn-sm repair-detail-toggle" type="button" data-action="details" aria-expanded="false" aria-controls="repair-details-${id}">Chi tiết ↓</button>${imageUrl ? `<a class="btn btn-secondary btn-sm" href="${App.escapeHTML(imageUrl)}" target="_blank" rel="noopener noreferrer">📎 Xem ảnh</a>` : `<span class="platform-label repair-reporter">Người báo: ${App.escapeHTML(item.reporter || '—')}</span>`}</div>
+                    <div class="repair-edit-actions"><button class="btn btn-secondary btn-sm admin-only" type="button" data-action="edit" aria-label="Sửa báo cáo" title="Sửa báo cáo"><span aria-hidden="true">✏️</span><span class="collection-admin-label"> Sửa</span></button><button class="btn btn-danger btn-sm admin-only" type="button" data-action="delete" aria-label="Xóa báo cáo" title="Xóa báo cáo"><span aria-hidden="true">🗑️</span><span class="collection-admin-label"> Xóa</span></button></div>
                 </div>
             </article>`;
         }).join('');
@@ -275,6 +275,11 @@
         const card = event.target.closest('.repair-card');
         if (!action || !card) return;
         const id = card.dataset.id;
+        if (action.dataset.action === 'details' && state.accessLevel === 'admin' && App.isAdmin()) {
+            const expanded = card.classList.toggle('repair-expanded');
+            action.setAttribute('aria-expanded', String(expanded));
+            action.textContent = expanded ? 'Thu gọn ↑' : 'Chi tiết ↓';
+        }
         if (action.dataset.action === 'edit') App.requireAdmin(() => openForm(id));
         if (action.dataset.action === 'delete') App.requireAdmin(() => deleteRepair(id));
     });
