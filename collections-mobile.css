@@ -1,0 +1,74 @@
+/* Compact collection lists; desktop uses the existing card layout. */
+.collection-action-short,.repair-detail-toggle { display: none; }
+.repair-edit-actions { display: flex; gap: 7px; }
+@media(max-width:850px) {
+  :is(.page-prompts,.page-repairs) .page-main { padding-top: 12px; }
+  :is(.page-prompts,.page-repairs) .page-heading { min-height: 0; padding: 14px 16px; gap: 10px; margin-bottom: 12px; border-radius: 16px; }
+  :is(.page-prompts,.page-repairs) .page-eyebrow { font-size: 9px; margin-bottom: 4px; }
+  :is(.page-prompts,.page-repairs) .page-title { font-size: 25px; line-height: 1.25; }
+  :is(.page-prompts,.page-repairs) .page-description { font-size: 11px; line-height: 1.5; margin-top: 6px; }
+  :is(.page-prompts,.page-repairs) .page-actions { gap: 6px; flex-wrap: wrap; }
+  :is(.page-prompts,.page-repairs) .page-actions .btn { min-height: 44px; padding: 7px 10px; font-size: 11px; }
+  :is(.page-prompts,.page-repairs) .toolbar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; padding: 10px; margin-bottom: 10px; border-radius: 12px; }
+  :is(.page-prompts,.page-repairs) .toolbar .search-wrap { grid-column: 1/-1; min-width: 0; }
+  :is(.page-prompts,.page-repairs) .toolbar .search-input { min-width: 0; min-height: 44px; font-size: 16px; padding-block: 8px; }
+  :is(.page-prompts,.page-repairs) .toolbar .select-input { width: 100%; min-width: 0; min-height: 40px; padding: 7px 26px 7px 9px; font-size: 13px; }
+  .page-repairs .toolbar > .select-input { grid-column: 1/-1; }
+  .page-prompts .tabs { gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 10px; scrollbar-width: thin; }
+  .page-prompts .tab { min-height: 40px; padding: 7px 9px; font-size: 11px; }
+  .page-prompts .tab-count { font-size: 10px; padding: 1px 4px; }
+  :is(#promptContainer,#repairContainer) { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  :is(.prompt-card,.repair-card) { padding: 11px 12px; border-radius: 12px; }
+  :is(.prompt-card,.repair-card) .card-header { gap: 8px; min-width: 0; }
+  .prompt-card .card-header > div { min-width: 0; flex: 1; }
+  :is(.prompt-card,.repair-card) .card-title { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+  .prompt-card .prompt-meta { gap: 4px 6px; margin-top: 5px!important; }
+  .prompt-meta .tag { padding: 2px 6px; border-radius: 7px; font-size: 9px; line-height: 1.5; }
+  .prompt-meta .platform-label { font-size: 10px; overflow-wrap: anywhere; }
+  .prompt-card .favorite-btn { flex: 0 0 44px; width: 44px; height: 44px; padding: 4px; border-radius: 9px; font-size: 20px; }
+  .prompt-card .prompt-box { margin-top: 7px; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+  .prompt-card .prompt-box:not(.expanded) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; max-height: 2.9em; overflow: hidden; }
+  .prompt-card .prompt-box::after { display: none; }
+  .prompt-card .prompt-box.expanded { display: block; max-height: none; padding: 9px; background: #f8fafc; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+  :is(.prompt-card,.repair-card) .card-footer { display: flex; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 5px; margin-top: 8px; padding-top: 6px; }
+  :is(.prompt-card,.repair-card) .card-footer > div { min-width: 0; }
+  :is(.prompt-card,.repair-card) .card-footer .btn { min-height: 44px; padding: 6px; font-size: 11px; }
+  .prompt-card .card-footer > .prompt-action-group { display: flex; width: auto; flex: 0 0 auto; gap: 4px; flex-wrap: nowrap; }
+  .prompt-action-group .btn { flex: 0 0 44px; min-width: 44px; width: 44px; }
+  .collection-action-full,.collection-admin-label { display: none; }
+  .collection-action-short { display: inline; }
+  .prompt-card .vip-lock { min-height: 0; padding: 9px; gap: 4px; margin-top: 7px; border-radius: 9px; }
+  .prompt-card .vip-lock-icon { display: none; }
+  .prompt-card .vip-lock strong { font-size: 11px; }
+  .prompt-card .vip-lock span { font-size: 10px; line-height: 1.5; }
+  .prompt-card .vip-lock .btn { min-height: 40px; padding: 6px 9px; font-size: 11px; }
+  .prompt-card .vip-note { font-size: 10px; }
+  .page-repairs .repair-summary { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-bottom: 10px; }
+  .repair-summary .stat-card { min-height: 0; padding: 9px 11px; border-radius: 11px; }
+  .repair-summary .stat-label { font-size: 10px; }
+  .repair-summary .stat-value { font-size: 19px; margin: 4px 0 0; line-height: 1.3; overflow-wrap: anywhere; }
+  .repair-summary .stat-hint { display: none; }
+  .repair-card .card-title { flex: 1; min-width: 0; }
+  .repair-card .status-badge { flex: 0 0 auto; max-width: 110px; padding: 4px 6px; font-size: 9px; white-space: normal; text-align: center; }
+  .repair-card .repair-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-top: 8px; }
+  .repair-card .repair-detail { padding: 5px 6px; border: 0; border-radius: 6px; }
+  .repair-card .repair-detail-label { font-size: 9px; line-height: 1.4; margin-bottom: 2px; }
+  .repair-card .repair-detail-value { font-size: 11px; line-height: 1.4; }
+  .repair-card:not(.repair-expanded) .repair-detail:nth-child(n+4),.repair-card:not(.repair-expanded) .repair-note,.repair-card:not(.repair-expanded) .repair-reporter { display: none; }
+  .repair-card.repair-expanded .repair-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .repair-card .repair-note { padding: 8px 10px; margin-top: 8px; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+  .repair-card .card-footer > .repair-overview-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; width: auto; flex: 1; }
+  .repair-detail-toggle { display: inline-flex; }
+  .repair-card .card-footer > .repair-edit-actions { display: flex; flex-wrap: nowrap; gap: 4px; width: auto; flex: 0 0 auto; }
+  .repair-edit-actions .btn { min-width: 44px; width: 44px; }
+  .repair-card .repair-reporter { font-size: 10px; }
+  .repair-card-public .repair-private-placeholder { min-height: 0; margin-top: 7px; padding: 6px 8px; gap: 5px; border-radius: 7px; }
+  .repair-card-public .repair-private-placeholder > span { font-size: 11px; }
+  .repair-card-public .repair-private-placeholder p { font-size: 9px; line-height: 1.4; }
+  .page-repairs .repair-auth-gate { gap: 8px; padding: 10px 12px; margin-bottom: 10px; border-radius: 12px; }
+  .page-repairs .repair-auth-lock { width: 32px; height: 32px; border-radius: 8px; }
+  .page-repairs .repair-auth-lock svg { width: 18px; height: 18px; }
+  .page-repairs .repair-auth-gate strong { font-size: 11px; }
+  .page-repairs .repair-auth-gate p { font-size: 10px; line-height: 1.4; }
+  .page-repairs .repair-auth-gate .btn { min-height: 44px; padding: 7px 10px; font-size: 11px; }
+}
