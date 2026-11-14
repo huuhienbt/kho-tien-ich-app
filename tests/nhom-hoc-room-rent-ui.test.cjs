@@ -21,7 +21,11 @@ test('Rent is admin-only; payment UI carries excess, retries one ID, blocks unsa
   role='admin';w.dispatchEvent(new w.Event('app:auth-change'));await settle();
   assert.equal(d.getElementById('nhRentCount').textContent,'18/16');assert.equal(d.getElementById('nhRentPanel').dataset.state,'due');assert.match(d.getElementById('nhRentDate').textContent,/15\/10\/2026/);assert.match(d.getElementById('nhRentHint').textContent,/2 buổi chuyển tiếp/);
   d.querySelector('[data-group="g35"]').click();await settle();
-  const square=()=>d.querySelector('#nhOverview [data-cycle]');square().click();assert.equal(d.getElementById('nhRentPay').disabled,true);assert.match(d.getElementById('nhRentHint').textContent,/Lưu điểm danh/);square().click();square().click();assert.equal(d.getElementById('nhRentPay').disabled,false);
+  const square=d.querySelector('#nhOverview [data-cycle][data-student="s1"]');square.click();
+  const saved=d.querySelector('#nhAttendance [data-mark="co_mat"][data-student="s1"]').getAttribute('aria-pressed')==='true'?'co_mat':d.querySelector('#nhAttendance [data-mark="vang"][data-student="s1"]').getAttribute('aria-pressed')==='true'?'vang':'chua_diem_danh';
+  d.querySelector('#nhAttendance [data-mark="'+(saved==='co_mat'?'vang':'co_mat')+'"][data-student="s1"]').click();
+  assert.equal(d.getElementById('nhRentPay').disabled,true);assert.match(d.getElementById('nhRentHint').textContent,/Lưu điểm danh/);
+  d.querySelector('#nhAttendance [data-mark="'+saved+'"][data-student="s1"]').click();assert.equal(d.getElementById('nhRentPay').disabled,false);
   d.getElementById('nhRentPay').click();assert.equal(d.getElementById('nhDialog').open,true);assert.equal(d.querySelector('[name="amount"]').readOnly,true);assert.equal(d.querySelector('[name="date"]').min,'2026-10-15');assert.equal(d.querySelector('[name="date"]').max,'2026-10-20');
   d.querySelector('[name="note"]').value='<img src=x onerror=alert(1)> Chuyển khoản';
   const form=d.getElementById('nhForm'),views=calls.filter(c=>c.action==='nh_view').length;
