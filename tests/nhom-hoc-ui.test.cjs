@@ -59,7 +59,7 @@ test('Classbook reads old records without writes; names, lessons, payments and p
   for(const tab of ['fees','students','attendance'])click('[data-tab="'+tab+'"]');
   await ui.selectPeriod('2026-10');await ui.selectPeriod('2026-09');
   assert.match(q('#nhPeriodInfo').textContent,/Kỳ 1/);assert.equal(q('#nhMonth').value,'2026-09');assert.equal(q('#nhMonth').hidden,true);assert.equal(q('#nhPeriodChoice').hidden,false);
-  click('[data-attendance-mode="overview"]');assert.equal(ui.d.querySelectorAll('.nh-overview-table thead th').length,10);
+  click('[data-attendance-mode="overview"]');assert.equal(ui.d.querySelectorAll('.nh-overview-table thead th').length,11);
   q('#nhOverview [data-cycle][data-student="s1"]').click();assert.equal(q('#nhAttendance').hidden,false);assert.equal(q('#nhSaveAttendance').disabled,true);
   q('#nhSearch').value='do anh';q('#nhSearch').dispatchEvent(new ui.w.Event('input',{bubbles:true}));
   assert.equal([...ui.d.querySelectorAll('.nh-mobile-student')].filter(r=>!r.hidden).length,1);
@@ -129,19 +129,25 @@ test('Notes, profiles, fee filters and CSV preserve installment history and esca
 });
 test('Receipt forms append installments; closing and reopening a period preserve the previous ledger',async t=>{
   const ui=await mount(t,{prepare:completedFixture});await ui.selectGroup('g35');await ui.selectPeriod('2026-09');
+  assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'partial');
   const before=snapshot(ui.h);ui.click('[data-profile="s1"]');ui.click('#nhProfileBody [data-receive="s1"]');
   assert.equal(ui.q('#nhProfile').open,false);assert.match(ui.q('.nh-receipt-context').textContent,/Thứ 3–5.*Kỳ 1.*Học sinh A/);
   assert.equal(ui.q('[name="amount"]').value,'175000');ui.q('[name="note"]').value='Đóng thêm lần 2';
   ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
   let view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.fees.find(f=>f.studentId==='s1').paid,375000);assert.equal(view.receipts.length,2);
+  assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'paid');
   const write=ui.calls.find(c=>c.action==='nh_receipt_save');assert.equal(write.data.month,'2026-09');assert.equal(write.data.studentId,'s1');assert.equal(write.data.amount,'175000');
   const after=snapshot(ui.h);assert.deepEqual(after.ThuHocPhi.slice(0,before.ThuHocPhi.length),before.ThuHocPhi);
   for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','BuoiHoc','DiemDanh','HocPhiKy','TienThuePhong'])assert.deepEqual(after[name],before[name]);
   ui.click('[data-tab="fees"]');ui.click('[data-action="close"]');ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
   view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.closed,true);assert.equal(ui.q('#nhAttendance [data-mark="co_mat"][data-student="s1"]').disabled,true);
+  assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'paid');
   ui.click('[data-action="reopen"]');ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
   view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.closed,false);assert.equal(view.fees.find(f=>f.studentId==='s1').paid,375000);
   const reopened=snapshot(ui.h);for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','BuoiHoc','DiemDanh','ThuHocPhi','TienThuePhong'])assert.deepEqual(reopened[name],after[name]);
+  ui.click('[data-void="'+write.data.id+'"]');ui.q('[name="reason"]').value='Hủy phiếu nhập nhầm';ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'partial');
+  view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.receipts.length,2);assert.equal(view.fees.find(f=>f.studentId==='s1').paid,200000);
 });
 test('Future lessons stay read-only; scheduling only appends lessons and preserves the old ledger',async t=>{
   const ui=await mount(t,{prepare:h=>{const v=h.api('nh_view',{groupId:'g35',month:'2026-09'});h.api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:v.revision,sessions:[{id:'future',date:'2026-10-13'}]});}});

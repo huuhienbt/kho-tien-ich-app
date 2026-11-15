@@ -405,6 +405,19 @@
     if(f.paid)return {key:'partial',text:'Đóng một phần',tone:'orange'};
     return {key:'unpaid',text:'Chưa đóng',tone:'red'};
   }
+  function attendanceFee(f,m) {
+    const status=feeStatus(f),label=({free:'Miễn',partial:'Một phần'})[status.key]||status.text;
+    const detail=`Học phí ${m.ho_ten} · ${periodLabel(state.month)}: ${status.text}. Phải đóng ${money(f.due)}, đã đóng ${money(f.paid)}${f.balance<0?', đóng dư '+money(-f.balance):f.balance>0?', còn thiếu '+money(f.balance):''}.${state.dirty?' Tạm tính theo điểm danh chưa lưu.':''} Xem chi tiết học sinh.`;
+    return `<button type="button" class="nh-pill nh-attendance-fee ${status.tone}" data-profile="${esc(f.studentId)}" data-fee-state="${status.key}" title="${esc(detail)}" aria-label="${esc(detail)}">${label}</button>`;
+  }
+  function refreshAttendanceFees() {
+    const fees=projectedFees();
+    document.querySelectorAll('[data-attendance-fee]').forEach(cell=>{
+      const id=cell.dataset.attendanceFee,f=fees.find(f=>f.studentId===id),m=state.view.roster.find(m=>m.ma_hoc_sinh===id);
+      if(f&&m)cell.innerHTML=attendanceFee(f,m);
+    });
+    const hint=$('nhAttendanceFeeHint');if(hint)hint.hidden=!state.dirty;
+  }
   const studentButton = m => `<button class="nh-student-name" type="button" data-profile="${esc(m.ma_hoc_sinh)}">${esc(m.ho_ten)}</button>`;
   function paintSummary() {
     const v=state.view,cycle=v.period.mode==='eight_sessions',fees=projectedFees(),due=fees.reduce((n,f)=>n+f.due,0),paid=fees.reduce((n,f)=>n+f.paid,0),balance=fees.reduce((n,f)=>n+Math.max(0,f.balance),0);
@@ -481,9 +494,9 @@
   }
   function paintOverview() {
     const v=state.view,slots=slotSessions(),size=v.period.mode==='eight_sessions'?8:Math.max(1,slots.length),columns=Array.from({length:size},(_,i)=>slots[i]||null),fees=projectedFees();
-    const heads=columns.map((s,i)=>`<th scope="col">${s?`<button type="button" class="nh-overview-date" data-session="${esc(s.ma_buoi)}" aria-label="Điểm danh buổi ${i+1}, ${esc(dateLabel(s.ngay_hoc))}"><span>${i+1}</span><small>${shortDate(s.ngay_hoc)}</small></button>`:`<span>${i+1}</span><small class="nh-overview-unset">—</small>`}</th>`).join('');
-    const rows=v.roster.map(m=>{const f=fees.find(f=>f.studentId===m.ma_hoc_sinh);return `<tr class="nh-student-entry" data-student-name="${esc(normalize(m.ho_ten))}"><th scope="row" class="nh-overview-name">${studentButton(m)}</th>${columns.map(s=>`<td class="nh-overview-cell" data-cell-session="${esc(s?.ma_buoi||'')}" data-cell-student="${esc(m.ma_hoc_sinh)}">${squareCell(m,s)}</td>`).join('')}<td class="nh-overview-count"><strong data-overview-count="${esc(m.ma_hoc_sinh)}" data-size="${size}" title="Có mặt ${f.attended} buổi, vắng ${f.absent||0} buổi">${f.attended}/${size}</strong></td></tr>`;}).join('');
-    $('nhOverview').innerHTML=`<div class="nh-card nh-overview-card"><div class="nh-card-heading"><p class="nh-matrix-caption">${v.roster.length} học sinh · ${size} buổi</p><label class="nh-overview-search"><span class="sr-only">Tìm học sinh</span><input id="nhOverviewSearch" class="form-control" aria-label="Tìm học sinh trong cả kỳ" placeholder="Tìm học sinh…" value="${esc(state.search)}"></label></div><div class="nh-square-legend"><span><i class="nh-square co_mat" aria-hidden="true"></i>Có mặt</span><span><i class="nh-square vang" aria-hidden="true"></i>Vắng</span><span><i class="nh-square" aria-hidden="true"></i>Chưa điểm danh</span><span><i class="nh-square future" aria-hidden="true"></i>Dự kiến</span></div><div class="nh-table-wrap nh-overview-wrap" tabindex="0" role="region" aria-label="Tổng quan điểm danh tất cả học sinh"><table class="nh-table nh-overview-table"><thead><tr><th scope="col" class="nh-overview-name">Học sinh</th>${heads}<th scope="col" class="nh-overview-count" aria-label="Số buổi có mặt">Có mặt</th></tr></thead><tbody>${rows}</tbody></table></div><p class="nh-search-empty" id="nhOverviewEmpty" hidden>Không tìm thấy học sinh.</p><p class="nh-caption nh-overview-caption">Chọn ngày hoặc ô để mở buổi học.</p></div>`;
+    const heads=columns.map((s,i)=>`<th scope="col">${s?`<button type="button" class="nh-overview-date" data-session="${esc(s.ma_buoi)}" aria-label="Điểm danh buổi ${i+1}, ${esc(dateLabel(s.ngay_hoc))}"><span class="nh-session-index">${i+1}</span><small><span>${shortDate(s.ngay_hoc).slice(0,2)}</span><span class="nh-date-month">${shortDate(s.ngay_hoc).slice(2)}</span></small></button>`:`<span class="nh-session-index">${i+1}</span><small class="nh-overview-unset">—</small>`}</th>`).join('');
+    const rows=v.roster.map(m=>{const f=fees.find(f=>f.studentId===m.ma_hoc_sinh);return `<tr class="nh-student-entry" data-student-name="${esc(normalize(m.ho_ten))}"><th scope="row" class="nh-overview-name">${studentButton(m)}</th>${columns.map(s=>`<td class="nh-overview-cell" data-cell-session="${esc(s?.ma_buoi||'')}" data-cell-student="${esc(m.ma_hoc_sinh)}">${squareCell(m,s)}</td>`).join('')}<td class="nh-overview-count"><strong data-overview-count="${esc(m.ma_hoc_sinh)}" data-size="${size}" title="Có mặt ${f.attended} buổi, vắng ${f.absent||0} buổi">${f.attended}/${size}</strong></td><td class="nh-overview-fee" data-attendance-fee="${esc(m.ma_hoc_sinh)}">${attendanceFee(f,m)}</td></tr>`;}).join('');
+    $('nhOverview').innerHTML=`<div class="nh-card nh-overview-card"><div class="nh-card-heading"><p class="nh-matrix-caption">${v.roster.length} học sinh · ${size} buổi</p><label class="nh-overview-search"><span class="sr-only">Tìm học sinh</span><input id="nhOverviewSearch" class="form-control" aria-label="Tìm học sinh trong cả kỳ" placeholder="Tìm học sinh…" value="${esc(state.search)}"></label></div><div class="nh-square-legend"><span><i class="nh-square co_mat" aria-hidden="true"></i>Có mặt</span><span><i class="nh-square vang" aria-hidden="true"></i>Vắng</span><span><i class="nh-square" aria-hidden="true"></i>Chưa điểm danh</span><span><i class="nh-square future" aria-hidden="true"></i>Dự kiến</span></div><div class="nh-table-wrap nh-overview-wrap" tabindex="0" role="region" aria-label="Tổng quan điểm danh và học phí tất cả học sinh"><table class="nh-table nh-overview-table" style="--nh-session-count:${size}"><thead><tr><th scope="col" class="nh-overview-name">Học sinh</th>${heads}<th scope="col" class="nh-overview-count" aria-label="Số buổi có mặt">Có mặt</th><th scope="col" class="nh-overview-fee">Học phí</th></tr></thead><tbody>${rows}</tbody></table></div><p class="nh-search-empty" id="nhOverviewEmpty" hidden>Không tìm thấy học sinh.</p><p class="nh-caption nh-overview-caption">Chọn ngày để điểm danh · Chọn học phí để xem chi tiết.</p><p class="nh-caption nh-overview-fee-hint" id="nhAttendanceFeeHint" ${state.dirty?'':'hidden'}>Học phí tạm tính theo điểm danh chưa lưu.</p></div>`;
     applyStudentFilter();updateDraftUi();
   }
   function paintAttendance() {
@@ -539,7 +552,7 @@
       label.forEach(el=>{if(el.dataset.markState===studentId)el.textContent=statusLabel[d.status];});
       $('nhAttendance').querySelectorAll('[data-mark="chua_diem_danh"]').forEach(el=>{if(el.dataset.student===studentId)el.hidden=d.status==='chua_diem_danh';});
     }
-    paintSummary();paintFees();updateDraftUi();
+    refreshAttendanceFees();paintSummary();paintFees();updateDraftUi();
   }
   function applyStudentFilter() {
     const query=normalize(state.search);

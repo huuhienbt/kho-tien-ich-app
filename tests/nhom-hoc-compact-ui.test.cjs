@@ -156,3 +156,42 @@ test('Archived groups stay identifiable, labels remain plain text and guest sess
   await ui.setRole('member');assert.equal(ui.q('#nhDashboard').hidden,true);assert.equal(ui.q('#nhWorkspace').hidden,true);
   assert.equal(ui.q('#nhGroupTable').querySelectorAll('tbody tr').length,0);assert.deepEqual(ui.writes(),[]);assert.deepEqual(snapshot(h),before);
 });
+test('Attendance puts tuition after the presence total and distinguishes paid, unpaid, partial, credit, free and not-yet-due',async t=>{
+  const h=ledgerFixture();
+  h.api('nh_students_save',{groupId:'g35',joinDate:'2026-09-01',students:[3,4,5,6].map(i=>({id:'s'+i,memberId:'m'+i,name:'Học sinh '+i,className:'4/6'}))});
+  h.api('nh_member_save',{groupId:'g35',memberId:'m1',name:'Đỗ <B> & An',joinDate:'2026-09-01',leaveDate:'',rate:''});
+  const view=h.api('nh_view',{groupId:'g35',month:'2026-09'}),session=view.sessions[0];
+  h.api('nh_attendance_batch_save',{groupId:'g35',sessions:[{sessionId:session.ma_buoi,revision:session.revision,marks:[1,2,3,4,5,6].map(i=>({studentId:'s'+i,status:i===6?'vang':'co_mat'}))}]});
+  for(const [id,studentId,month,amount] of [['paid','s1','2026-09',62500],['credit','s3','2026-09',70000],['partial','s4','2026-09',25000],['other-period','s5','2026-10',62500],['voided','s5','2026-09',62500]]){
+    h.api('nh_receipt_save',{groupId:'g35',id,studentId,month,date:'2026-10-10',amount,method:'chuyen_khoan'});
+  }
+  h.api('nh_receipt_void',{groupId:'g35',id:'voided',reason:'Phiếu thu đã hủy'});
+  const before=snapshot(h),ui=await mount(t,{h,url:'https://egv.test/groups.html?group=g35&month=2026-09'});ui.change('#nhAttendanceDisplay','overview');
+  const headers=[...ui.d.querySelectorAll('.nh-overview-table thead th')];
+  assert.equal(headers.length,11);assert.equal(headers.at(-2).textContent,'Có mặt');assert.equal(headers.at(-1).textContent,'Học phí');
+  const expected={s1:['paid','Đã đủ'],s2:['free','Miễn'],s3:['credit','Đóng dư'],s4:['partial','Một phần'],s5:['unpaid','Chưa đóng'],s6:['none','Chưa phát sinh']};
+  for(const [id,[status,label]] of Object.entries(expected)){
+    const cell=ui.q('[data-attendance-fee="'+id+'"]'),button=cell.querySelector('button');
+    assert.equal(button.dataset.feeState,status);assert.equal(button.textContent,label);
+    assert(cell.previousElementSibling.classList.contains('nh-overview-count'));assert.equal(cell.parentElement.querySelectorAll('[data-cell-session]').length,8);
+    assert.equal(button.getAttribute('aria-label'),button.title);assert.match(button.title,/Kỳ 1/);
+  }
+  assert.equal(ui.d.querySelector('.nh-overview-table b'),null);assert.match(ui.q('[data-attendance-fee="s1"] button').title,/Đỗ <B> & An/);
+  ui.click('[data-attendance-fee="s4"] button');assert.equal(ui.q('#nhProfile').open,true);assert.match(ui.q('#nhProfileBody').textContent,/25[.,]000/);assert.match(ui.q('#nhProfileBody').textContent,/37[.,]500/);ui.click('#nhCloseProfile');
+  ui.change('#nhMonth','2026-10');await ui.ready();assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'none');
+  ui.change('#nhMonth','2026-09');await ui.ready();assert.equal(ui.q('[data-attendance-fee="s1"] button').dataset.feeState,'paid');assert.equal(ui.q('[data-attendance-fee="s5"] button').dataset.feeState,'unpaid');
+  assert.deepEqual(ui.writes(),[]);assert.deepEqual(snapshot(h),before,'reading tuition and changing periods never rewrites the ledger');
+});
+test('Attendance tuition follows unsaved marks and reverting a draft restores the saved status without touching receipts',async t=>{
+  const h=ledgerFixture(),session=h.api('nh_view',{groupId:'g35',month:'2026-09'}).sessions[0];
+  h.api('nh_attendance_batch_save',{groupId:'g35',sessions:[{sessionId:session.ma_buoi,revision:session.revision,marks:[{studentId:'s1',status:'co_mat'}]}]});
+  h.api('nh_receipt_save',{groupId:'g35',id:'saved-payment',studentId:'s1',month:'2026-09',date:'2026-10-10',amount:62500,method:'tien_mat'});
+  const before=snapshot(h),ui=await mount(t,{h,url:'https://egv.test/groups.html?group=g35&month=2026-09&session='+session.ma_buoi});
+  const status=()=>ui.q('[data-attendance-fee="s1"] button').dataset.feeState;
+  assert.equal(status(),'paid');assert.equal(ui.q('#nhAttendanceFeeHint').hidden,true);
+  ui.mark('s1','vang');assert.equal(status(),'credit');assert.equal(ui.q('#nhAttendanceFeeHint').hidden,false);assert.match(ui.q('[data-attendance-fee="s1"] button').title,/điểm danh chưa lưu/);
+  ui.mark('s1','co_mat');assert.equal(status(),'paid');assert.equal(ui.q('#nhAttendanceFeeHint').hidden,true);assert.doesNotMatch(ui.q('[data-attendance-fee="s1"] button').title,/điểm danh chưa lưu/);
+  ui.change('#nhSessionSelect','g35b1');ui.mark('s1','co_mat');assert.equal(status(),'partial');ui.click('[data-action="all-present"]');assert.equal(status(),'partial');
+  assert.equal(ui.q('[data-attendance-fee="s2"] button').dataset.feeState,'free');ui.change('#nhAttendanceDisplay','overview');assert.equal(ui.q('#nhOverview').hidden,false);assert.equal(status(),'partial');
+  assert.deepEqual(ui.writes(),[]);assert.deepEqual(snapshot(h),before,'local marks do not change receipts, names or saved sessions');
+});
