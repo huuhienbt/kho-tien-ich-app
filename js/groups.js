@@ -19,6 +19,7 @@
   const lessonDate = value => new Intl.DateTimeFormat('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(value+'T12:00:00Z'));
   const uid = () => window.crypto.randomUUID();
   const state = {boot:null,view:null,rent:null,groupId:'',month:'',sessionId:'',tab:'attendance',drafts:{},dirty:false,busy:false,epoch:0,submit:null,search:'',feeSearch:'',feeFilter:'all',attendanceMode:'day',pendingNavigation:null,memberEditInitial:null,profileId:'',files:null,filesLoading:false,backup:null,backupTimer:0,backupDeadline:0,backupLoading:false};
+  Object.assign(state,{workViews:[],workLoading:false,workErrors:0,workSequence:0,workTimer:0,workSummary:null,requireChoice:false,localDrafts:null,localDraftCandidate:null,draftPersisted:false,completeContext:null});
   const statusLabel = {co_mat:'Có mặt',vang:'Vắng',chua_diem_danh:'Chưa điểm danh'};
   const markSymbol = {co_mat:'✓',vang:'×',chua_diem_danh:'·'};
   const message = (text,error=false) => { $('nhFeedback').textContent=text; $('nhFeedback').className='nh-feedback'+(error?' error':''); $('nhFeedback').hidden=!text; };
@@ -43,6 +44,7 @@
     $('nhRentPay').disabled=state.busy||state.dirty||r.unpaid<16;
     $('nhRentSessions').innerHTML=r.sessions.length?`<ol class="nh-rent-sessions">${r.sessions.map((s,i)=>`<li><span class="nh-rent-order">${i+1}</span><strong>${esc(shortDate(s.date))}<small>${esc(s.date.slice(0,4))}</small></strong><span>${esc(s.groupName)}</span>${i===15?'<span class="nh-rent-boundary">Đủ 16</span>':''}</li>`).join('')}</ol>`:'<p class="nh-empty-inline">Chưa có buổi chưa thanh toán.</p>';
     $('nhRentHistory').innerHTML=r.payments.length?r.payments.map(p=>`<article class="nh-rent-payment ${p.trang_thai==='da_huy'?'voided':''}"><div><strong>${money(p.so_tien_vnd)}</strong><span>${p.trang_thai==='da_huy'?'Đã hủy':'Đã đóng'} · ${esc(dateLabel(p.ngay_dong))}</span></div><details><summary>16 buổi: ${esc(shortDate(p.sessions[0]?.date))} – ${esc(dateLabel(p.sessions.at(-1)?.date))}</summary><ul>${p.sessions.map(s=>`<li>${esc(dateLabel(s.date))} · ${esc(s.groupName)}</li>`).join('')}</ul></details>${p.ghi_chu?`<p>${esc(p.ghi_chu)}</p>`:''}${p.trang_thai==='da_dong'?`<button type="button" class="nh-link" data-rent-void="${esc(p.ma_dong)}" ${state.busy||state.dirty?'disabled':''}>Hủy ghi nhận</button>`:''}</article>`).join(''):'<p class="nh-empty-inline">Chưa ghi nhận đóng tiền phòng.</p>';
+    paintWork();
   }
   function rentPaymentForm() {
     if(!App.isAdmin()||state.dirty||!state.rent||state.rent.unpaid<16)return;
@@ -70,6 +72,7 @@
     $('nhBackupNow').disabled=state.dirty||state.backupLoading||data.state==='syncing'||data.state==='unconfigured';
     const id=typeof data.spreadsheetId==='string'&&/^[\w-]{20,150}$/.test(data.spreadsheetId)?data.spreadsheetId:'';
     $('nhBackupDrive').hidden=!id;if(id)$('nhBackupDrive').href='https://docs.google.com/spreadsheets/d/'+id+'/edit';else $('nhBackupDrive').removeAttribute('href');
+    paintWork();
   }
   function queueBackupPoll() {
     window.clearTimeout(state.backupTimer);state.backupTimer=0;
@@ -130,20 +133,115 @@
       return;
     }
     if(pending!==state.pendingNavigation||pending.epoch!==state.epoch)return;
-    if(!save){clearDrafts();paint();}
+    if(!save){clearDrafts(true);paint();}
     state.pendingNavigation=null;$('nhUnsavedDialog').close();
     await pending.action();
   }
-  const clearDrafts = () => {state.drafts={};state.dirty=false;};
+  function clearDrafts(removeLocal=false) {
+    if(removeLocal&&state.view)state.localDrafts?.remove(state.view.group.ma_nhom,state.view.month);
+    state.drafts={};state.dirty=false;state.draftPersisted=false;state.localDraftCandidate=null;
+  }
+  function persistDrafts() {
+    if(!state.view||!state.localDrafts||state.localDraftCandidate)return;
+    if(!state.dirty){state.localDrafts.remove(state.view.group.ma_nhom,state.view.month);state.draftPersisted=false;return;}
+    state.draftPersisted=state.localDrafts.write(state.view,state.drafts).persisted;
+  }
+  function paintLocalDraft() {
+    const candidate=state.localDraftCandidate,show=!!candidate&&!state.dirty;
+    $('nhLocalDraftNotice').hidden=!show;
+    if(!show)return;
+    $('nhLocalDraftText').textContent=candidate.conflicts?'Có nháp trên thiết bị nhưng dữ liệu sổ đã thay đổi. Nháp chưa được áp dụng; kiểm tra sổ hiện tại trước khi xóa nháp.':'Có điểm danh đang làm dở trên thiết bị này. Khôi phục để tiếp tục; nháp chưa được ghi vào sổ.';
+    $('nhRestoreLocalDraft').disabled=candidate.conflicts||state.busy;
+  }
+  async function restoreLocalDraft() {
+    if(state.busy||!state.localDrafts||!state.view)return;
+    const epoch=state.epoch;busy(true,'Đang kiểm tra nháp với sổ hiện tại…');
+    try{
+      await loadView(epoch);if(epoch!==state.epoch)return;
+      const candidate=state.localDraftCandidate;
+      if(!candidate||candidate.conflicts)return;
+      state.drafts=candidate.drafts;state.dirty=Object.values(state.drafts).some(rows=>Object.keys(rows).length);state.localDraftCandidate=null;
+      state.draftPersisted=candidate.persisted;state.tab='attendance';paint();
+    }catch(error){if(epoch===state.epoch)message('Chưa kiểm tra được nháp. '+error.message,true);}
+    finally{if(epoch===state.epoch){busy(false);updateDraftUi();}}
+  }
+  function paintWork() {
+    if(!$('nhDashboard')||!window.NHWorkflow||!state.boot||!App.isAdmin())return;
+    const summary=NHWorkflow.summarize(state.workViews,{today:state.boot.today,rent:state.rent,backup:state.backup});state.workSummary=summary;
+    $('nhDashboard').hidden=false;$('nhTodayDate').textContent=lessonDate(state.boot.today);
+    $('nhTodayList').innerHTML=summary.today.length?summary.today.map((item,i)=>'<article class="nh-today-card"><div><strong>'+esc(item.groupName)+'</strong><small>'+esc([item.startTime&&item.startTime+'–'+item.endTime,item.closed?'Kỳ đã chốt':item.completed?'Đã điểm danh đủ':item.missing?item.missing+' em chưa chọn':'Chưa hoàn tất'].filter(Boolean).join(' · '))+'</small></div><button class="btn btn-secondary" type="button" aria-label="Mở buổi '+esc(item.groupName)+'" data-open-work="'+i+'">Mở buổi</button></article>').join(''):'<p class="nh-caption">'+(state.workLoading?'Đang tìm buổi học hôm nay…':state.workErrors?'Chưa tải đủ lịch hôm nay. Chọn nhóm bên dưới hoặc thử cập nhật lại.':'Không có buổi học được xếp lịch hôm nay trong các kỳ đã kiểm tra.')+'</p>';
+    $('nhWorkCount').textContent=summary.tasks.length;
+    $('nhTaskList').innerHTML=summary.tasks.length?summary.tasks.map((item,i)=>'<article class="nh-task-item"><div><strong>'+esc(item.title)+(item.kind==='close-period'?' · '+esc(periodLabel(item.month,state.boot.groups.find(g=>g.ma_nhom===item.groupId))):'')+'</strong><small>'+esc(item.detail)+'</small></div><button type="button" class="btn btn-secondary" data-work-task="'+i+'">Mở</button></article>').join(''):'<p class="nh-caption">'+(state.workLoading?'Đang kiểm tra…':'Không có việc cần xử lý trong phạm vi đã tải.')+'</p>';
+    $('nhWorkRefresh').disabled=state.workLoading;
+    $('nhDashboardHint').textContent='Kiểm tra kỳ hiện tại, kỳ trước của các nhóm đang học và kỳ đang mở. '+(state.workLoading?'Đang cập nhật…':state.workErrors?state.workErrors+' kỳ chưa tải được; danh sách có thể chưa đầy đủ.':'Các kỳ cũ hơn có thể mở từ bộ chọn kỳ để kiểm tra thêm.');
+  }
+  async function refreshWork(freshBoot=false) {
+    if(!window.NHWorkflow||!state.boot?.features?.attendanceBatch||!App.isAdmin())return;
+    window.clearTimeout(state.workTimer);state.workTimer=0;
+    const epoch=state.epoch,sequence=++state.workSequence,views=[];
+    state.workLoading=true;state.workErrors=0;paintWork();let cursor=0,errors=0;
+    if(freshBoot){
+      try{
+        const result=await App.apiPost('nh_boot',{}, {userAuth:true,timeoutMs:15000});
+        if(epoch!==state.epoch||sequence!==state.workSequence)return;
+        if(!result.data?.groups)throw Error('Thiếu dữ liệu');
+        state.boot=result.data;state.rent=result.data.roomRent||state.rent;state.backup=result.data.backup||state.backup;paintGroupSelect(true);paintGroupCards();paintBackup();paintRent();
+      }catch(_){if(epoch===state.epoch&&sequence===state.workSequence){state.workLoading=false;state.workErrors=1;paintWork();}return;}
+    }
+    const requests=NHWorkflow.periods(state.boot.groups,state.boot.today);
+    await Promise.all(Array.from({length:Math.min(3,requests.length)},async()=>{
+      while(cursor<requests.length){
+        const request=requests[cursor++];
+        if(epoch!==state.epoch||sequence!==state.workSequence)return;
+        try{const result=await App.apiPost('nh_view',request,{userAuth:true,timeoutMs:15000});if(!result.data?.group)throw Error('Thiếu dữ liệu');views.push(result.data);}catch(_){errors++;}
+      }
+    }));
+    if(epoch!==state.epoch||sequence!==state.workSequence)return;
+    if(state.view&&!views.some(v=>v.group.ma_nhom===state.groupId&&v.month===state.month))views.push(state.view);
+    state.workViews=views;state.workErrors=errors;state.workLoading=false;paintWork();
+    state.workTimer=window.setTimeout(()=>{if(!document.hidden)refreshWork(true);},300000);return state.workSummary;
+  }
+  function openWork(item) {
+    if(!item||state.busy)return;
+    if(item.kind==='rent'||item.kind==='backup'){
+      $('nhOperations').open=true;$(item.kind==='rent'?'nhRentDetails':'nhBackupPanel').open=true;$('nhOperations').scrollIntoView({behavior:'smooth',block:'center'});return;
+    }
+    return guardDrafts(async()=>{
+      if(!state.boot.groups.some(g=>g.ma_nhom===item.groupId))return;
+      state.requireChoice=false;state.groupId=item.groupId;state.month=item.month;state.sessionId=item.sessionId||'';state.tab=item.tab||'attendance';state.attendanceMode='day';state.search='';state.feeSearch='';state.files=null;state.filesLoading=false;
+      $('nhGroup').value=state.groupId;await reload(true);$('nhGroupTitle').scrollIntoView({behavior:'smooth',block:'start'});
+    },'mở '+(item.groupName||'nhóm')+' · '+dateLabel(item.date||item.month));
+  }
+  function requestComplete() {
+    const session=selectedSession();if(state.busy||!writable(session)||!window.NHWorkflow)return;
+    const summary=NHWorkflow.attendanceSummary(state.view,state.drafts,state.sessionId);
+    state.completeContext={groupId:state.groupId,month:state.month,sessionId:state.sessionId,revision:session.revision,epoch:state.epoch};
+    $('nhCompleteContext').textContent=state.view.group.ten_nhom+' · '+dateLabel(session.ngay_hoc)+' · '+periodLabel(state.month);
+    $('nhCompleteSummary').textContent=summary.present+' có mặt · '+summary.absent+' vắng · '+summary.missing+' chưa chọn';
+    $('nhCompleteAbsent').textContent=summary.absentNames.length?'Vắng: '+summary.absentNames.join(', '):'Không có học sinh vắng.';
+    const otherDrafts=Object.keys(state.drafts).filter(id=>id!==state.sessionId);
+    $('nhCompleteMissing').textContent=otherDrafts.length?'Còn nháp ở buổi khác. Mở Xem cả kỳ và Lưu điểm danh để xem, lưu đầy đủ các buổi.':summary.missingNames.length?summary.missing+' em chưa chọn: '+summary.missingNames.join(', ')+'. Quay lại chọn đủ trước khi hoàn tất.':!summary.total?'Buổi này chưa có học sinh thuộc danh sách.':'';
+    $('nhCompleteMissing').hidden=!$('nhCompleteMissing').textContent;
+    $('nhConfirmComplete').disabled=summary.missing>0||!summary.total||otherDrafts.length>0;$('nhCompleteDialog').showModal();
+  }
+  async function confirmComplete() {
+    const context=state.completeContext,s=selectedSession();
+    if(state.busy||!context||context.epoch!==state.epoch||context.groupId!==state.groupId||context.month!==state.month||context.sessionId!==state.sessionId||context.revision!==s?.revision||!writable(s))return;
+    const summary=NHWorkflow.attendanceSummary(state.view,state.drafts,state.sessionId);if(summary.missing||!summary.total||Object.keys(state.drafts).some(id=>id!==state.sessionId))return;
+    $('nhCompleteDialog').close();state.completeContext=null;await saveAttendance(true);
+  }
   const normalize = text => String(text).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   function busy(on,text='Đang tải dữ liệu…') {
     state.busy=on;$('nhBusy').hidden=!on;$('nhBusyText').textContent=text;$('nhWorkspace').setAttribute('aria-busy',String(on));
     $('nhForm').querySelectorAll('button,input,select,textarea').forEach(el=>el.disabled=on);
     $('nhUnsavedDialog').querySelectorAll('button').forEach(el=>el.disabled=on);
-    paintRent();
+    paintRent();if(state.view)updateDraftUi();else paintLocalDraft();
   }
   function closeProfile() {if($('nhProfile').open)$('nhProfile').close();state.profileId='';$('nhProfileBody').replaceChildren();$('nhProfileName').textContent='';$('nhProfilePeriod').textContent='';}
   function resetAuth() {
+    window.clearTimeout(state.workTimer);state.workTimer=0;
+    state.localDrafts?.clear();state.localDrafts=null;state.localDraftCandidate=null;state.workViews=[];state.workSequence++;state.workSummary=null;state.workLoading=false;state.workErrors=0;state.requireChoice=false;state.completeContext=null;
+    $('nhDashboard').hidden=true;$('nhTodayList').replaceChildren();$('nhTaskList').replaceChildren();$('nhLocalDraftNotice').hidden=true;$('nhCompleteDialog').close();
     window.clearTimeout(state.backupTimer);state.backup=null;state.backupTimer=0;state.backupDeadline=0;state.backupLoading=false;
     $('nhBackupPanel').hidden=true;$('nhBackupDrive').hidden=true;$('nhBackupDrive').removeAttribute('href');['nhBackupState','nhBackupSummary','nhBackupSuccess','nhBackupChecked','nhBackupHint'].forEach(id=>$(id).textContent='');
     state.rent=null;$('nhRentPanel').hidden=true;$('nhRentDetails').open=false;['nhRentCount','nhRentStatus','nhRentGroups','nhRentDate','nhRentHint','nhRentSessions','nhRentHistory'].forEach(id=>$(id).replaceChildren());
@@ -159,6 +257,7 @@
     const epoch=state.epoch;busy(true);
     try {
       const data=await call('nh_boot');if(epoch!==state.epoch)return;
+      if(window.NHLocalDrafts){const store=await NHLocalDrafts.create(App.getAdminToken?.()||'');if(epoch!==state.epoch)return;state.localDrafts=store;}
       if(!state.boot&&data.groups.some(g=>g.ma_nhom===launch.get('group'))){
         state.groupId=launch.get('group');const month=launch.get('month');
         if(/^\d{4}-(0[1-9]|1[0-2])$/.test(month||'')&&month>='2000-01'&&month<='2100-12')state.month=month;
@@ -166,17 +265,20 @@
         state.sessionId=launch.get('session')||'';state.attendanceMode='day';
       }
       state.boot=data;state.backup=data.backup||null;paintBackup();queueBackupPoll();$('nhWorkspace').hidden=false;
+      const work=await refreshWork();if(epoch!==state.epoch)return;
+      if(!launch.get('group')&&work?.today.length===1&&!state.workErrors){const today=work.today[0];state.groupId=today.groupId;state.month=today.month;state.sessionId=today.sessionId;}
+      state.requireChoice=!launch.get('group')&&work?.today.length>1;
       paintGroupSelect();state.month=state.month||(data.groups.find(g=>g.ma_nhom===state.groupId)?.ky_hien_tai||data.today.slice(0,7));$('nhMonth').value=state.month;paintGroupCards();
       if(!data.features?.attendanceBatch){paintEmpty('Cập nhật NhomHoc.gs bản 9.4 trong Apps Script rồi triển khai bản mới để dùng bảng điểm danh này.');message('Máy chủ nhóm học cần được cập nhật lên bản 9.4.',true);return;}
       $('nhAddGroup').hidden=!data.admin;
-      if(state.groupId)await loadView(epoch);else paintEmpty();message('');
+      if(state.groupId)await loadView(epoch);else paintEmpty(state.requireChoice?'Có nhiều buổi học hôm nay. Chọn Mở buổi ở phía trên hoặc chọn nhóm học.':'');message('');
     } catch(error){if(epoch===state.epoch){message(error.message,true);$('nhWorkspace').hidden=false;paintEmpty('Không tải được dữ liệu. Kiểm tra kết nối rồi bấm Tải lại.');}}
     finally {if(epoch===state.epoch)busy(false);}
   }
-  function paintGroupSelect() {
+  function paintGroupSelect(preserveContext=false) {
     const groups=state.boot?.groups||[];
-    if(!groups.some(g=>g.ma_nhom===state.groupId))state.groupId=(groups.find(g=>g.trang_thai==='dang_hoc')||groups[0])?.ma_nhom||'';
-    $('nhGroup').innerHTML=groups.map(g=>`<option value="${esc(g.ma_nhom)}">${esc(g.ten_nhom)}${g.trang_thai==='luu_tru'?' · Đã lưu trữ':''}</option>`).join('');$('nhGroup').value=state.groupId;
+    if(!preserveContext){if(state.requireChoice)state.groupId='';else if(!groups.some(g=>g.ma_nhom===state.groupId))state.groupId=(groups.find(g=>g.trang_thai==='dang_hoc')||groups[0])?.ma_nhom||'';}
+    $('nhGroup').innerHTML=(state.requireChoice?'<option value="">Chọn nhóm học…</option>':'')+groups.map(g=>`<option value="${esc(g.ma_nhom)}">${esc(g.ten_nhom)}${g.trang_thai==='luu_tru'?' · Đã lưu trữ':''}</option>`).join('');$('nhGroup').value=state.groupId;
   }
   function paintGroupCards() {
     $('nhGroupCards').innerHTML=(state.boot?.groups||[]).map(g=>{
@@ -212,6 +314,8 @@
     const groupId=state.groupId,month=state.month;$('nhGroupContent').hidden=true;$('nhEmpty').hidden=true;$('nhExport').disabled=true;
     const data=await call('nh_view',{groupId,month});if(epoch!==state.epoch||groupId!==state.groupId||month!==state.month)return;
     state.view=data;clearDrafts();closeProfile();
+    state.localDraftCandidate=state.localDrafts?.read(data)||null;
+    state.workViews=state.workViews.filter(v=>v.group.ma_nhom!==groupId||v.month!==month).concat(data);paintWork();
     const group=state.boot.groups.find(g=>g.ma_nhom===groupId);
     if(group){group.ky_hien_tai=data.period.current;group.buoi_hien_tai=data.currentPeriod.completed;group.so_buoi_ky=data.currentPeriod.size;}
     if(!data.sessions.some(s=>s.ma_buoi===state.sessionId&&s.trang_thai!=='da_huy')){
@@ -231,6 +335,7 @@
     const next=state.boot?.groups.find(g=>g.ma_nhom===id);
     if(!next||!state.boot?.features?.attendanceBatch||state.busy||id===state.groupId)return;
     if(!confirmed)return guardDrafts(()=>changeGroup(id,true),'chuyển sang '+next.ten_nhom);
+    state.requireChoice=false;
     state.files=null;state.filesLoading=false;state.groupId=id;state.search='';state.feeSearch='';state.sessionId='';state.attendanceMode='day';
     state.month=next.ky_hien_tai||state.boot.today.slice(0,7);$('nhMonth').value=state.month;$('nhGroup').value=id;$('nhBookTools').open=false;
     await reload(true);
@@ -290,6 +395,7 @@
   }
   function paintAttendanceMode() {
     $('nhOverview').hidden=state.attendanceMode!=='overview';$('nhAttendance').hidden=state.attendanceMode!=='day';
+    $('nhSaveAttendance').hidden=state.attendanceMode==='day';$('nhCompleteAttendance').hidden=state.attendanceMode!=='day';
     document.querySelectorAll('[data-attendance-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.attendanceMode===state.attendanceMode)));
     updateDraftUi();
   }
@@ -355,28 +461,32 @@
       const students=v.roster.filter(m=>within(m,s.ngay_hoc)),readonly=v.closed?'Kỳ đã chốt học phí. Mở lại kỳ ở tab Học phí để sửa.':s.trang_thai==='da_huy'?'Buổi đã hủy. Lịch sử điểm danh được giữ nguyên.':v.group.trang_thai==='luu_tru'?'Nhóm đã lưu trữ. Mở lại nhóm để sửa điểm danh.':'';
       const position=s.thu_tu_ky?'Buổi '+s.thu_tu_ky+(v.period.size?'/'+v.period.size:'')+' · ':'';
       const rows=students.map(m=>{
-        const d=getMark(s.ma_buoi,m.ma_hoc_sinh),disabled=!writable(s)?'disabled':'';
+        const d=getMark(s.ma_buoi,m.ma_hoc_sinh),disabled=!writable(s)||state.localDraftCandidate?'disabled':'';
         return '<article class="nh-student-entry nh-mobile-student" data-student-name="'+esc(normalize(m.ho_ten))+'" data-student-row="'+esc(m.ma_hoc_sinh)+'"><div class="nh-mobile-student-top"><div>'+studentButton(m)+'<small class="nh-student-class">'+esc(m.lop)+'</small><span class="nh-student-mark-state" data-mark-state="'+esc(m.ma_hoc_sinh)+'">'+statusLabel[d.status]+'</span></div><button type="button" class="nh-link nh-mark-note" data-mark-note="'+esc(s.ma_buoi)+'" data-student="'+esc(m.ma_hoc_sinh)+'" '+disabled+'>'+ (d.note?'Có ghi chú':'Ghi chú')+'</button></div><div class="nh-mark-controls" role="group" aria-label="Điểm danh '+esc(m.ho_ten)+'">'+['co_mat','vang'].map(key=>'<button type="button" data-mark="'+key+'" data-student="'+esc(m.ma_hoc_sinh)+'" aria-pressed="'+(d.status===key)+'" '+disabled+'>'+statusLabel[key]+'</button>').join('')+'<button type="button" class="nh-clear-mark" data-mark="chua_diem_danh" data-student="'+esc(m.ma_hoc_sinh)+'" aria-label="Đặt '+esc(m.ho_ten)+' về chưa điểm danh" '+(d.status==='chua_diem_danh'?'hidden ':'')+disabled+'>Bỏ chọn</button></div></article>';
       }).join('');
-      one='<div class="nh-single-heading"><div><h3>'+esc(lessonDate(s.ngay_hoc))+'</h3><p>'+position+esc(periodLabel(v.month))+' · '+sessionState(s)+(isMakeup(s)?' · Học bù':'')+'</p></div><button type="button" class="nh-link" data-action="edit-session" '+(v.closed?'disabled':'')+'>Sửa buổi</button></div>'+(readonly?'<p class="nh-inline-info">'+readonly+'</p>':'')+(s.trang_thai==='du_kien'&&s.ngay_hoc<=v.today?'<p class="nh-inline-info">Buổi chưa xác nhận đã học. Lưu điểm danh Có mặt/Vắng để xác nhận.</p>':'')+(s.ngay_hoc>v.today?'<p class="nh-inline-info">Chưa đến ngày học. Điểm danh và học phí của buổi này chưa phát sinh.</p>':'')+'<div class="nh-quick-actions"><span id="nhDraftCount" class="nh-caption"></span><button type="button" class="btn btn-secondary" data-action="all-present" '+(!writable(s)?'disabled':'')+'>Tất cả có mặt</button></div><div class="nh-mobile-roster">'+rows+'</div>'+(!students.length?'<p class="nh-muted">Chưa có học sinh thuộc buổi này.</p>':'');
+      one='<div class="nh-single-heading"><div><h3>'+esc(lessonDate(s.ngay_hoc))+'</h3><p>'+position+esc(periodLabel(v.month))+' · '+sessionState(s)+(isMakeup(s)?' · Học bù':'')+'</p></div><button type="button" class="nh-link" data-action="edit-session" '+(v.closed?'disabled':'')+'>Sửa buổi</button></div>'+(readonly?'<p class="nh-inline-info">'+readonly+'</p>':'')+(s.trang_thai==='du_kien'&&s.ngay_hoc<=v.today?'<p class="nh-inline-info">Buổi chưa xác nhận đã học. Lưu điểm danh Có mặt/Vắng để xác nhận.</p>':'')+(s.ngay_hoc>v.today?'<p class="nh-inline-info">Chưa đến ngày học. Điểm danh và học phí của buổi này chưa phát sinh.</p>':'')+'<p class="nh-attendance-guide">1. Chọn các em còn lại có mặt → 2. Đánh dấu người vắng → 3. Hoàn tất buổi.</p><div class="nh-quick-actions"><span id="nhDraftCount" class="nh-caption"></span><button type="button" class="btn btn-secondary" data-action="all-present" aria-label="Chọn các em chưa điểm danh là có mặt" '+(!writable(s)||state.localDraftCandidate?'disabled':'')+'>Còn lại có mặt</button></div><div class="nh-mobile-roster">'+rows+'</div>'+(!students.length?'<p class="nh-muted">Chưa có học sinh thuộc buổi này.</p>':'');
     }
     $('nhAttendance').innerHTML='<div class="nh-card"><div class="nh-attendance-tools"><label class="nh-session-select"><span>Buổi học</span><select id="nhSessionSelect" class="form-control" '+(!options?'disabled':'')+'>'+ (options||'<option>Chưa có buổi</option>')+'</select></label><label class="nh-search-label"><span>Tìm học sinh</span><input id="nhSearch" class="form-control" placeholder="Tên học sinh…" value="'+esc(state.search)+'"></label></div>'+one+'<p class="nh-search-empty" id="nhSearchEmpty" hidden>Không tìm thấy học sinh.</p></div>';
     applyStudentFilter();updateDraftUi();
   }
-  function setDraft(sessionId,studentId,patch) {
+  function setDraft(sessionId,studentId,patch,persist=true) {
+    if(state.localDraftCandidate){message('Khôi phục hoặc xóa nháp thiết bị trước khi chỉnh điểm danh mới.',true);return;}
     const s=state.view.sessions.find(b=>b.ma_buoi===sessionId),m=state.view.roster.find(r=>r.ma_hoc_sinh===studentId);if(!writable(s)||!m||!within(m,s.ngay_hoc))return;
     const d={...getMark(sessionId,studentId),...patch},saved=savedMark(sessionId,studentId);
     if(d.status===saved.trang_thai&&d.note===(saved.ghi_chu||'')){if(state.drafts[sessionId]){delete state.drafts[sessionId][studentId];if(!Object.keys(state.drafts[sessionId]).length)delete state.drafts[sessionId];}}
     else (state.drafts[sessionId]??={})[studentId]=d;
     state.dirty=Object.keys(state.drafts).length>0;
+    if(persist)persistDrafts();
   }
   function updateDraftUi() {
     paintBackup();paintRent();
     if(!state.view)return;
     const changed=Object.values(state.drafts).reduce((n,rows)=>n+Object.keys(rows).length,0),s=selectedSession();
     $('nhSaveContext').textContent=state.view.group.ten_nhom+' · '+(state.attendanceMode==='day'&&s?dateLabel(s.ngay_hoc)+' · ':'')+periodLabel(state.month);
-    $('nhSaveHint').textContent=state.dirty?changed+' ô điểm danh chưa lưu':state.view.closed?'Kỳ đã chốt. Mở lại ở tab Học phí để sửa.':'Không có thay đổi chưa lưu.';
+    $('nhSaveHint').textContent=state.dirty?changed+' ô điểm danh chưa lưu · '+(state.draftPersisted?'Nháp đã giữ trên thiết bị, chưa ghi sổ.':'Nháp chưa được giữ trên thiết bị; giữ trang này và lưu khi có kết nối.'):state.view.closed?'Kỳ đã chốt. Mở lại ở tab Học phí để sửa.':'Không có thay đổi chưa lưu.';
     $('nhSaveAttendance').disabled=!state.dirty||state.view.closed||state.busy;
+    $('nhCompleteAttendance').disabled=state.busy||!!state.localDraftCandidate||!writable(s)||!state.dirty&&s?.trang_thai==='da_hoc';
+    paintLocalDraft();
     $('nhPendingNotice').hidden=!state.dirty||state.tab==='attendance';
     $('nhPendingText').textContent=changed+' ô điểm danh chưa lưu ở '+state.view.group.ten_nhom+'.';
     if($('nhDraftCount')&&s){
@@ -551,6 +661,7 @@
     }catch(error){if(epoch===state.epoch)message(error.message,true);}finally{if(epoch===state.epoch)busy(false);}
   }
   function noteForm(sessionId,studentId) {
+    if(sessionId!==state.sessionId)return guardDrafts(()=>{changeSession(sessionId,studentId,true);if(state.sessionId===sessionId)noteForm(sessionId,studentId);},'mở ghi chú buổi '+dateLabel(state.view.sessions.find(s=>s.ma_buoi===sessionId)?.ngay_hoc||''));
     const s=state.view.sessions.find(s=>s.ma_buoi===sessionId),m=state.view.roster.find(m=>m.ma_hoc_sinh===studentId);if(!writable(s)||!m)return;
     const d=getMark(sessionId,studentId);
     openForm('Ghi chú · '+m.ho_ten,`<p class="nh-caption wide">Buổi ${dateLabel(s.ngay_hoc)}</p><label class="wide">Ghi chú<textarea class="form-control" name="note" maxlength="250">${esc(d.note)}</textarea></label>`,f=>{setDraft(sessionId,studentId,{note:f.note.trim()});return {local:true};},'Áp dụng ghi chú');
@@ -567,16 +678,23 @@
     }catch(error){if(epoch===state.epoch){$('nhFormError').hidden=false;$('nhFormError').textContent=error.message;}}
     finally{if(epoch===state.epoch){$('nhSubmit').textContent=caption;busy(false);}}
   }
-  async function saveAttendance() {
-    if(state.busy||!state.dirty)return false;const epoch=state.epoch;
+  async function saveAttendance(complete=false) {
+    if(state.busy||!state.dirty&&!complete)return false;const epoch=state.epoch;
     const sessions=Object.entries(state.drafts).map(([sessionId,marks])=>({sessionId,revision:state.view.sessions.find(s=>s.ma_buoi===sessionId).revision,marks:Object.entries(marks).map(([studentId,d])=>({studentId,...d}))}));
+    if(complete){
+      const s=selectedSession();if(!writable(s))return false;
+      if(Object.keys(state.drafts).some(id=>id!==s.ma_buoi))return false;
+      const summary=NHWorkflow.attendanceSummary(state.view,state.drafts,s.ma_buoi);if(summary.missing||!summary.total)return false;
+      if(!sessions.some(row=>row.sessionId===s.ma_buoi)&&s.trang_thai==='du_kien')sessions.push({sessionId:s.ma_buoi,revision:s.revision,marks:state.view.roster.filter(m=>within(m,s.ngay_hoc)).map(m=>({studentId:m.ma_hoc_sinh,...getMark(s.ma_buoi,m.ma_hoc_sinh)}))});
+    }
+    if(!sessions.length)return false;
     busy(true,'Đang lưu điểm danh…');
     try {
-      await call('nh_attendance_batch_save',{groupId:state.groupId,sessions});if(epoch!==state.epoch)return false;clearDrafts();
+      await call('nh_attendance_batch_save',{groupId:state.groupId,sessions});if(epoch!==state.epoch)return false;clearDrafts(true);
       try{await loadView(epoch);if(epoch!==state.epoch)return false;message('Đã lưu điểm danh và cập nhật học phí.');return true;}
       catch(error){if(epoch===state.epoch){message('Đã lưu điểm danh, nhưng chưa tải lại được dữ liệu. Bấm Tải lại. '+error.message,true);paintEmpty('Điểm danh đã lưu. Tải lại để xem kết quả.');}return false;}
     }catch(error){if(epoch===state.epoch)message(error.message+' Nếu mất kết nối, bấm Tải lại để kiểm tra trạng thái lưu.',true);return false;}
-    finally{if(epoch===state.epoch){busy(false);updateDraftUi();}}
+    finally{if(epoch===state.epoch){busy(false);updateDraftUi();refreshWork(true);}}
   }
   function exportCsv() {
     if(!state.view)return;if(state.dirty){message('Lưu điểm danh trước khi xuất để số liệu khớp với dữ liệu đã lưu.',true);return;}
@@ -611,14 +729,19 @@
     if(action==='reload-files')return loadFiles().catch(error=>message(error.message,true));
     if(action==='save-attendance')return saveAttendance();
     if(action==='return-attendance'){state.tab='attendance';paintTab();return;}
-    if(action==='all-present'){const s=selectedSession();if(!writable(s))return;state.view.roster.filter(m=>within(m,s.ngay_hoc)).forEach(m=>setDraft(s.ma_buoi,m.ma_hoc_sinh,{status:'co_mat'}));paintAttendance();paintOverview();paintSummary();paintFees();updateDraftUi();return;}
+    if(action==='all-present'){const s=selectedSession();if(!writable(s)||state.localDraftCandidate)return;state.view.roster.filter(m=>within(m,s.ngay_hoc)&&getMark(s.ma_buoi,m.ma_hoc_sinh).status==='chua_diem_danh').forEach(m=>setDraft(s.ma_buoi,m.ma_hoc_sinh,{status:'co_mat'},false));persistDrafts();paintAttendance();paintOverview();paintSummary();paintFees();updateDraftUi();return;}
     const actions={'add-students':studentsForm,'new-session':()=>sessionForm(false),'edit-session':()=>sessionForm(true),'plan-sessions':planForm,'close':()=>monthForm(false),'reopen':()=>monthForm(true)};
     if(actions[action])externalEdit(actions[action]);
   }
   document.addEventListener('DOMContentLoaded',()=>{
     App.init('groups');$('nhLogin').addEventListener('click',()=>App.openLogin('admin'));
+    $('nhWorkRefresh').addEventListener('click',()=>refreshWork(true));
+    $('nhDashboard').addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.hasAttribute('data-open-work'))openWork(state.workSummary?.today[Number(button.dataset.openWork)]);if(button.hasAttribute('data-work-task'))openWork(state.workSummary?.tasks[Number(button.dataset.workTask)]);});
+    $('nhRestoreLocalDraft').addEventListener('click',restoreLocalDraft);$('nhDiscardLocalDraft').addEventListener('click',()=>{if(state.busy||!state.view)return;if(state.localDrafts&&!state.localDrafts.remove(state.view.group.ma_nhom,state.view.month)){state.localDraftCandidate=state.localDrafts.read(state.view);message('Nháp đã đổi ở tab khác. Kiểm tra nháp mới trước khi xóa.',true);}else state.localDraftCandidate=null;paint();});
+    $('nhCompleteAttendance').addEventListener('click',requestComplete);$('nhConfirmComplete').addEventListener('click',confirmComplete);$('nhCancelComplete').addEventListener('click',()=>{if(!state.busy){$('nhCompleteDialog').close();state.completeContext=null;}});
+    $('nhCompleteDialog').addEventListener('cancel',event=>{if(state.busy)event.preventDefault();else state.completeContext=null;});
     $('nhRentPay').addEventListener('click',()=>{if(!state.busy)rentPaymentForm();});$('nhRentHistory').addEventListener('click',onClick);
-    $('nhBackupNow').addEventListener('click',backupNow);document.addEventListener('visibilitychange',()=>{if(document.hidden){window.clearTimeout(state.backupTimer);state.backupTimer=0;}else{state.backupDeadline=0;refreshBackup(false);}});
+    $('nhBackupNow').addEventListener('click',backupNow);document.addEventListener('visibilitychange',()=>{if(document.hidden){window.clearTimeout(state.backupTimer);state.backupTimer=0;window.clearTimeout(state.workTimer);state.workTimer=0;}else{state.backupDeadline=0;refreshBackup(false);if(state.boot&&!state.workLoading)refreshWork(true);}});
     $('nhAddGroup').addEventListener('click',()=>externalEdit(()=>groupForm(true)));$('nhEditGroup').addEventListener('click',()=>externalEdit(()=>groupForm(false)));
     $('nhReload').addEventListener('click',()=>state.groupId?reload():boot());$('nhGroup').addEventListener('change',()=>changeGroup($('nhGroup').value));
     $('nhGroupCards').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(b)changeGroup(b.dataset.group);});
