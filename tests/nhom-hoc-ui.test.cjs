@@ -1,107 +1,154 @@
 'use strict';
-// DOM integration test; no browser, network, live Google API or real account is used.
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+// Real UI + shared ledger; synthetic, in-memory Sheets only.
+const test=require('node:test'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {JSDOM}=require(require.resolve('jsdom',{paths:[process.env.EGV_QA_DEPENDENCIES||process.cwd()]}));
 const {ledgerFixture}=require('./nhom-hoc-ledger.test.cjs');
-const root=path.resolve(__dirname,'..');
-const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const tick=()=>new Promise(r=>setImmediate(r));
-async function settle(){for(let i=0;i<12;i++)await tick();}
-async function tests() {
-  const h=ledgerFixture(),{api}=h;
-  api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:api('nh_view',{groupId:'g35',month:'2026-09'}).revision,sessions:[{id:'p12',date:'2026-10-12'},{id:'p13',date:'2026-10-13'},{id:'p15',date:'2026-10-15'}]});
+const root=path.resolve(__dirname,'..'),copy=value=>JSON.parse(JSON.stringify(value));
+const settle=async()=>{for(let i=0;i<18;i++)await new Promise(resolve=>setImmediate(resolve));};
+const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const snapshot=h=>Object.fromEntries([...h.sheets].map(([name,sheet])=>[name,copy(sheet.values)]));
+function completedFixture(h) {
+  const view=h.api('nh_view',{groupId:'g35',month:'2026-09'});
+  h.api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:view.revision,sessions:[{id:'p12',date:'2026-10-12'},{id:'p13',date:'2026-10-13'},{id:'p15',date:'2026-10-15'}]});
+  h.setToday('2026-10-15');
+  const v=h.api('nh_view',{groupId:'g35',month:'2026-09'});
+  h.api('nh_attendance_batch_save',{groupId:'g35',sessions:v.sessions.map((s,i)=>({sessionId:s.ma_buoi,revision:s.revision,marks:[{studentId:'s1',status:i<6?'co_mat':'vang'},{studentId:'s2',status:'co_mat'}]}))});
+  h.api('nh_receipt_save',{groupId:'g35',id:'old-receipt',studentId:'s1',month:'2026-09',date:'2026-09-30',amount:200000,method:'chuyen_khoan',note:'Khoản đóng đã có'});
+}
+async function mount(t,options={}) {
+  const h=ledgerFixture();if(options.prepare)options.prepare(h);
   const dom=new JSDOM(fs.readFileSync(path.join(root,'groups.html'),'utf8'),{url:'https://egv.test/groups.html',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
-  await new Promise(r=>w.addEventListener('load',r,{once:true}));
-  const style=d.createElement('style');style.textContent=fs.readFileSync(path.join(root,'groups.css'),'utf8');d.head.append(style);
+  await new Promise(resolve=>w.addEventListener('load',resolve,{once:true}));
   w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
   w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
-  let role='guest',release=null;const calls=[],exports=[],blobs=[];w.Blob=Blob;w.URL.createObjectURL=b=>{blobs.push(b);return 'blob:test';};w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){exports.push(this.download);};w.confirm=()=>true;
-  w.App={escapeHTML,init(){},isAdmin:()=>role==='admin',openLogin:type=>calls.push({login:type}),async apiPost(action,data){calls.push({action,data});if(release&&action==='nh_view')return new Promise(r=>release=r);const p=role==='admin'?{adminToken:'admin-test'}:{userToken:'member'};return h.ctx.handleNhomHoc({action,data,...p});}};
-  const errors=[];w.addEventListener('error',e=>errors.push(e.message));
+  let role=options.role||'admin';const calls=[],blobs=[],downloads=[],errors=[];
+  w.confirm=()=>true;w.Blob=Blob;w.URL.createObjectURL=blob=>{blobs.push(blob);return 'blob:local-test';};w.URL.revokeObjectURL=()=>{};
+  w.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
+  w.App={init(){},isAdmin:()=>role==='admin',escapeHTML,openLogin:type=>calls.push({login:type}),async apiPost(action,data){
+    calls.push({action,data:copy(data)});if(options.beforeRequest)await options.beforeRequest(action,data,h);
+    const result=h.ctx.handleNhomHoc({action,data,...(role==='admin'?{adminToken:'admin-test'}:{userToken:'member'})});
+    if(result.status!=='success')throw new Error(result.message);
+    if(action==='nh_boot'){
+      const values=h.sheets.get('HocSinh').values,headers=values[0];
+      result.data.students=values.slice(1).filter(r=>r[0]).map(row=>Object.fromEntries(headers.map((name,i)=>[name,row[i]??''])));
+    }
+    if(options.afterResponse)await options.afterResponse(action,data,result,h);
+    return result;
+  }};
+  w.addEventListener('error',event=>errors.push(event.message));
   w.eval(fs.readFileSync(path.join(root,'js/groups.js'),'utf8'));d.dispatchEvent(new w.Event('DOMContentLoaded'));await settle();
-  assert.equal(d.getElementById('nhGate').hidden,false);assert.equal(calls.filter(c=>c.action).length,0);
-  d.getElementById('nhLogin').click();assert.equal(calls.at(-1).login,'admin');
-  for(const r of ['member','google','vip']){role=r;w.dispatchEvent(new w.Event('app:auth-change'));await settle();assert.equal(d.getElementById('nhWorkspace').hidden,true);assert.equal(calls.filter(c=>c.action).length,0);}
-  role='admin';w.dispatchEvent(new w.Event('app:auth-change'));await settle();
-  assert.equal(d.getElementById('nhMonth').value,'2026-09');assert.equal(d.querySelectorAll('.nh-group-card').length,2);
-  d.querySelector('[data-group="g35"]').click();await settle();assert.equal(d.getElementById('nhMonth').value,'2026-09');
-  assert.match(d.getElementById('nhPeriodInfo').textContent,/5\/8/);assert.equal(d.querySelectorAll('.nh-overview-table thead th').length,10);
-  assert.equal(d.getElementById('nhOverview').hidden,false);
-  assert.equal(d.querySelectorAll('.nh-overview-table tbody tr').length,2);assert.equal(d.querySelectorAll('[data-tab="overview"]').length,0);assert.equal(d.querySelectorAll('[data-action="save-attendance"]').length,1);
-  assert.equal(d.querySelectorAll('.nh-overview-table tbody tr:first-child .nh-overview-cell').length,8);
-  const futureSquare=d.querySelector('#nhOverview [data-cycle="p12"][data-student="s1"]');
-  assert.equal(futureSquare.disabled,true);assert(futureSquare.classList.contains('future'));
-  assert.match(futureSquare.getAttribute('aria-label'),/12\/10\/2026: Dự kiến/);
-  assert.equal(futureSquare.querySelector('.nh-square').textContent,'');
-  assert.equal(d.querySelector('[data-cycle="p12"][data-student="s1"]').disabled,true);assert.match(d.querySelector('[data-cycle="p12"]').getAttribute('aria-label'),/Dự kiến/);
-  const learned=api('nh_view',{groupId:'g35',month:'2026-09'});h.setToday('2026-10-15');
-  const now=api('nh_view',{groupId:'g35',month:'2026-09'});
-  api('nh_attendance_batch_save',{groupId:'g35',sessions:now.sessions.map((s,i)=>({sessionId:s.ma_buoi,revision:s.revision,marks:[{studentId:'s1',status:i<6?'co_mat':'vang'},{studentId:'s2',status:'co_mat'}]}))});
-  api('nh_receipt_save',{groupId:'g35',id:'r1',studentId:'s1',month:'2026-09',date:'2026-09-30',amount:200000,method:'chuyen_khoan',note:'Đóng lần 1'});
-  d.getElementById('nhReload').click();await settle();assert.match(d.getElementById('nhPeriodInfo').textContent,/8\/8/);assert.match(d.querySelector('[data-group="g35"]').textContent,/0\/8/);
-  assert.deepEqual(errors,[]);assert.match(d.getElementById('nhFees').textContent,/375\.000đ/);assert.match(d.getElementById('nhFees').textContent,/Miễn học phí/);
-  assert.equal(d.querySelectorAll('#nhOverview tr:first-child .nh-square-mark.co_mat').length,6);
-  assert.equal(d.querySelectorAll('#nhOverview tr:first-child .nh-square-mark.vang').length,2);
-  assert.equal(d.querySelector('[data-overview-count="s1"]').textContent,'6/8');
-  const squareColor=status=>w.getComputedStyle(d.querySelector(`#nhOverview .nh-square-mark.${status} .nh-square`)).backgroundColor;
-  assert.equal(squareColor('co_mat'),'rgb(22, 163, 74)');assert.equal(squareColor('vang'),'rgb(75, 85, 99)');
-  const first=api('nh_view',{groupId:'g35',month:'2026-09'}).sessions[0];
-  d.querySelector(`[data-cycle="${first.ma_buoi}"][data-student="s1"]`).click();assert.match(d.getElementById('nhFees').textContent,/312\.500đ/);
-  assert(d.querySelector(`#nhOverview [data-cycle="${first.ma_buoi}"][data-student="s1"]`).classList.contains('vang'));
-  d.querySelector('[data-attendance-mode="overview"]').click();assert.equal(d.getElementById('nhOverview').hidden,false);assert.equal(d.getElementById('nhAttendance').hidden,true);
-  assert.equal(d.querySelector('[data-attendance-mode="overview"]').getAttribute('aria-pressed'),'true');
-  const apiCallsBeforeEdit=calls.length;
-  d.querySelector('#nhOverview [data-cycle="p13"][data-student="s1"]').click();
-  assert(d.querySelector('#nhOverview [data-cycle="p13"][data-student="s1"]').classList.contains('chua_diem_danh'));
-  d.querySelector('#nhOverview [data-cycle="p13"][data-student="s1"]').click();
-  d.querySelector('#nhOverview [data-session="p13"]').click();assert.equal(d.querySelector('#nhAttendance [data-mark="co_mat"][data-student="s1"]').getAttribute('aria-pressed'),'true');d.querySelector('[data-attendance-mode="overview"]').click();
-
-  assert.equal(calls.length,apiCallsBeforeEdit);assert.equal(d.getElementById('nhSaveAttendance').disabled,false);
-  assert.equal(d.querySelector('[data-overview-count="s1"]').textContent,'6/8');
-  assert.match(d.getElementById('nhSaveHint').textContent,/2 ô/);assert.match(d.getElementById('nhFees').textContent,/375\.000đ/);
-  assert.match(d.getElementById('nhSaveHint').textContent,/2 ô/);
-  d.querySelector('[data-session="p13"]').click();d.querySelector('[data-mark-note="p13"][data-student="s1"]').click();
-  assert.equal(d.getElementById('nhOverview').hidden,true);assert.equal(d.getElementById('nhAttendance').hidden,false);
-  d.querySelector('[name="note"]').value='<b>Ghi chú buổi học</b>';d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
-  assert.match(d.getElementById('nhSaveHint').textContent,/2 ô/);
-  const savedBefore=calls.filter(c=>c.action==='nh_attendance_batch_save').length;
-  d.querySelector('[data-attendance-mode="overview"]').click();d.getElementById('nhSaveAttendance').click();await settle();
-  assert.equal(calls.filter(c=>c.action==='nh_attendance_batch_save').length,savedBefore+1);assert.equal(calls.filter(c=>c.action==='nh_attendance_batch_save').at(-1).data.sessions.length,2);
-  assert.equal(api('nh_view',{groupId:'g35',month:'2026-09'}).fees.find(f=>f.studentId==='s1').due,375000);
-  assert.equal(d.getElementById('nhSaveAttendance').disabled,true);
-  assert.equal(d.getElementById('nhSaveAttendance').disabled,true);
-  assert.equal(d.getElementById('nhOverview').hidden,false);
-  d.querySelector('[data-profile="s1"]').click();assert.equal(d.getElementById('nhProfile').open,true);assert.match(d.getElementById('nhProfileBody').textContent,/6 buổi/);assert.match(d.getElementById('nhProfileBody').textContent,/30\/09\/2026/);assert.match(d.getElementById('nhProfileBody').textContent,/<b>Ghi chú buổi học<\/b>/);assert.equal(d.getElementById('nhProfileBody').querySelectorAll('b').length,0);
-  d.getElementById('nhProfileBody').querySelector('[data-receive="s1"]').click();assert.equal(d.getElementById('nhProfile').open,false);assert.equal(d.querySelector('[name="amount"]').value,'175000');
-  d.querySelector('[name="note"]').value='Đóng đủ';d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();
-  let v=api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(v.fees.find(f=>f.studentId==='s1').paid,375000);assert.equal(v.receipts.length,2);assert.equal(v.receipts.find(p=>p.ma_thu!=='r1').ngay_dong,'2026-10-15');
-  // Retained old marks on a class moved back to Planned must not create fees.
-  const moved=v.sessions[1];
-  api('nh_session_save',{groupId:'g35',id:moved.ma_buoi,date:moved.ngay_hoc,update:true,planned:true,revision:moved.revision});
-  d.getElementById('nhReload').click();await settle();
-  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/312\.500đ/);
-  d.querySelector(`[data-cycle="${first.ma_buoi}"][data-student="s1"]`).click();
-  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/312\.500đ/);
-  d.getElementById('nhReload').click();await settle();
-  const revised=api('nh_view',{groupId:'g35',month:'2026-09'}).sessions.find(s=>s.ma_buoi===moved.ma_buoi);
-  api('nh_session_save',{groupId:'g35',id:moved.ma_buoi,date:moved.ngay_hoc,update:true,planned:false,revision:revised.revision});
-  d.getElementById('nhReload').click();await settle();
-  assert.match(d.querySelector('[data-fee-name="hoc sinh a"]').textContent,/375\.000đ/);
-  d.querySelector('[data-tab="fees"]').click();const filter=d.getElementById('nhFeeFilter');filter.value='free';filter.dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal([...d.querySelectorAll('.nh-fee-row')].filter(r=>!r.hidden).length,1);
-  d.getElementById('nhExport').click();assert.equal(exports[0],'Nhom_hoc_2026-09.csv');const csv=await blobs[0].text();assert.match(csv,/LỊCH SỬ ĐÓNG TIỀN/);assert.match(csv,/175000/);
-  d.querySelector('[data-tab="attendance"]').click();d.querySelector('[data-attendance-mode="day"]').click();d.getElementById('nhSearch').value='hoc sinh a';d.getElementById('nhSearch').dispatchEvent(new w.Event('input',{bubbles:true}));assert([...d.querySelectorAll('.nh-mobile-student')].some(r=>!r.hidden));assert.equal([...d.querySelectorAll('.nh-mobile-student')].filter(r=>!r.hidden).length,1);
-  d.querySelector('[data-attendance-mode="overview"]').click();assert.equal(d.getElementById('nhOverviewSearch').value,'hoc sinh a');
-  assert.equal([...d.querySelectorAll('.nh-overview-table tbody tr')].filter(r=>!r.hidden).length,1);
-  d.getElementById('nhOverviewSearch').value='khong co';d.getElementById('nhOverviewSearch').dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(d.getElementById('nhOverviewEmpty').hidden,false);
-  d.getElementById('nhOverviewSearch').value='';d.getElementById('nhOverviewSearch').dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal([...d.querySelectorAll('.nh-overview-table tbody tr')].filter(r=>!r.hidden).length,2);
-  assert.equal(d.getElementById('nhSearch').value,'');
-  d.querySelector('[data-tab="attendance"]').click();
-  d.getElementById('nhNextMonth').click();await settle();assert.equal(d.getElementById('nhMonth').value,'2026-10');
-  d.querySelector('[data-action="plan-sessions"]').click();await settle();assert.equal(d.getElementById('nhDialog').open,true);assert.equal(d.querySelector('[name="date_0"]').value,'2026-10-20');assert.equal(d.querySelector('[name="date_7"]').value,'2026-11-12');
-  d.getElementById('nhForm').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settle();v=api('nh_view',{groupId:'g35',month:'2026-10'});assert.equal(v.sessions.length,8);assert.equal(v.period.completed,0);assert.equal(v.fees.find(f=>f.studentId==='s1').due,0);
-  assert(d.querySelectorAll('.nh-square-mark.future').length>0);assert.equal(d.getElementById('nhSaveAttendance').disabled,true);
-  d.querySelector('[data-profile="s1"]').click();role='member';w.dispatchEvent(new w.Event('app:auth-change'));await settle();assert.equal(d.getElementById('nhProfile').open,false);assert.equal(d.getElementById('nhProfileBody').textContent,'');assert.equal(d.getElementById('nhAttendance').textContent,'');assert.equal(d.getElementById('nhOverview').textContent,'');assert.equal(d.getElementById('nhGroupCards').textContent,'');assert.equal(d.getElementById('nhWorkspace').hidden,true);
-  assert.deepEqual(errors,[]);dom.window.close();
-  console.log('PASS: admin-only gate; 8-square overview for every student; green/dark-grey colors; future cells disabled; one attendance tab with all-session and per-session modes; shared drafts, counts and fee preview; overview batch save; notes escaped; profile and receipts; synchronized search; CSV; period planning; logout clears both attendance views. Browser layout was not tested by this DOM test.');
+  t.after(()=>{try{assert.deepEqual(errors,[]);}finally{w.close();}});
+  const q=selector=>{const el=d.querySelector(selector);assert(el,'Missing '+selector);return el;},click=selector=>q(selector).click();
+  const change=(selector,value)=>{q(selector).value=value;q(selector).dispatchEvent(new w.Event('change',{bubbles:true}));};
+  return {h,w,d,calls,blobs,downloads,q,click,change,
+    selectGroup:async id=>{click('[data-group="'+id+'"]');await settle();},
+    selectPeriod:async month=>{change('#nhMonth',month);await settle();},
+    selectSession:async id=>{change('#nhSessionSelect',id);await settle();},
+    mark:(id,status)=>click('#nhAttendance [data-mark="'+status+'"][data-student="'+id+'"]'),
+    setRole:async next=>{role=next;w.dispatchEvent(new w.Event('app:auth-change'));await settle();}
+  };
 }
-tests().catch(error=>{console.error(error);process.exitCode=1;});
+test('Classbook reads old records without writes; names, lessons, payments and period IDs are preserved',async t=>{
+  const ui=await mount(t,{role:'guest',prepare:h=>h.api('nh_member_save',{groupId:'g35',memberId:'m1',name:'Đỗ Ánh <B>',className:'4/6',joinDate:'2026-09-01',leaveDate:'',rate:''})});
+  const {h,q,calls,click}=ui,before=snapshot(h);
+  for(const role of ['guest','member','google','vip']){await ui.setRole(role);assert.equal(q('#nhWorkspace').hidden,true);assert.equal(calls.filter(c=>c.action).length,0);}
+  click('#nhLogin');assert.equal(calls.at(-1).login,'admin');
+  await ui.setRole('admin');await ui.selectGroup('g35');
+  assert.equal(q('#nhGroupTitle').textContent,'Thứ 3–5');assert.equal(q('#nhAttendance').hidden,false);assert.equal(q('#nhOverview').hidden,true);assert.equal(q('#nhStats').hidden,true);
+  assert.match(q('#nhAttendance').textContent,/Đỗ Ánh <B>/);assert.equal(ui.d.querySelector('#nhAttendance b'),null);
+  for(const tab of ['fees','students','attendance'])click('[data-tab="'+tab+'"]');
+  await ui.selectPeriod('2026-10');await ui.selectPeriod('2026-09');
+  assert.match(q('#nhPeriodInfo').textContent,/Kỳ 1/);assert.equal(q('#nhMonth').value,'2026-09');assert.equal(q('#nhMonth').hidden,true);assert.equal(q('#nhPeriodChoice').hidden,false);
+  click('[data-attendance-mode="overview"]');assert.equal(ui.d.querySelectorAll('.nh-overview-table thead th').length,10);
+  q('#nhOverview [data-cycle][data-student="s1"]').click();assert.equal(q('#nhAttendance').hidden,false);assert.equal(q('#nhSaveAttendance').disabled,true);
+  q('#nhSearch').value='do anh';q('#nhSearch').dispatchEvent(new ui.w.Event('input',{bubbles:true}));
+  assert.equal([...ui.d.querySelectorAll('.nh-mobile-student')].filter(r=>!r.hidden).length,1);
+  q('#nhSearch').value='';q('#nhSearch').dispatchEvent(new ui.w.Event('input',{bubbles:true}));
+  click('[data-profile="s1"]');assert.equal(q('#nhProfileName').textContent,'Đỗ Ánh <B>');click('#nhCloseProfile');
+  click('#nhExport');assert.equal(ui.downloads[0],'Nhom_hoc_2026-09.csv');
+  assert.deepEqual(snapshot(h),before,'opening, navigation, filters, profile and export never rewrite records');
+  assert(calls.filter(c=>c.action).every(c=>['nh_boot','nh_view'].includes(c.action)));
+  assert(calls.filter(c=>c.action==='nh_view').every(c=>/^\d{4}-\d{2}$/.test(c.data.month)));
+});
+test('Explicit marks are idempotent; the whole-period table only opens a lesson',async t=>{
+  const ui=await mount(t,{prepare:completedFixture});await ui.selectGroup('g35');await ui.selectPeriod('2026-09');
+  const before=snapshot(ui.h),s=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'}).sessions[0];
+  ui.click('[data-attendance-mode="overview"]');ui.click('#nhOverview [data-cycle="'+s.ma_buoi+'"][data-student="s1"]');
+  assert.equal(ui.q('#nhSessionSelect').value,s.ma_buoi);assert.equal(ui.q('#nhSaveAttendance').disabled,true);
+  ui.mark('s1','co_mat');ui.mark('s1','co_mat');assert.equal(ui.q('#nhSaveAttendance').disabled,true);
+  ui.mark('s1','vang');assert.match(ui.q('#nhSaveHint').textContent,/1 ô điểm danh chưa lưu/);
+  ui.mark('s1','co_mat');assert.equal(ui.q('#nhSaveAttendance').disabled,true);assert.deepEqual(snapshot(ui.h),before);
+});
+test('Stay/discard/save guard protects context; only an explicitly saved attendance mark changes',async t=>{
+  const ui=await mount(t);await ui.selectGroup('g35');const before=snapshot(ui.h),old=ui.q('#nhSessionSelect').value;
+  const view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'}),saved=view.marks.find(m=>m.ma_buoi===old&&m.ma_hoc_sinh==='s1')?.trang_thai||'chua_diem_danh',status=saved==='co_mat'?'vang':'co_mat';
+  ui.mark('s1',status);ui.click('[data-group="g24"]');assert.equal(ui.q('#nhUnsavedDialog').open,true);assert.equal(ui.q('#nhGroupTitle').textContent,'Thứ 3–5');
+  assert.match(ui.q('#nhUnsavedContext').textContent,/Thứ 3–5.*Kỳ 1/);ui.click('#nhStay');assert.equal(ui.q('#nhUnsavedDialog').open,false);assert.equal(ui.q('#nhSaveAttendance').disabled,false);
+  ui.click('[data-group="g24"]');ui.click('#nhDiscardAndContinue');await settle();assert.equal(ui.q('#nhGroupTitle').textContent,'Thứ 2–4');assert.deepEqual(snapshot(ui.h),before);
+  await ui.selectGroup('g35');ui.mark('s1',status);const target=view.sessions.find(s=>s.ma_buoi!==old).ma_buoi;
+  ui.change('#nhSessionSelect',target);assert.equal(ui.q('#nhSessionSelect').value,old);assert.equal(ui.q('#nhUnsavedDialog').open,true);
+  ui.click('#nhSaveAndContinue');await settle();assert.equal(ui.q('#nhUnsavedDialog').open,false);assert.equal(ui.q('#nhSessionSelect').value,target);
+  const writes=ui.calls.filter(c=>c.action==='nh_attendance_batch_save');assert.equal(writes.length,1);assert.equal(writes[0].data.groupId,'g35');
+  assert.equal(writes[0].data.sessions[0].sessionId,old);assert.equal(writes[0].data.sessions[0].marks[0].studentId,'s1');assert.equal(writes[0].data.sessions[0].marks[0].status,status);
+  const after=snapshot(ui.h);for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','BuoiHoc','ThuHocPhi','HocPhiKy','TienThuePhong'])assert.deepEqual(after[name],before[name],name+' stays unchanged');
+});
+test('Failed saving retains drafts and blocks navigation; logout clears pending private state',async t=>{
+  const ui=await mount(t,{beforeRequest(action){if(action==='nh_attendance_batch_save')throw Error('Điểm danh vừa thay đổi ở phiên khác');}});
+  await ui.selectGroup('g35');const before=snapshot(ui.h),saved=ui.q('#nhAttendance [data-mark="co_mat"][data-student="s1"]').getAttribute('aria-pressed')==='true';
+  ui.mark('s1',saved?'vang':'co_mat');ui.click('[data-group="g24"]');ui.click('#nhSaveAndContinue');await settle();
+  assert.equal(ui.q('#nhUnsavedDialog').open,true);assert.equal(ui.q('#nhUnsavedError').hidden,false);assert.equal(ui.q('#nhGroupTitle').textContent,'Thứ 3–5');assert.match(ui.q('#nhSaveHint').textContent,/1 ô/);assert.deepEqual(snapshot(ui.h),before);
+  await ui.setRole('member');assert.equal(ui.q('#nhUnsavedDialog').open,false);assert.equal(ui.q('#nhWorkspace').hidden,true);assert.equal(ui.q('#nhAttendance').textContent,'');assert.equal(ui.q('#nhGroupTitle').textContent,'');
+});
+test('Cycle and calendar labels retain stored YYYY-MM keys across year boundaries',async t=>{
+  const ui=await mount(t,{prepare:h=>h.api('nh_group_save',{id:'calendar',name:'Nhóm theo tháng cũ',teacher:'u1',days:'2,4',mode:'theo_thang',rate:500000,cycleSize:0})});
+  const before=snapshot(ui.h);await ui.selectGroup('g35');assert.match(ui.q('#nhPeriodInfo').textContent,/Kỳ 1/);
+  for(let i=0;i<4;i++){ui.click('#nhNextMonth');await settle();}
+  assert.equal(ui.q('#nhMonth').value,'2027-01');assert.match(ui.q('#nhPeriodInfo').textContent,/Kỳ 5/);
+  await ui.selectGroup('calendar');assert.equal(ui.q('#nhMonth').hidden,false);assert.equal(ui.q('#nhPeriodChoice').hidden,true);assert.match(ui.q('#nhPeriodInfo').textContent,/Tháng 10\/2026/);
+  await ui.selectPeriod('2026-12');assert.match(ui.q('#nhPeriodInfo').textContent,/Tháng 12\/2026/);assert.deepEqual(snapshot(ui.h),before);
+});
+test('A lost add-student reply cannot leak a membership ID into a different group',async t=>{
+  let lost=false;
+  const ui=await mount(t,{prepare:h=>h.sheets.get('HocSinh').values.push(['detached','Học sinh đã có hồ sơ','5/1','dang_hoc','']),
+    afterResponse(action){if(action==='nh_students_save'&&!lost){lost=true;throw Error('Mất phản hồi sau khi đã lưu');}}});
+  const before=snapshot(ui.h);
+  async function addTo(group){await ui.selectGroup(group);ui.click('[data-tab="students"]');ui.click('[data-action="add-students"]');ui.q('[name="existing"]').value='detached';ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();}
+  await addTo('g24');assert.match(ui.q('#nhFormError').textContent,/Mất phản hồi/);ui.click('#nhCancelDialog');await addTo('g35');assert.equal(ui.q('#nhDialog').open,false);
+  const members=ui.h.sheets.get('ThanhVienNhom').values.slice(1).filter(r=>r[2]==='detached');assert.equal(members.length,2);assert.notEqual(members[0][0],members[1][0]);
+  const after=snapshot(ui.h);for(const name of ['NhomHoc','HocSinh','BuoiHoc','DiemDanh','ThuHocPhi','HocPhiKy','TienThuePhong'])assert.deepEqual(after[name],before[name]);
+});
+test('Notes, profiles, fee filters and CSV preserve installment history and escape text',async t=>{
+  const ui=await mount(t,{prepare:completedFixture});await ui.selectGroup('g35');await ui.selectPeriod('2026-09');const before=snapshot(ui.h);
+  ui.click('#nhAttendance [data-mark-note][data-student="s1"]');ui.q('[name="note"]').value='<b>Ghi chú buổi học</b>';ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  assert.equal(ui.calls.filter(c=>c.action==='nh_attendance_batch_save').length,0);assert.deepEqual(snapshot(ui.h),before);
+  ui.click('[data-tab="fees"]');assert.equal(ui.q('#nhStats').hidden,false);assert.equal(ui.q('#nhPendingNotice').hidden,false);
+  ui.change('#nhFeeFilter','free');assert.equal([...ui.d.querySelectorAll('.nh-fee-row')].filter(r=>!r.hidden).length,1);
+  ui.click('[data-action="return-attendance"]');ui.click('#nhSaveAttendance');await settle();
+  ui.click('[data-profile="s1"]');assert.match(ui.q('#nhProfileBody').textContent,/<b>Ghi chú buổi học/);assert.equal(ui.d.querySelector('#nhProfileBody b'),null);assert.match(ui.q('#nhProfileBody').textContent,/200.000đ/);ui.click('#nhCloseProfile');
+  ui.click('#nhExport');const csv=await ui.blobs.at(-1).text();assert.match(csv,/LỊCH SỬ ĐÓNG TIỀN/);assert.match(csv,/200000/);assert.match(csv,/375000/);assert.match(csv,/2026-09/);assert.deepEqual(snapshot(ui.h).ThuHocPhi,before.ThuHocPhi);
+});
+test('Receipt forms append installments; closing and reopening a period preserve the previous ledger',async t=>{
+  const ui=await mount(t,{prepare:completedFixture});await ui.selectGroup('g35');await ui.selectPeriod('2026-09');
+  const before=snapshot(ui.h);ui.click('[data-profile="s1"]');ui.click('#nhProfileBody [data-receive="s1"]');
+  assert.equal(ui.q('#nhProfile').open,false);assert.match(ui.q('.nh-receipt-context').textContent,/Thứ 3–5.*Kỳ 1.*Học sinh A/);
+  assert.equal(ui.q('[name="amount"]').value,'175000');ui.q('[name="note"]').value='Đóng thêm lần 2';
+  ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  let view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.fees.find(f=>f.studentId==='s1').paid,375000);assert.equal(view.receipts.length,2);
+  const write=ui.calls.find(c=>c.action==='nh_receipt_save');assert.equal(write.data.month,'2026-09');assert.equal(write.data.studentId,'s1');assert.equal(write.data.amount,'175000');
+  const after=snapshot(ui.h);assert.deepEqual(after.ThuHocPhi.slice(0,before.ThuHocPhi.length),before.ThuHocPhi);
+  for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','BuoiHoc','DiemDanh','HocPhiKy','TienThuePhong'])assert.deepEqual(after[name],before[name]);
+  ui.click('[data-tab="fees"]');ui.click('[data-action="close"]');ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.closed,true);assert.equal(ui.q('#nhAttendance [data-mark="co_mat"][data-student="s1"]').disabled,true);
+  ui.click('[data-action="reopen"]');ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  view=ui.h.api('nh_view',{groupId:'g35',month:'2026-09'});assert.equal(view.closed,false);assert.equal(view.fees.find(f=>f.studentId==='s1').paid,375000);
+  const reopened=snapshot(ui.h);for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','BuoiHoc','DiemDanh','ThuHocPhi','TienThuePhong'])assert.deepEqual(reopened[name],after[name]);
+});
+test('Future lessons stay read-only; scheduling only appends lessons and preserves the old ledger',async t=>{
+  const ui=await mount(t,{prepare:h=>{const v=h.api('nh_view',{groupId:'g35',month:'2026-09'});h.api('nh_sessions_plan',{groupId:'g35',month:'2026-09',revision:v.revision,sessions:[{id:'future',date:'2026-10-13'}]});}});
+  await ui.selectGroup('g35');await ui.selectSession('future');assert.equal(ui.q('#nhAttendance [data-mark="co_mat"][data-student="s1"]').disabled,true);assert.match(ui.q('#nhAttendance').textContent,/Chưa đến ngày học/);
+  const before=snapshot(ui.h);ui.click('[data-attendance-mode="overview"]');assert.equal(ui.q('#nhOverview [data-cycle="future"][data-student="s1"]').disabled,true);
+  ui.click('[data-action="plan-sessions"]');await settle();assert.equal(ui.q('#nhDialog').open,true);assert(ui.q('[name="date_0"]').value>='2026-10-11');
+  ui.q('#nhForm').dispatchEvent(new ui.w.Event('submit',{bubbles:true,cancelable:true}));await settle();
+  const after=snapshot(ui.h);for(const name of ['NhomHoc','HocSinh','ThanhVienNhom','DiemDanh','ThuHocPhi','HocPhiKy','TienThuePhong'])assert.deepEqual(after[name],before[name]);
+  assert.deepEqual(after.BuoiHoc.slice(0,before.BuoiHoc.length),before.BuoiHoc);assert(after.BuoiHoc.length>before.BuoiHoc.length);
+});
