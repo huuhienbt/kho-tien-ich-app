@@ -64,7 +64,7 @@ test('Today opens the unique scheduled lesson across groups without modifying th
   const h=todayFixture(),before=snapshot(h),ui=await mount(t,{h});
   assert.equal(ui.q('#nhDashboard').hidden,false);assert.equal(ui.d.querySelectorAll('[data-open-work]').length,1);
   assert.equal(ui.q('#nhGroupTitle').textContent,'Thứ 3–5');assert.equal(ui.q('#nhSessionSelect').value,'today35');assert.equal(ui.q('#nhMonth').value,'2026-09');
-  assert.match(ui.q('#nhTodayList').textContent,/Thứ 3–5/);assert.deepEqual(ui.writes(),[]);assert.deepEqual(snapshot(h),before);
+  assert.match(ui.q('#nhGroupTable').textContent,/Thứ 3–5/);assert.deepEqual(ui.writes(),[]);assert.deepEqual(snapshot(h),before);
   assert(ui.calls.some(c=>c.action==='nh_view'&&c.data.groupId==='g24'));
 });
 test('Multiple lessons require a choice, and an explicit deep link keeps its original group and lesson',async t=>{

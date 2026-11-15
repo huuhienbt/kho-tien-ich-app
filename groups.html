@@ -8,47 +8,50 @@
   <meta name="description" content="Quản lý nhóm học, điểm danh từng buổi và theo dõi học phí trong Sổ lớp E-GV.">
   <link rel="stylesheet" href="style.css?v=9.8.1">
   <link rel="stylesheet" href="modern-saas.css?v=9.3.0">
-  <link rel="stylesheet" href="groups.css?v=9.13.0">
+  <link rel="stylesheet" href="groups.css?v=9.14.0">
   <script src="js/config.js?v=9.7.0" defer></script>
   <script src="js/app.js?v=9.10.0" defer></script>
   <script src="js/groups-workflow.js?v=9.13.0" defer></script>
   <script src="js/groups-drafts.js?v=9.13.0" defer></script>
-  <script src="js/groups.js?v=9.13.0" defer></script>
+  <script src="js/groups.js?v=9.14.0" defer></script>
 </head>
-<body class="page-groups page-classbook">
+<body class="page-groups page-classbook page-groups-compact">
   <div id="appShell"></div>
   <main class="page-main"><div class="container">
-    <header class="nh-page-heading">
-      <div><p class="nh-eyebrow">E-GV / Nhóm học</p><h1>Sổ lớp</h1><p>Chọn nhóm, mở buổi học và theo dõi học phí.</p></div>
+    <header class="nh-page-heading" id="nhPageHeader">
+      <div><h1>Nhóm học</h1></div>
       <button class="btn btn-secondary" id="nhAddGroup" type="button" hidden>+ Tạo nhóm</button>
     </header>
     <section class="panel nh-gate" id="nhGate"><h2>Đăng nhập quản trị để mở sổ lớp</h2><p>Thông tin học sinh, điểm danh và học phí chỉ dành cho quản trị.</p><button class="btn btn-primary" type="button" id="nhLogin">Đăng nhập quản trị</button></section>
     <p class="nh-feedback" id="nhFeedback" role="status" aria-live="polite" hidden></p>
     <section id="nhDashboard" class="nh-dashboard" aria-labelledby="nhTodayTitle" hidden>
-      <header><div><h2 id="nhTodayTitle">Hôm nay</h2><p id="nhTodayDate"></p></div><button id="nhWorkRefresh" class="btn btn-secondary" type="button">Cập nhật</button></header>
-      <div id="nhTodayList" class="nh-today-list"></div>
+      <header class="nh-overview-heading"><div><h2 id="nhTodayTitle" tabindex="-1">Tổng quan</h2><p id="nhTodayDate"></p></div><button id="nhWorkRefresh" class="btn btn-secondary" type="button">Cập nhật</button></header>
+      <p id="nhSummaryLine" class="nh-summary-line"></p>
+      <div class="nh-group-table-wrap"><table id="nhGroupTable" class="nh-group-summary-table"><thead><tr><th scope="col">Nhóm học</th><th scope="col">HS trong kỳ</th><th scope="col">Kỳ hiện tại</th><th scope="col">Đã thu</th><th scope="col">Còn thiếu</th><th scope="col"><span class="sr-only">Mở nhóm</span></th></tr></thead><tbody></tbody></table></div>
+      <div id="nhTodayList" class="nh-today-list" hidden></div>
       <details id="nhWorkDetails"><summary>Việc cần xử lý <span id="nhWorkCount">0</span></summary><div id="nhTaskList" class="nh-task-list"></div></details>
       <p id="nhDashboardHint" class="nh-caption" role="status" aria-live="polite"></p>
     </section>
     <div id="nhWorkspace" class="nh-classbook-layout" hidden>
-      <aside class="nh-sidebar" aria-label="Các nhóm học">
+      <aside class="nh-sidebar" aria-label="Các nhóm học" hidden>
         <p class="nh-eyebrow">Nhóm của tôi</p>
         <nav id="nhGroupCards" class="nh-group-cards" aria-label="Chọn nhóm học"></nav>
       </aside>
       <section class="nh-book" aria-label="Sổ của nhóm đang chọn">
         <header class="nh-book-heading">
-          <div class="nh-book-identity"><h2 id="nhGroupTitle"></h2><p id="nhGroupHint"></p></div>
+          <div class="nh-book-identity"><button type="button" id="nhBackOverview" class="nh-back-overview">← Tổng quan</button><h2 id="nhGroupTitle" tabindex="-1"></h2><p id="nhGroupHint"></p></div>
           <details class="nh-book-tools" id="nhBookTools">
-            <summary>Quản lý nhóm</summary>
+            <summary aria-label="Thao tác quản lý nhóm">Thao tác</summary>
             <div class="nh-book-tool-list">
+              <label class="nh-group-select">Nhóm học<select id="nhGroup" class="form-control"></select></label>
               <button class="btn btn-secondary" type="button" id="nhEditGroup" hidden>Cài đặt nhóm</button>
               <button class="btn btn-secondary" type="button" id="nhExport">Xuất CSV (Excel)</button>
               <button class="btn btn-secondary" type="button" id="nhReload">Tải lại sổ lớp</button>
+              <div id="nhSessionTools" class="nh-session-tools"><span class="nh-menu-label">Lịch học</span><div id="nhAttendanceToolbar" class="nh-attendance-toolbar"></div></div>
             </div>
           </details>
         </header>
         <section class="nh-toolbar" aria-label="Chọn nhóm và kỳ học">
-          <label class="nh-group-select">Nhóm học<select id="nhGroup" class="form-control"></select></label>
           <label class="nh-period-select"><span id="nhPeriodLabel">Kỳ học</span><span class="nh-month-picker">
             <button type="button" id="nhPrevMonth" aria-label="Xem kỳ trước">‹</button>
             <select id="nhPeriodChoice" class="form-control" aria-label="Chọn kỳ học" hidden></select>
@@ -60,21 +63,15 @@
         <div id="nhGroupContent" hidden>
           <section id="nhPeriodInfo" class="nh-period-info" aria-label="Tiến độ kỳ học"></section>
           <div id="nhLocalDraftNotice" class="nh-local-draft" role="status" hidden><p id="nhLocalDraftText"></p><div><button id="nhRestoreLocalDraft" class="btn btn-secondary" type="button">Khôi phục nháp</button><button id="nhDiscardLocalDraft" class="nh-link" type="button">Xóa nháp thiết bị</button></div></div>
-          <nav class="nh-tabs" aria-label="Chức năng nhóm học">
+          <div class="nh-book-tabs"><nav class="nh-tabs" aria-label="Chức năng nhóm học">
             <button type="button" data-tab="attendance" aria-pressed="true">Điểm danh</button>
             <button type="button" data-tab="fees" aria-pressed="false">Học phí</button>
             <button type="button" data-tab="students" aria-pressed="false">Học sinh</button>
             <button type="button" id="nhFilesTab" data-tab="files" aria-pressed="false" hidden>Tệp</button>
-          </nav>
+          </nav><label id="nhAttendanceDisplayLabel" class="nh-attendance-display"><span class="sr-only">Cách xem điểm danh</span><select id="nhAttendanceDisplay" class="form-control" aria-label="Cách xem điểm danh"><option value="overview">Cả kỳ</option><option value="day">Từng buổi</option></select></label></div>
           <div id="nhPendingNotice" class="nh-pending-notice" role="status" hidden><span id="nhPendingText"></span><button type="button" class="nh-link" data-action="return-attendance">Về điểm danh để lưu</button></div>
           <section id="nhAttendancePanel" class="nh-tab-panel nh-attendance-panel">
-            <div class="nh-attendance-topbar">
-              <div class="nh-attendance-modes" aria-label="Cách xem điểm danh">
-                <button type="button" data-attendance-mode="day" aria-pressed="true">Từng buổi</button>
-                <button type="button" id="nhAllSessionsMode" data-attendance-mode="overview" aria-pressed="false">Xem cả kỳ</button>
-              </div>
-              <details id="nhSessionTools" class="nh-session-tools"><summary>Lịch học &amp; học bù</summary><div id="nhAttendanceToolbar" class="nh-attendance-toolbar"></div></details>
-            </div>
+            <div class="nh-attendance-modes" aria-label="Cách xem điểm danh" hidden><button type="button" data-attendance-mode="day" aria-pressed="true">Từng buổi</button><button type="button" id="nhAllSessionsMode" data-attendance-mode="overview" aria-pressed="false">Xem cả kỳ</button></div>
             <section id="nhAttendance" aria-label="Điểm danh một buổi"></section>
             <section id="nhOverview" aria-label="Tất cả học sinh và buổi học" hidden></section>
             <div class="nh-save-bar"><div><strong id="nhSaveContext"></strong><p id="nhSaveHint" role="status" aria-live="polite"></p></div><button class="btn btn-primary" type="button" data-action="save-attendance" id="nhSaveAttendance" hidden>Lưu điểm danh</button><button class="btn btn-primary" type="button" id="nhCompleteAttendance">Hoàn tất buổi</button></div>
@@ -85,6 +82,7 @@
           <section id="nhFiles" class="nh-tab-panel" hidden></section>
         </div>
       </section>
+    </div>
       <details class="nh-operations" id="nhOperations">
         <summary><span>Tiền phòng và sao lưu</span><span id="nhOperationsHint">Thông tin chung các nhóm</span></summary>
         <div class="nh-operations-body">
@@ -108,7 +106,6 @@
       </details>
         </div>
       </details>
-    </div>
   </div></main>
   <dialog class="nh-dialog" id="nhDialog" aria-labelledby="nhDialogTitle"><form id="nhForm"><header><h2 id="nhDialogTitle"></h2><button class="nh-close" type="button" id="nhCloseDialog" aria-label="Đóng">×</button></header><div id="nhFormFields"></div><p id="nhFormError" class="nh-error" role="alert" hidden></p><footer><button type="button" class="btn btn-secondary" id="nhCancelDialog">Hủy</button><button type="submit" class="btn btn-primary" id="nhSubmit">Lưu</button></footer></form></dialog>
   <dialog class="nh-profile" id="nhProfile" aria-labelledby="nhProfileName"><header><div><p class="page-eyebrow" id="nhProfilePeriod"></p><h2 id="nhProfileName"></h2></div><button class="nh-close" id="nhCloseProfile" type="button" aria-label="Đóng hồ sơ học sinh">×</button></header><div id="nhProfileBody"></div></dialog>
