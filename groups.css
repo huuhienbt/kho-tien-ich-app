@@ -583,7 +583,7 @@
 .page-groups-compact.page-classbook #nhGroupTable { width:100%; min-width:0; overflow-x:auto; }
 .page-groups-compact.page-classbook .nh-group-summary-table { width:100%; table-layout:auto; border-collapse:collapse; text-align:left; font-size:13px; }
 .page-groups-compact.page-classbook .nh-group-summary-table th { padding:10px 15px; background:#fafbfc; border-block:1px solid var(--book-line); font-size:11px; font-weight:600; color:#728095; white-space:nowrap; }
-.page-groups-compact.page-classbook .nh-group-summary-table td { padding:17px 15px; border-bottom:1px solid #edf0f4; vertical-align:middle; font-variant-numeric:tabular-nums; color:#334155; }
+.page-groups-compact.page-classbook .nh-group-summary-table td { padding:11px 12px; border-bottom:1px solid #edf0f4; vertical-align:middle; font-variant-numeric:tabular-nums; color:#334155; }
 .page-groups-compact.page-classbook .nh-group-summary-table th:first-child,.page-groups-compact.page-classbook .nh-group-summary-table td:first-child { padding-left:20px; }
 .page-groups-compact.page-classbook .nh-group-summary-table th:last-child,.page-groups-compact.page-classbook .nh-group-summary-table td:last-child { padding-right:20px; text-align:right; }
 .page-groups-compact.page-classbook .nh-group-summary-row:last-child td { border-bottom:0; }
@@ -641,9 +641,9 @@
 .page-groups-compact.page-classbook .nh-quick-actions { margin:9px 0 2px; gap:12px; }
 .page-groups-compact.page-classbook #nhDraftCount { font-size:11px; color:#748196; }
 .page-groups-compact.page-classbook .nh-quick-actions .btn { min-height:32px; padding:5px 9px; font-size:11px; }
-.page-groups-compact.page-classbook .nh-mobile-student { padding:8px 0; gap:14px; min-height:54px; }
+.page-groups-compact.page-classbook .nh-mobile-student { padding:5px 0; gap:10px; min-height:44px; }
 .page-groups-compact.page-classbook .nh-mobile-student-top { gap:14px; }
-.page-groups-compact.page-classbook .nh-student-name { font-size:13px; font-weight:550; line-height:1.45; }
+.page-groups-compact.page-classbook .nh-student-name { font-size:13px; font-weight:550; line-height:1.35; }
 .page-groups-compact.page-classbook .nh-student-class { font-size:11px; }
 .page-groups-compact.page-classbook .nh-student-class:not(:empty)::after { content:none; }
 .page-groups-compact.page-classbook .nh-student-mark-state { display:none; }
@@ -700,7 +700,7 @@
 }
 @media(max-width:600px) {
  .page-groups-compact .page-main { padding:16px 0 28px; }
- .page-groups-compact.page-classbook .page-main > .container { width:calc(100% - 24px); }
+ .page-groups-compact.page-classbook .page-main > .container { width:calc(100% - 16px); }
  .page-groups-compact.page-classbook .nh-page-heading { margin-bottom:13px; gap:10px; }
  .page-groups-compact.page-classbook .nh-page-heading h1 { font-size:22px; }
  .page-groups-compact.page-classbook .btn { min-height:40px; }
@@ -711,7 +711,7 @@
  .page-groups-compact.page-classbook .nh-group-summary-table,.page-groups-compact.page-classbook .nh-group-summary-table tbody { display:block; width:100%; }
  .page-groups-compact.page-classbook .nh-group-summary-table thead { display:none; }
  .page-groups-compact.page-classbook .nh-group-summary-table tr:not(.nh-group-summary-row) { display:block; }
- .page-groups-compact.page-classbook .nh-group-summary-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; padding:15px 14px; border-top:1px solid var(--book-line); }
+ .page-groups-compact.page-classbook .nh-group-summary-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 12px; padding:11px 12px; border-top:1px solid var(--book-line); }
  .page-groups-compact.page-classbook .nh-group-summary-table td,.page-groups-compact.page-classbook .nh-group-summary-table td:first-child,.page-groups-compact.page-classbook .nh-group-summary-table td:last-child { display:block; border:0; padding:0; min-width:0; text-align:left; }
  .page-groups-compact.page-classbook .nh-group-summary-table td:first-child { grid-column:1/-1; min-width:0; max-width:none; }
  .page-groups-compact.page-classbook .nh-group-summary-table td:nth-child(2) { grid-column:1; grid-row:2; }
@@ -726,7 +726,7 @@
  .page-groups-compact.page-classbook #nhWorkDetails > summary { padding:12px 14px; }
  .page-groups-compact.page-classbook .nh-task-list { padding:0 14px 5px; }
  .page-groups-compact.page-classbook #nhDashboardHint { padding:0 14px 11px; }
- .page-groups-compact.page-classbook .nh-book { display:block; padding:14px; border-radius:8px; }
+ .page-groups-compact.page-classbook .nh-book { display:block; padding:10px; border-radius:8px; }
  .page-groups-compact.page-classbook #nhGroupTitle { font-size:18px; }
  .page-groups-compact.page-classbook .nh-book-heading { gap:10px; }
  .page-groups-compact.page-classbook .nh-book-tools > summary { min-height:40px; display:flex; align-items:center; padding:8px; max-width:none; font-size:11px; }
@@ -745,9 +745,9 @@
  .page-groups-compact.page-classbook .nh-tabs button { min-height:44px; font-size:12px; }
  .page-groups-compact.page-classbook .nh-attendance-tools .form-control { min-height:42px; font-size:14px; }
  .page-groups-compact.page-classbook .nh-quick-actions .btn { min-height:40px; }
- .page-groups-compact.page-classbook .nh-mobile-student { grid-template-columns:minmax(0,1fr) 148px; gap:10px; padding:9px 0; }
+ .page-groups-compact.page-classbook .nh-mobile-student { grid-template-columns:minmax(0,1fr) 148px; gap:8px; padding:4px 0; }
  .page-groups-compact.page-classbook .nh-mobile-student-top { display:block; }
- .page-groups-compact.page-classbook .nh-mark-note { display:inline-flex; align-items:center; justify-content:center; min-height:28px; width:28px; padding:3px; }
+ .page-groups-compact.page-classbook .nh-mark-note { display:inline-flex; align-items:center; justify-content:center; min-height:26px; width:26px; padding:3px; }
  .page-groups-compact.page-classbook .nh-mobile-student .nh-mark-controls { grid-template-columns:60px 54px 24px; gap:5px; }
  .page-groups-compact.page-classbook .nh-mobile-student .nh-mark-controls button { min-height:44px; font-size:12px; padding:6px 4px; }
  .page-groups-compact.page-classbook .nh-mobile-student .nh-mark-controls .nh-clear-mark { grid-column:auto; min-height:32px; padding:2px; font-size:17px; }
@@ -768,14 +768,40 @@
 .page-groups-compact.page-classbook .nh-summary-paid small { display:block; margin-top:5px; color:#64748b; font-size:11px; font-weight:400; white-space:normal; }
 .page-groups-compact.page-classbook #nhDashboardHint { color:#7b8798; }
 .page-groups-compact.page-classbook .nh-period-info strong { display:none; }
-.page-groups-compact.page-classbook .nh-overview-table td,.page-groups-compact.page-classbook .nh-overview-table th { padding:7px 3px; }
-.page-groups-compact.page-classbook .nh-overview-table .nh-overview-name { padding-inline:9px; }
+.page-groups-compact.page-classbook .nh-table td,.page-groups-compact.page-classbook .nh-table th { padding-block:8px; }
+.page-groups-compact.page-classbook #nhStudents .nh-table td,.page-groups-compact.page-classbook #nhStudents .nh-table th { padding-block:6px; }
+.page-groups-compact.page-classbook .nh-overview-table { min-width:max(320px,calc(248px + var(--nh-session-count) * 24px)); }
+.page-groups-compact.page-classbook .nh-overview-table td,.page-groups-compact.page-classbook .nh-overview-table th { padding:1px 2px; }
+.page-groups-compact.page-classbook .nh-overview-table .nh-square-mark { min-height:24px; }
+.page-groups-compact.page-classbook .nh-overview-table .nh-overview-name { width:190px; padding-inline:7px; }
+.page-groups-compact.page-classbook .nh-overview-table .nh-overview-count { width:42px; white-space:normal; line-height:1.2; }
+.page-groups-compact.page-classbook .nh-overview-table .nh-overview-fee { width:92px; border-left:1px solid #e2e8f0; font-size:11px; }
+.page-groups-compact.page-classbook .nh-attendance-fee { display:inline-flex; align-items:center; justify-content:center; max-width:100%; min-height:24px; border:0; border-radius:4px; padding:3px 6px; font:inherit; font-size:11px; font-weight:550; line-height:1.2; white-space:normal; cursor:pointer; }
+.page-groups-compact.page-classbook .nh-attendance-fee:hover { box-shadow:inset 0 0 0 1px currentColor; }
+.page-groups-compact.page-classbook .nh-attendance-fee:focus-visible { outline:2px solid #245bda; outline-offset:2px; }
+.page-groups-compact.page-classbook .nh-overview-fee-hint { margin:5px 0 0; color:#9a3412; font-size:11px; }
 .page-groups-compact.page-classbook .nh-mark-note.has-note { color:#245bda; background:#eff5ff; border-radius:5px; }
 .page-groups-compact.page-classbook .nh-back-overview { border:0; background:transparent; color:#64748b; padding:0; margin:0 0 8px; font-size:12px; cursor:pointer; }
 .page-groups-compact.page-classbook .nh-back-overview:hover { color:#245bda; }
 @media(max-width:600px) {
  .page-groups-compact.page-classbook .nh-tabs { gap:12px; }
  .page-groups-compact.page-classbook .nh-attendance-tools .form-control { font-size:16px; }
+ .page-groups-compact.page-classbook .nh-overview-table { min-width:max(320px,calc(184px + var(--nh-session-count) * 17px)); }
+ .page-groups-compact.page-classbook .nh-overview-table td,.page-groups-compact.page-classbook .nh-overview-table th { padding:1px 0; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-overview-name { width:92px; padding-inline:4px; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-student-name { font-size:11px; line-height:1.25; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-overview-count { width:30px; font-size:9px; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-overview-count strong { font-size:11px!important; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-overview-fee { width:62px; font-size:10px; }
+ .page-groups-compact.page-classbook .nh-attendance-fee { padding:2px 3px; font-size:10px; }
+ .page-groups-compact.page-classbook .nh-overview-date { min-height:32px; gap:0; }
+ .page-groups-compact.page-classbook .nh-overview-date .nh-session-index { display:none; }
+ .page-groups-compact.page-classbook .nh-overview-date small { font-size:10px; line-height:1.15; }
+ .page-groups-compact.page-classbook .nh-date-month { display:block; font-size:8px; }
+ .page-groups-compact.page-classbook .nh-overview-table .nh-square-mark { min-width:16px; min-height:26px; padding:2px 0; }
+ .page-groups-compact.page-classbook .nh-square { width:12px; height:12px; }
+ .page-groups-compact.page-classbook .nh-square-legend { gap:5px 9px; margin:7px 0; font-size:10px; }
+ .page-groups-compact.page-classbook .nh-overview-search { max-width:170px; margin-bottom:4px; }
 }
 .page-groups-compact.page-classbook .nh-dashboard > .nh-overview-heading { margin-bottom:0; padding-bottom:5px; }
 .page-groups-compact.page-classbook .nh-overview-heading > div { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; }
