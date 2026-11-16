@@ -7,7 +7,7 @@ export async function loadSnapshot(db: D1Database, action: string, groupId?: str
   const names = Object.keys(schema);
   const statements = [db.prepare('SELECT revision FROM nh_meta WHERE id=1')];
   for (const name of names) {
-    if (action === 'nh_boot' && ['DiemDanh','ThuHocPhi','HocPhiKy'].includes(name)) { statements.push(db.prepare('SELECT 1 WHERE 0')); continue; }
+    if (action === 'nh_boot' && ['DiemDanh','ThuHocPhi','HocPhiKy','DiemKiemTra'].includes(name)) { statements.push(db.prepare('SELECT 1 WHERE 0')); continue; }
     let predicate = '', params: string[] = [];
     // Overview and room rent need both groups. Attendance and tuition stay scoped.
     if (groupId && ['BuoiHoc','ThuHocPhi','HocPhiKy'].includes(name) && !(name==='BuoiHoc'&&action==='nh_view') && !action.startsWith('nh_room_rent_')) {predicate=' WHERE ma_nhom=?';params=[groupId];}

@@ -28,9 +28,10 @@
     const result=await App.apiPost(action,data,{userAuth:true,timeoutMs:60000,timeoutMessage:'Chưa nhận được phản hồi. Tải lại để kiểm tra dữ liệu trước khi nhập lại.'});
     if(epoch!==state.epoch)throw new Error('Phiên làm việc đã thay đổi.');
     if(result.data?.roomRent){state.rent=result.data.roomRent;paintRent();}
-    if(state.boot?.features?.driveBackup&&action!=='nh_boot'&&!action.endsWith('_preview')&&!action.startsWith('nh_file'))refreshBackup(!['nh_view'].includes(action));
+    if(state.boot?.features?.driveBackup&&action!=='nh_boot'&&!action.endsWith('_preview')&&!action.startsWith('nh_file'))refreshBackup(!['nh_view','nh_grades_list'].includes(action));
     return result.data;
   };
+  const gradeUi=window.NHGrades?.create({context:()=>({boot:state.boot,view:state.view,epoch:state.epoch,busy:state.busy,admin:App.isAdmin()}),call,escape:esc,busy,message});
   function paintRent() {
     const r=state.rent,panel=$('nhRentPanel');panel.hidden=!App.isAdmin()||!r;if(panel.hidden)return;
     panel.dataset.state=r.state;
@@ -267,6 +268,7 @@
   }
   function closeProfile() {if($('nhProfile').open)$('nhProfile').close();state.profileId='';$('nhProfileBody').replaceChildren();$('nhProfileName').textContent='';$('nhProfilePeriod').textContent='';}
   function resetAuth() {
+    gradeUi?.reset();
     state.screen='overview';$('nhGroupTable').querySelector('tbody').replaceChildren();$('nhSummaryLine').textContent='';$('nhOperations').hidden=true;document.body.classList.remove('is-book');$('nhPageHeader').hidden=false;
     window.clearTimeout(state.workTimer);state.workTimer=0;
     state.localDrafts?.clear();state.localDrafts=null;state.localDraftCandidate=null;state.workViews=[];state.workSequence++;state.workSummary=null;state.workLoading=false;state.workErrors=0;state.requireChoice=false;state.completeContext=null;
@@ -291,7 +293,7 @@
         state.screen='book';
         state.groupId=launch.get('group');const month=launch.get('month');
         if(/^\d{4}-(0[1-9]|1[0-2])$/.test(month||'')&&month>='2000-01'&&month<='2100-12')state.month=month;
-        if(['attendance','fees'].includes(launch.get('tab')))state.tab=launch.get('tab');
+        if(['attendance','fees','students'].includes(launch.get('tab')))state.tab=launch.get('tab');
         state.sessionId=launch.get('session')||'';state.attendanceMode='day';
       }
       state.boot=data;state.backup=data.backup||null;if(!window.NHWorkflow)state.screen='book';paintBackup();queueBackupPoll();paintScreen();
@@ -343,7 +345,7 @@
   async function loadView(epoch=state.epoch) {
     const groupId=state.groupId,month=state.month;$('nhGroupContent').hidden=true;$('nhEmpty').hidden=true;$('nhExport').disabled=true;
     const data=await call('nh_view',{groupId,month});if(epoch!==state.epoch||groupId!==state.groupId||month!==state.month)return;
-    state.view=data;clearDrafts();closeProfile();
+    gradeUi?.invalidate();state.view=data;clearDrafts();closeProfile();
     state.localDraftCandidate=state.localDrafts?.read(data)||null;
     state.workViews=state.workViews.filter(v=>v.group.ma_nhom!==groupId||v.month!==month).concat(data);paintWork();
     const group=state.boot.groups.find(g=>g.ma_nhom===groupId);
@@ -450,7 +452,7 @@
     $('nhStats').hidden=state.tab!=='fees';
     $('nhAttendanceDisplayLabel').hidden=state.tab!=='attendance';
     document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab)));
-    paintAttendanceMode();if(state.tab==='files')paintFiles();
+    paintAttendanceMode();if(state.tab==='files')paintFiles();if(state.tab==='students')gradeUi?.load();
   }
   function paintAttendanceToolbar() {
     const v=state.view,canPlan=v.period.mode==='eight_sessions'&&!v.closed&&slotSessions().length<8&&v.group.trang_thai==='dang_hoc';
@@ -560,6 +562,7 @@
     ['nhSearch','nhOverviewSearch'].forEach(id=>{if($(id)&&$(id).value!==state.search)$(id).value=state.search;});
   }
   function paintStudents() {
+    if(gradeUi&&state.boot?.features?.grades)return gradeUi.paint();
     const v=state.view,g=v.group,unit=g.cach_tinh_hoc_phi==='theo_buoi'?'/buổi':'/kỳ';
     $('nhStudents').innerHTML=`<div class="nh-card"><div class="nh-card-heading"><div><h2>Học sinh trong kỳ</h2><p>Bấm Sửa để cập nhật thông tin, chuyển nhóm hoặc xóa khỏi nhóm.</p></div><button type="button" class="btn btn-primary" data-action="add-students" ${g.trang_thai!=='dang_hoc'?'disabled':''}>+ Thêm học sinh</button></div><div class="nh-table-wrap"><table class="nh-table"><thead><tr><th>Học sinh</th><th>Ngày vào</th><th>Ngày học cuối</th><th>Mức phí áp dụng</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>${v.roster.map(m=>`<tr><td>${studentButton(m)}<small>${esc(m.lop)}</small></td><td>${dateLabel(m.ngay_vao)}</td><td>${dateLabel(m.ngay_nghi)||'Chưa đặt'}<small>${m.ngay_nghi?(m.ngay_nghi<v.today?'Đã nghỉ nhóm':'Học đến hết ngày này'):'Đang học'}</small></td><td>${m.don_gia_rieng_vnd===''?'Theo nhóm':Number(m.don_gia_rieng_vnd)===0?'Miễn học phí':'Mức riêng'}<small>${money(m.don_gia_rieng_vnd===''?g.don_gia_vnd:m.don_gia_rieng_vnd)}${unit}</small></td><td>${esc(m.ghi_chu)}</td><td><button type="button" class="nh-link" data-member="${esc(m.ma_thanh_vien)}">Sửa</button></td></tr>`).join('')}</tbody></table></div>${!v.roster.length?'<p class="nh-muted">Chưa có học sinh trong kỳ này.</p>':''}</div>`;
   }
@@ -581,6 +584,7 @@
     const metrics=[['Có mặt',f.attended+' buổi'],['Vắng',f.absent+' buổi'],['Phải đóng',money(f.due)],['Đã đóng',money(f.paid)]];
     const timeline=v.sessions.filter(s=>within(m,s.ngay_hoc)).map(s=>{const d=getMark(s.ma_buoi,id),label=s.trang_thai==='da_huy'?'Đã hủy':s.ngay_hoc>v.today?'Dự kiến':s.trang_thai==='du_kien'&&d.status==='chua_diem_danh'?'Chưa xác nhận':statusLabel[d.status],tone=s.trang_thai==='da_huy'||s.ngay_hoc>v.today?'neutral':d.status==='co_mat'?'green':d.status==='vang'?'red':'neutral';return `<li><div><strong>${dateLabel(s.ngay_hoc)}</strong><small>${s.thu_tu_ky?'Buổi '+s.thu_tu_ky+' · ':''}${isMakeup(s)?'Học bù · ':''}${esc(s.gio_bat_dau||'Chưa đặt giờ')}</small></div><span class="nh-pill ${tone}">${label}</span>${d.note?`<p>${esc(d.note)}</p>`:''}</li>`;}).join('');
     $('nhProfileBody').innerHTML=`<p class="nh-profile-meta">${esc(m.lop)} · Vào nhóm ${dateLabel(m.ngay_vao)}${m.ngay_nghi?' · Nghỉ nhóm '+dateLabel(m.ngay_nghi):''}</p><div class="nh-profile-metrics">${metrics.map(([label,value])=>`<div><small>${label}</small><strong>${esc(value)}</strong></div>`).join('')}</div><div class="nh-profile-balance"><div><span class="nh-pill ${status.tone}">${status.text}</span><p>${f.balance<0?'Đóng dư':f.balance>0?'Còn thiếu':'Còn thiếu'}: <strong>${money(Math.abs(f.balance))}</strong></p></div><button type="button" class="btn btn-primary" data-receive="${esc(id)}">Ghi nhận đóng tiền</button></div>${state.dirty?'<p class="nh-inline-info">Điểm danh chưa lưu. Số tiền phải đóng đang là bản xem trước.</p>':''}${m.ghi_chu?`<div class="nh-profile-note"><strong>Ghi chú học sinh</strong><p>${esc(m.ghi_chu)}</p></div>`:''}<section class="nh-profile-section"><h3>Các buổi trong kỳ</h3><ol class="nh-timeline">${timeline||'<li>Chưa có buổi học.</li>'}</ol></section><section class="nh-profile-section"><h3>Lịch sử đóng tiền</h3><div class="nh-table-wrap"><table class="nh-table nh-receipts-table"><thead><tr><th>Ngày đóng</th><th>Số tiền</th><th>Phương thức</th><th>Ghi chú</th><th>Trạng thái</th><th></th></tr></thead><tbody>${receiptRows(receipts,{},true)}</tbody></table></div>${!receipts.length?'<p class="nh-empty-inline">Chưa ghi nhận khoản đóng tiền trong kỳ này.</p>':''}</section>`;
+    if(gradeUi&&state.boot?.features?.grades)$('nhProfileBody').insertAdjacentHTML('afterbegin',gradeUi.profileHTML(id));
     if(!$('nhProfile').open)$('nhProfile').showModal();
   }
 

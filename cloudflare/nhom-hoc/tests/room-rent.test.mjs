@@ -53,10 +53,10 @@ test('D1 rent migration is additive and idempotent; two simultaneous payments re
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:new URL('../dist/index.js',import.meta.url).pathname,compatibilityDate:cfg.compatibility_date,compatibilityFlags:cfg.compatibility_flags,bindings:cfg.vars,d1Databases:['DB'],outboundService:async request=>{
     const p=await request.json();return Response.json(p.adminToken==='signed.rent-test-admin'?{status:'success',data:{role:'admin',sub:'u1',exp:Math.floor(Date.now()/1000)+3600}}:{status:'error'});
   }}));t.after(()=>mf.dispose());const db=await mf.getD1Database('DB');
-  for(const name of ['0001_groups.sql','0002_drive_backup.sql','0003_room_rent.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
-  assert.equal((await db.prepare('SELECT revision FROM nh_meta').first()).revision,1);
+  for(const name of ['0001_groups.sql','0002_drive_backup.sql','0003_room_rent.sql','0004_grades.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
+  assert.equal((await db.prepare('SELECT revision FROM nh_meta').first()).revision,2);
   await db.exec(fs.readFileSync(new URL('../migrations/0003_room_rent.sql',import.meta.url),'utf8').replaceAll('\n',' '));
-  assert.equal((await db.prepare('SELECT revision FROM nh_meta').first()).revision,1);
+  assert.equal((await db.prepare('SELECT revision FROM nh_meta').first()).revision,2);
   const tables=seed();for(let i=0;i<6;i++)tables.BuoiHoc.push(added('new'+i,'2026-09-'+(10+i)));
   // Original g35 has Sep 15. Keep unique (group, date).
   tables.BuoiHoc.find(s=>s.ma_buoi==='new5').ngay_hoc='2026-09-17';

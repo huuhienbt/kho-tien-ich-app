@@ -812,3 +812,63 @@
 @media(max-width:600px) {
  .page-groups-compact.page-classbook .nh-group-summary-table .nh-summary-paid,.page-groups-compact.page-classbook .nh-group-summary-table .nh-summary-debt { text-align:left; }
 }
+
+/* Academic results stay in the student tab, independent of the tuition period. */
+.page-groups-compact.page-classbook .nh-grade-context { display:flex; align-items:end; flex-wrap:wrap; gap:10px 16px; margin:6px 0 12px; color:#64748b; font-size:12px; }
+.page-groups-compact.page-classbook .nh-grade-context label { display:grid; gap:4px; font-size:11px; }
+.page-groups-compact.page-classbook .nh-grade-context .form-control { width:auto; min-width:140px; min-height:34px; padding:5px 8px; font-size:13px; border-radius:6px; }
+.page-groups-compact.page-classbook .nh-grade-context > span { padding-bottom:8px; }
+.page-groups-compact.page-classbook #nhGradesStatus:empty { display:none; }
+.page-groups-compact.page-classbook #nhGradesStatus { margin:0 0 9px; }
+.page-groups-compact.page-classbook .nh-grades-table { table-layout:fixed; min-width:0; }
+.page-groups-compact.page-classbook #nhStudents .nh-grades-table th,.page-groups-compact.page-classbook #nhStudents .nh-grades-table td { padding:2px 7px; }
+.page-groups-compact.page-classbook .nh-grades-table tbody th { background:#fff; white-space:normal; }
+.page-groups-compact.page-classbook .nh-grades-table .nh-grade-score { width:88px; text-align:center; font-variant-numeric:tabular-nums; }
+.page-groups-compact.page-classbook .nh-grades-table td.nh-grade-score { font-size:15px; font-weight:600; color:#334155; }
+.page-groups-compact.page-classbook .nh-grades-table .nh-grade-edit { width:48px; text-align:right; }
+.page-groups-compact.page-classbook .nh-grades-table .nh-grade-edit .nh-link { padding:2px 0; min-height:24px; font-size:11px; }
+.page-groups-compact.page-classbook .nh-grades-table .nh-student-name { display:block; min-height:24px; }
+.page-groups-compact.page-classbook .nh-grades-table tbody th small { display:block; color:#64748b; font-size:11px; font-weight:400; line-height:1.25; }
+.page-groups-compact.page-classbook .nh-grades-caption { margin:9px 0 0; font-size:11px; }
+.page-groups-compact.page-classbook .nh-grade-history { margin-top:18px; border-top:1px solid #e2e8f0; padding-top:10px; }
+.page-groups-compact.page-classbook .nh-grade-history summary { cursor:pointer; color:#64748b; font-size:12px; }
+.page-groups-compact.page-classbook .nh-grade-history-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #edf0f4; }
+.page-groups-compact.page-classbook .nh-grade-history-row > div { min-width:0; overflow-wrap:anywhere; }
+.page-groups-compact.page-classbook .nh-grade-history-row strong { font-size:12px; font-weight:500; }
+.page-groups-compact.page-classbook .nh-grade-history-row small { display:block; font-size:11px; color:#64748b; }
+.page-groups-compact.page-classbook .nh-grade-dialog { width:min(860px,calc(100vw - 32px)); }
+.page-groups-compact.page-classbook .nh-grade-dialog header p { margin:5px 0 0; color:#64748b; font-size:12px; }
+.page-groups-compact.page-classbook .nh-grade-dialog header > [data-grade-cancel] { display:grid; place-items:center; width:32px; min-height:32px; border:0; border-radius:6px; padding:0; font-size:18px; background:#f1f5f9; color:#64748b; cursor:pointer; }
+.page-groups-compact.page-classbook .nh-grade-dialog footer { position:sticky; bottom:0; background:#fff; border-top:1px solid #e2e8f0; padding-top:10px; z-index:2; }
+.page-groups-compact.page-classbook .nh-grade-file { display:grid; gap:5px; margin:14px 0; font-size:12px; }
+.page-groups-compact.page-classbook .nh-grade-import-context { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.page-groups-compact.page-classbook .nh-grade-import-context label { display:grid; gap:5px; font-size:11px; }
+.page-groups-compact.page-classbook .nh-grade-import-summary { display:flex; flex-wrap:wrap; gap:8px 16px; margin:16px 0 10px; font-size:12px; }
+.page-groups-compact.page-classbook .nh-grade-preview-table { min-width:0; table-layout:fixed; }
+.page-groups-compact.page-classbook .nh-grade-preview-table th,.page-groups-compact.page-classbook .nh-grade-preview-table td { padding:6px; white-space:normal; }
+.page-groups-compact.page-classbook .nh-grade-preview-table .nh-grade-score { width:70px; text-align:center; font-variant-numeric:tabular-nums; }
+.page-groups-compact.page-classbook .nh-grade-preview-table th:last-child { width:150px; }
+.page-groups-compact.page-classbook .nh-grade-match { font-size:11px; }
+.page-groups-compact.page-classbook .nh-grade-match .form-control { max-width:100%; min-width:0; margin-top:5px; font-size:12px; }
+.page-groups-compact.page-classbook .nh-profile-grades { margin:0 0 18px; padding:0 0 14px; border-bottom:1px solid #e2e8f0; }
+.page-groups-compact.page-classbook .nh-profile-grades h3 { font-size:14px; margin:0 0 10px; }
+.page-groups-compact.page-classbook .nh-profile-grades > div { display:flex; gap:24px; margin-bottom:6px; font-size:12px; }
+.page-groups-compact.page-classbook .nh-profile-grades strong { display:block; margin-top:2px; font-size:21px; color:#245bda; font-variant-numeric:tabular-nums; }
+@media(max-width:600px) {
+ .page-groups-compact.page-classbook .nh-grades-card > .nh-card-heading { flex-wrap:wrap; gap:10px; }
+ .page-groups-compact.page-classbook .nh-grades-card .nh-actions { display:flex; flex-wrap:wrap; gap:6px; }
+ .page-groups-compact.page-classbook .nh-grades-card .nh-actions .btn { width:auto; min-height:40px; padding:6px 9px; font-size:11px; }
+ .page-groups-compact.page-classbook .nh-grade-context { gap:8px 12px; }
+ .page-groups-compact.page-classbook .nh-grade-context .form-control { min-height:40px; font-size:16px; min-width:0; max-width:170px; }
+ .page-groups-compact.page-classbook .nh-grades-table .nh-grade-score { width:58px; font-size:11px; white-space:normal; }
+ .page-groups-compact.page-classbook .nh-grades-table .nh-grade-edit { width:34px; }
+ .page-groups-compact.page-classbook #nhStudents .nh-grades-table th,.page-groups-compact.page-classbook #nhStudents .nh-grades-table td { padding:3px 4px; }
+ .page-groups-compact.page-classbook .nh-grades-table .nh-student-name { font-size:12px; min-height:32px; }
+ .page-groups-compact.page-classbook .nh-grade-dialog { width:calc(100vw - 20px); padding:14px 10px; }
+ .page-groups-compact.page-classbook .nh-grade-import-context { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ .page-groups-compact.page-classbook .nh-grade-import-context label:last-child { grid-column:1/-1; }
+ .page-groups-compact.page-classbook .nh-grade-import-context .form-control { font-size:16px; }
+ .page-groups-compact.page-classbook .nh-grade-preview-table .nh-grade-score { width:43px; }
+ .page-groups-compact.page-classbook .nh-grade-preview-table th:last-child { width:76px; }
+ .page-groups-compact.page-classbook .nh-grade-dialog footer { flex-wrap:wrap; gap:8px; }
+}
