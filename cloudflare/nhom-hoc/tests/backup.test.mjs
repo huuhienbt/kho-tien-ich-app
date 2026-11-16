@@ -20,7 +20,7 @@ test('Real D1 snapshot → private Service binding → signed GAS mirror: leases
     }}
   ]}));t.after(()=>mf.dispose());
   const db=await mf.getD1Database('DB','groups');
-  for(const name of ['0001_groups.sql','0002_drive_backup.sql','0003_room_rent.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
+  for(const name of ['0001_groups.sql','0002_drive_backup.sql','0003_room_rent.sql','0004_grades.sql'])await db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replaceAll('\n',' '));
   const tables=gas.tables();await db.batch(Object.entries(tables).filter(([,rows])=>rows.length).map(([name,rows])=>{const columns=NH_SCHEMA[name];return db.prepare(`INSERT INTO ${name}(${columns.join(',')}) SELECT ${columns.map(column=>`json_extract(value,'$.${column}')`).join(',')} FROM json_each(?)`).bind(JSON.stringify(rows));}));
   await db.prepare('UPDATE nh_meta SET revision=38 WHERE id=1').run();
   const now=Math.floor(Date.now()/1000),claims={sub:'admin',role:'admin',iss:'egv-cloudflare-admin',aud:cfg.vars.APP_ORIGIN,kid:'test-key',iat:now,exp:now+3600,nonce:crypto.randomUUID()};
@@ -57,4 +57,12 @@ test('Real D1 snapshot → private Service binding → signed GAS mirror: leases
   assert.equal((await call('nh_room_rent_save',token,{id:'room-paid',revision:rent.revision,date:rent.today,amount:1000000,note:'=literal room payment note'})).http,200);await settle();
   assert.equal((await call('nh_backup_status')).body.data.backupRevision,43);
   const mirror=gas.tables().TienThuePhong;assert.equal(mirror.length,1);assert.equal(mirror[0].ma_dong,'room-paid');assert.equal(mirror[0].so_buoi,16);assert.equal(mirror[0].so_tien_vnd,1000000);assert.equal(mirror[0].ghi_chu,'=literal room payment note');
+  const legacy=JSON.stringify(Object.fromEntries(Object.entries(gas.tables()).filter(([name])=>name!=='DiemKiemTra')));
+  const gradeData={schoolYear:'2026-2027',assessment:'gk1',sourceFile:'Diem.xlsx',sourceClass:'4/6',rows:[{row:6,name:'Updated while backing up',vietnamese:0,math:9.5}]};
+  const gradePreview=(await call('nh_grades_preview',token,gradeData)).body.data;
+  assert.equal(gradePreview.changed,1);
+  assert.equal((await call('nh_grades_import',token,{...gradeData,id:'backup-grades',revision:gradePreview.revision})).http,200);await settle();
+  const gradeMirror=gas.tables().DiemKiemTra;assert.equal(gradeMirror.length,1);assert.equal(gradeMirror[0].tieng_viet,'0');assert.equal(gradeMirror[0].toan,'9.5');
+  assert.equal(JSON.stringify(Object.fromEntries(Object.entries(gas.tables()).filter(([name])=>name!=='DiemKiemTra'))),legacy);
+  assert.equal((await call('nh_backup_status')).body.data.backupRevision,44);
 });

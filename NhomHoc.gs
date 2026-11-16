@@ -1,5 +1,5 @@
 /* E-GV — Điểm danh, học phí và tiền thuê phòng. Dùng cùng Code.gs. */
-const NH_VERSION = '9.11.0';
+const NH_VERSION = '9.16.0';
 const NH_SCHEMA = {
   NhomHoc: ['ma_nhom','ten_nhom','nam_hoc','thu_trong_tuan','gio_bat_dau','gio_ket_thuc','giao_vien_id','cach_tinh_hoc_phi','don_gia_vnd','trang_thai','ghi_chu','so_buoi_moi_ky','ky_bat_dau'],
   HocSinh: ['ma_hoc_sinh','ho_ten','lop','trang_thai','ghi_chu'],
@@ -8,7 +8,8 @@ const NH_SCHEMA = {
   DiemDanh: ['ma_buoi','ma_hoc_sinh','trang_thai','ghi_chu','nguoi_cap_nhat_id','cap_nhat_luc'],
   ThuHocPhi: ['ma_thu','ma_nhom','ma_hoc_sinh','ky_thu','so_tien_vnd','ngay_dong','phuong_thuc','trang_thai','nguoi_thu_id','ghi_chu'],
   HocPhiKy: ['ma_chot','ma_nhom','ma_hoc_sinh','ky_thu','so_buoi','cach_tinh','don_gia_vnd','phai_thu_vnd','trang_thai','nguoi_chot_id','chot_luc'],
-  TienThuePhong: ['ma_dong','buoi_da_tinh','so_buoi','so_tien_vnd','ngay_dong','trang_thai','nguoi_dong_id','cap_nhat_luc','ghi_chu']
+  TienThuePhong: ['ma_dong','buoi_da_tinh','so_buoi','so_tien_vnd','ngay_dong','trang_thai','nguoi_dong_id','cap_nhat_luc','ghi_chu'],
+  DiemKiemTra: ['ma_ket_qua','ma_hoc_sinh','nam_hoc','dot_kiem_tra','tieng_viet','toan','ma_lan_nhap','tep_nguon','dong_nguon','lop_nguon','nguoi_cap_nhat_id','cap_nhat_luc','hoan_tac_ma','ban_nhap_hash']
 };
 
 function nhBook_() {
@@ -191,7 +192,7 @@ function nhBoot_(ctx) {
   return {groups:groups.map(function(g){
     const current=nhCurrentPeriod_(ctx,g),period=nhPeriod_(ctx,g,current);
     return Object.assign(nhPublic_(g),{ky_hien_tai:current,buoi_hien_tai:period.completed,so_buoi_ky:period.size});
-  }),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions',roomRent:nhRoomRent_(ctx),features:{attendanceBatch:true,plannedSessions:true,schedule:true,roomRent:true}};
+  }),students:students,teachers:teachers,admin:ctx.admin,today:nhToday_(),version:NH_VERSION,periodModel:'eight_sessions',roomRent:nhRoomRent_(ctx),features:{attendanceBatch:true,plannedSessions:true,schedule:true,roomRent:true,grades:true}};
 }
 
 // A rent payment reserves exactly 16 class IDs. Extra classes carry forward,
@@ -293,15 +294,19 @@ function handleNhomHoc(payload) {
   // Verify existing signed admin sessions without opening the spreadsheet.
   if(action==='nh_auth')return createResponse({status:'success',data:{role:'admin',sub:String(principal.sub),exp:Number(principal.exp)},version:NH_VERSION});
   if(nhCloudflareActive_())return createResponse({status:'error',code:'NH_MIGRATED',message:'Nhóm học đã chuyển sang Cloudflare. Tải lại E-GV để sử dụng phiên bản mới.'});
-  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month','nh_room_rent_save','nh_room_rent_void'];
+  const allowed=['nh_boot','nh_view','nh_group_save','nh_students_save','nh_member_save','nh_session_save','nh_attendance_save','nh_attendance_batch_save','nh_schedule_preview','nh_sessions_plan','nh_receipt_save','nh_receipt_void','nh_close_month','nh_reopen_month','nh_room_rent_save','nh_room_rent_void','nh_grades_list','nh_grades_preview','nh_grades_import','nh_grades_undo'];
   if(allowed.indexOf(action)===-1)throw new Error('Lệnh nhóm học không hợp lệ.');
-  const write=['nh_boot','nh_view','nh_schedule_preview'].indexOf(action)===-1;
+  const write=['nh_boot','nh_view','nh_schedule_preview','nh_grades_list','nh_grades_preview'].indexOf(action)===-1;
   const lock=write?LockService.getScriptLock():null;
   if(lock)lock.waitLock(10000);
   try {
     const ctx={book:nhBook_(),tables:{},user:principal,admin:principal.role==='admin'};
     let result;
     if(action==='nh_boot') result=nhBoot_(ctx);
+    else if(action==='nh_grades_list') result=nhGradesList_(ctx,data);
+    else if(action==='nh_grades_preview') result=nhGradesPreview_(ctx,data);
+    else if(action==='nh_grades_import') result=nhGradesImport_(ctx,data);
+    else if(action==='nh_grades_undo') result=nhGradesUndo_(ctx,data);
     else if(action==='nh_room_rent_save') result=nhSaveRoomRent_(ctx,data);
     else if(action==='nh_room_rent_void') result=nhVoidRoomRent_(ctx,data);
     else if(action==='nh_group_save') result=nhSaveGroup_(ctx,data);
@@ -557,4 +562,76 @@ function nhReopenMonth_(ctx,group,data) {
   if(!view.closed)return {saved:true};
   if(view.revision!==data.revision)throw new Error('Dữ liệu kỳ vừa thay đổi. Tải lại trước khi mở kỳ.');
   const bills=nhBills_(ctx,group,month);bills.forEach(function(b){b.trang_thai='da_mo_lai';});nhWrite_(ctx,'HocPhiKy',bills);return {saved:true};
+}
+
+// Academic results: exact student identity, school year and assessment, never a tuition key.
+function nhGradeContext_(data) {
+  const year=String(data.schoolYear||''),assessment=String(data.assessment||'');
+  if(!/^20\d{2}-20\d{2}$/.test(year)||Number(year.slice(5))!==Number(year.slice(0,4))+1)throw new Error('Năm học phải có dạng 2026-2027.');
+  if(['gk1','ck1','gk2','ck2'].indexOf(assessment)===-1)throw new Error('Đợt kiểm tra không hợp lệ.');
+  return {year:year,assessment:assessment};
+}
+function nhGradeName_(value) {return nhText_(value,120).normalize('NFC').toLocaleLowerCase('vi');}
+function nhGradeValue_(value) {
+  if(value===''||value===null||value===undefined)return '';
+  if(typeof value!=='number'||!isFinite(value)||value<0||value>10)throw new Error('Điểm phải là số từ 0 đến 10; để trống nếu chưa có điểm.');
+  return String(value);
+}
+function nhGradeRevision_(ctx) {return nhHash_([nhRows_(ctx,'HocSinh'),nhRows_(ctx,'ThanhVienNhom'),nhRows_(ctx,'DiemKiemTra')]);}
+function nhGradeLatest_(ctx,year,assessment) {
+  const latest=Object.create(null);nhRows_(ctx,'DiemKiemTra').forEach(function(r){if(r.nam_hoc===year&&r.dot_kiem_tra===assessment)latest[r.ma_hoc_sinh]=r;});return latest;
+}
+function nhGradesList_(ctx,data) {
+  const academic=nhGradeContext_(data),group=nhGroup_(ctx,nhId_(data.groupId)),members=nhMembers_(ctx,group),ids=members.map(function(m){return m.ma_hoc_sinh;}),all=nhRows_(ctx,'DiemKiemTra'),latest=nhGradeLatest_(ctx,academic.year,academic.assessment),batches=Object.create(null);
+  all.filter(function(r){return r.nam_hoc===academic.year&&r.dot_kiem_tra===academic.assessment;}).forEach(function(r){
+    const batch=batches[r.ma_lan_nhap]||(batches[r.ma_lan_nhap]={id:r.ma_lan_nhap,source:r.tep_nguon,at:r.cap_nhat_luc,undoOf:r.hoan_tac_ma,students:[],canUndo:true});
+    batch.students.push(r.ma_hoc_sinh);if(latest[r.ma_hoc_sinh].ma_ket_qua!==r.ma_ket_qua)batch.canUndo=false;
+  });
+  const history=Object.keys(batches).reverse().map(function(id){const b=batches[id];return {id:b.id,source:b.source,at:b.at,count:b.students.length,undoOf:b.undoOf,canUndo:b.canUndo&&!b.undoOf,belongs:b.students.some(function(id){return ids.indexOf(id)!==-1;})};}).filter(function(b){return b.belongs;}).slice(0,10);
+  return {schoolYear:academic.year,assessment:academic.assessment,revision:nhGradeRevision_(ctx),years:Array.from(new Set(all.map(function(r){return r.nam_hoc;}).concat([academic.year]))).sort().reverse(),scores:ids.filter(function(id){return latest[id];}).map(function(id){return nhPublic_(latest[id]);}),history:history};
+}
+function nhGradesPreview_(ctx,data) {
+  const academic=nhGradeContext_(data),members=nhRows_(ctx,'ThanhVienNhom'),groups=nhGroups_(ctx),groupIds=groups.map(function(g){return g.ma_nhom;}),students=nhRows_(ctx,'HocSinh').filter(function(s){return members.some(function(m){return m.ma_hoc_sinh===s.ma_hoc_sinh&&groupIds.indexOf(m.ma_nhom)!==-1;});}),latest=nhGradeLatest_(ctx,academic.year,academic.assessment);
+  if(!Array.isArray(data.rows)||!data.rows.length||data.rows.length>500)throw new Error('Tệp cần có từ 1 đến 500 học sinh.');
+  const source=nhText_(data.sourceFile,150),sourceClass=nhText_(data.sourceClass,40),seenRows=new Set(),nameCounts=Object.create(null),assigned=new Set();
+  if(!source)throw new Error('Thiếu tên tệp nguồn.');
+  const rows=data.rows.map(function(input){
+    if(!input||typeof input!=='object'||!Number.isSafeInteger(input.row)||input.row<1||input.row>10000||seenRows.has(input.row))throw new Error('Dòng Excel không hợp lệ hoặc bị lặp.');seenRows.add(input.row);
+    const name=nhText_(input.name,120),key=nhGradeName_(name);if(!key)throw new Error('Có dòng thiếu tên học sinh.');nameCounts[key]=(nameCounts[key]||0)+1;
+    return {row:input.row,name:name,key:key,vietnamese:nhGradeValue_(input.vietnamese),math:nhGradeValue_(input.math),studentId:input.studentId?nhId_(input.studentId):''};
+  });
+  const preview=rows.map(function(row){
+    const matches=students.filter(function(s){return nhGradeName_(s.ho_ten)===row.key;}),manual=row.studentId&&students.find(function(s){return s.ma_hoc_sinh===row.studentId;});
+    if(row.studentId&&!manual)throw new Error('Học sinh được chọn không còn thuộc nhóm học.');
+    let student=manual||(!row.studentId&&matches.length===1&&nameCounts[row.key]===1?matches[0]:null),reason='';
+    if(student&&!manual&&sourceClass&&student.lop&&nhGradeName_(student.lop)!==nhGradeName_(sourceClass)){student=null;reason='Khác lớp; cần chọn lại học sinh.';}
+    if(!student)return {row:row.row,name:row.name,vietnamese:row.vietnamese,math:row.math,state:reason||matches.length?'review':'outside',reason:reason||'Tên chưa khớp duy nhất.'};
+    if(assigned.has(student.ma_hoc_sinh))throw new Error('Hai dòng đang gắn vào cùng một học sinh. Kiểm tra lại tên.');assigned.add(student.ma_hoc_sinh);
+    const old=latest[student.ma_hoc_sinh]||{},tv=row.vietnamese===''?String(old.tieng_viet||''):row.vietnamese,math=row.math===''?String(old.toan||''):row.math;
+    const changed=tv!==String(old.tieng_viet||'')||math!==String(old.toan||'');
+    return {row:row.row,name:row.name,studentId:student.ma_hoc_sinh,studentName:student.ho_ten,studentClass:student.lop,missingClass:!student.lop,state:'matched',vietnamese:tv,math:math,oldVietnamese:String(old.tieng_viet||''),oldMath:String(old.toan||''),changed:changed,groups:groups.filter(function(g){return members.some(function(m){return m.ma_hoc_sinh===student.ma_hoc_sinh&&m.ma_nhom===g.ma_nhom;});}).map(function(g){return g.ten_nhom;})};
+  });
+  return {schoolYear:academic.year,assessment:academic.assessment,sourceFile:source,sourceClass:sourceClass,revision:nhGradeRevision_(ctx),rows:preview,matched:preview.filter(function(r){return r.state==='matched';}).length,changed:preview.filter(function(r){return r.changed;}).length,outside:preview.filter(function(r){return r.state==='outside';}).length,review:preview.filter(function(r){return r.state==='review';}).length,candidates:students.map(function(s){return {id:s.ma_hoc_sinh,name:s.ho_ten,className:s.lop};})};
+}
+function nhGradesImport_(ctx,data) {
+  const id=nhId_(data.id),hash=nhHash_([data.schoolYear,data.assessment,data.sourceFile,data.sourceClass||'',data.rows]),prior=nhRows_(ctx,'DiemKiemTra').filter(function(r){return r.ma_lan_nhap===id;});
+  if(prior.length){if(prior.some(function(r){return r.ban_nhap_hash!==hash||r.hoan_tac_ma;}))throw new Error('Mã lần nhập đã dùng cho dữ liệu khác.');return {id:id,saved:prior.length,repeated:true};}
+  const preview=nhGradesPreview_(ctx,data);
+  if(preview.revision!==data.revision)throw new Error('Danh sách hoặc điểm vừa thay đổi. Xem trước lại trước khi nhập.');
+  const now=new Date().toISOString(),changed=preview.rows.filter(function(r){return r.changed;});
+  nhWrite_(ctx,'DiemKiemTra',changed.map(function(r){return {ma_ket_qua:Utilities.getUuid(),ma_hoc_sinh:r.studentId,nam_hoc:preview.schoolYear,dot_kiem_tra:preview.assessment,tieng_viet:r.vietnamese,toan:r.math,ma_lan_nhap:id,tep_nguon:preview.sourceFile,dong_nguon:r.row,lop_nguon:preview.sourceClass,nguoi_cap_nhat_id:ctx.user.sub,cap_nhat_luc:now,hoan_tac_ma:'',ban_nhap_hash:hash};}));
+  return {id:id,saved:changed.length,matched:preview.matched,skipped:preview.outside+preview.review,unchanged:preview.matched-changed.length};
+}
+function nhGradesUndo_(ctx,data) {
+  const id=nhId_(data.id),batchId=nhId_(data.batchId),all=nhRows_(ctx,'DiemKiemTra'),prior=all.filter(function(r){return r.ma_lan_nhap===id;});
+  if(prior.length){if(prior.some(function(r){return r.hoan_tac_ma!==batchId;}))throw new Error('Mã hoàn tác đã dùng cho thao tác khác.');return {id:id,saved:prior.length,repeated:true};}
+  const rows=all.filter(function(r){return r.ma_lan_nhap===batchId;});if(!rows.length||rows.some(function(r){return !!r.hoan_tac_ma;}))throw new Error('Không tìm thấy lần nhập có thể hoàn tác.');
+  if(nhGradeRevision_(ctx)!==data.revision)throw new Error('Điểm vừa thay đổi. Tải lại lịch sử trước khi hoàn tác.');
+  const latest=nhGradeLatest_(ctx,rows[0].nam_hoc,rows[0].dot_kiem_tra);
+  if(rows.some(function(r){return latest[r.ma_hoc_sinh].ma_ket_qua!==r.ma_ket_qua;}))throw new Error('Có điểm đã cập nhật sau lần nhập này. Không hoàn tác để tránh ghi đè điểm mới.');
+  const now=new Date().toISOString();
+  nhWrite_(ctx,'DiemKiemTra',rows.map(function(r){
+    const index=all.indexOf(r),before=all.slice(0,index).filter(function(p){return p.ma_hoc_sinh===r.ma_hoc_sinh&&p.nam_hoc===r.nam_hoc&&p.dot_kiem_tra===r.dot_kiem_tra;}).pop();
+    return {ma_ket_qua:Utilities.getUuid(),ma_hoc_sinh:r.ma_hoc_sinh,nam_hoc:r.nam_hoc,dot_kiem_tra:r.dot_kiem_tra,tieng_viet:before?before.tieng_viet:'',toan:before?before.toan:'',ma_lan_nhap:id,tep_nguon:r.tep_nguon,dong_nguon:r.dong_nguon,lop_nguon:r.lop_nguon,nguoi_cap_nhat_id:ctx.user.sub,cap_nhat_luc:now,hoan_tac_ma:batchId,ban_nhap_hash:nhHash_([id,batchId])};
+  }));return {id:id,saved:rows.length};
 }
